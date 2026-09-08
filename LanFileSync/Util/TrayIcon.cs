@@ -16,7 +16,7 @@ public sealed class TrayIcon : IDisposable
 
         _icon = new NotifyIcon
         {
-            Icon = SystemIcons.Application,
+            Icon = AppIcons.TrayIcon(),
             Text = "BBK 同步与备份工具",
             Visible = false,
         };

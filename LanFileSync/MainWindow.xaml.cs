@@ -27,6 +27,7 @@ public partial class MainWindow : Window
     public MainWindow()
     {
         InitializeComponent();
+        Icon = AppIcons.WindowIcon() ?? Icon;
         txtRoot.Text = _settings.Settings.Root;
         txtPort.Text = _settings.Settings.Port.ToString();
         txtPeerPort.Text = _settings.Settings.Port.ToString();
