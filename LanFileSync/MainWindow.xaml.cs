@@ -1017,7 +1017,7 @@ public partial class MainWindow : Window
         }
 
         bool isDir = Directory.Exists(itemPath);
-        if (MessageBox.Show($"确认开始传输？\n\n将把 [{itemPath}] 传输到对方电脑的相同路径（{(isDir ? "文件夹" : "文件")}）。\n传输前会自动备份对方相应的文件/文件夹，出错时结束 FreeFormAlways* 进程后重试一次。",
+        if (MessageBox.Show($"确认开始传输？\n\n将把 [{itemPath}] 传输到[{cboPeerIp.Text}]电脑的相同路径（{(isDir ? "文件夹" : "文件")}）。\n传输前会自动备份对方相应的文件/文件夹。",
                 "确认", MessageBoxButton.OKCancel, MessageBoxImage.Question) != MessageBoxResult.OK)
             return;
 
@@ -1039,7 +1039,8 @@ public partial class MainWindow : Window
                     await client.TransferAsync(itemPath, isDir,
                         cbTransferSameSkip.IsChecked == true,
                         cbTransferKillFreeForm.IsChecked == true,
-                        LogLine, OnFileProgress, OnTotal, ct);
+LogLine, OnFileProgress, OnTotal,
+                        m => LogLineError("远端电脑: " + m), ct);
                     okIps.Add(host);
                     LogLine($"传输完成: {host}");
                 }

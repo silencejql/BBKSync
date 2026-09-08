@@ -201,7 +201,7 @@ _log("接收并应用完成");
                 _onTotal(engine.NeedList.Count);
                 await conn.SendJsonAsync(new { op = "need", paths = engine.NeedList }, ct);
                 await engine.ReceiveAndApplyAsync(conn, _log, _onFile, _onError, ct);
-                await conn.SendJsonAsync(new { op = "bye" }, ct);
+                await conn.SendJsonAsync(new { op = "bye", msgs = engine.TransferMessages }, ct);
                 _log("传输应用完成");
             }
             else

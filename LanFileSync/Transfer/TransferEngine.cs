@@ -20,6 +20,8 @@ public sealed class TransferEngine
 
     public IReadOnlyList<string> NeedList => _needed;
 
+    public List<string> TransferMessages { get; } = new();
+
     public void Plan(IEnumerable<FileEntry> remote)
     {
         _needed.Clear();
@@ -128,7 +130,7 @@ public sealed class TransferEngine
             {
                 string sp = frame.GetProperty("p").GetString() ?? "";
                 string sm = frame.GetProperty("msg").GetString() ?? "";
-                onError?.Invoke($"{sp}  源文件读取失败，已跳过: {sm}");
+                ReceiveMessage($"源文件读取失败，已跳过: {sp}（{sm}）", onError);
                 continue;
             }
             if (op != "data")
@@ -146,9 +148,15 @@ public sealed class TransferEngine
             catch (OperationCanceledException) { throw; }
             catch (Exception ex)
             {
-                onError?.Invoke($"{p}: {ex.Message}");
+                ReceiveMessage($"{p}: {ex.Message}", onError);
             }
         }
+    }
+
+    private void ReceiveMessage(string msg, Action<string> onError)
+    {
+        TransferMessages.Add(msg);
+        try { onError(msg); } catch { }
     }
 
     private async Task WriteOneAsync(PeerConnection peer, string p, long size, long mtimeTicks, Action<string> log, Action<string> onError, CancellationToken ct)
@@ -181,7 +189,7 @@ public sealed class TransferEngine
                 consumed += n;
             }
             try { if (File.Exists(tmp)) File.Delete(tmp); } catch { }
-            onError?.Invoke(target + "  写入失败，已跳过");
+            ReceiveMessage(target + "  写入失败，已跳过", onError);
             return;
         }
 
@@ -194,7 +202,7 @@ public sealed class TransferEngine
         try { File.SetLastWriteTimeUtc(target, new DateTime(mtimeTicks, DateTimeKind.Utc)); } catch { }
     }
 
-    private static bool MoveIntoPlace(string tmp, string target, bool killFreeForm, Action<string> log, Action<string> onError)
+    private bool MoveIntoPlace(string tmp, string target, bool killFreeForm, Action<string> log, Action<string> onError)
     {
         int attempt = 0;
         while (true)
@@ -210,11 +218,11 @@ public sealed class TransferEngine
                 if (attempt == 1)
                 {
                     int killed = killFreeForm ? FreeFormKiller.KillAll() : 0;
-                    log($"更新出错: {target}，已结束 {killed} 个 FreeFormAlways 进程，重试一次 ...");
+                    ReceiveMessage($"更新出错: {target}，已结束远端电脑 {killed} 个 FreeFormAlways 进程，重试一次...", onError);
                     Thread.Sleep(Constants.RetryDelayMs);
                     continue;
                 }
-                onError?.Invoke($"更新失败（已重试一次）: {target}");
+                ReceiveMessage($"更新失败（已重试一次）: {target}", onError);
                 return false;
             }
         }
