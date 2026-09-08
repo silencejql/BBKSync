@@ -362,7 +362,7 @@ public partial class MainWindow : Window
             _totalCount = files.Count;
             progressBar.Maximum = Math.Max(1, files.Count);
             LogLine($"同步前先备份本机 {src} → {dest}（共 {files.Count} 项）...");
-            await engine.RunAsync(OnFileProgress, _cts!.Token);
+            await engine.RunAsync(OnFileProgress, m => LogLineError("跳过: " + m), _cts!.Token);
             LogLine("同步前备份完成");
             await CompressAndRemoveFolderAsync(dest);
             return true;
@@ -440,7 +440,7 @@ public partial class MainWindow : Window
             _opLabel = "备份";
             progressBar.Maximum = Math.Max(1, files.Count);
             LogLine($"开始备份 {src} → {target}（共 {files.Count} 项）...");
-            await engine.RunAsync(OnFileProgress, _cts!.Token);
+            await engine.RunAsync(OnFileProgress, m => LogLineError("跳过: " + m), _cts!.Token);
             LogLine("备份完成");
             txtStatus.Text = "备份完成";
             await CompressAndRemoveFolderAsync(target);
@@ -614,7 +614,7 @@ public partial class MainWindow : Window
             _opLabel = "备份";
             progressBar.Maximum = Math.Max(1, files.Count);
             LogLine($"开始从共享 {unc} 备份 → {target}（共 {files.Count} 项）...");
-            await engine.RunAsync(OnFileProgress, _cts!.Token);
+            await engine.RunAsync(OnFileProgress, m => LogLineError("跳过: " + m), _cts!.Token);
             LogLine("备份完成");
             txtStatus.Text = "备份完成";
             await CompressAndRemoveFolderAsync(target);

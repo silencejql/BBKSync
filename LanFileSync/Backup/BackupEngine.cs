@@ -59,7 +59,7 @@ public sealed class BackupEngine
         return list;
     }
 
-    public async Task RunAsync(Action<string, long>? onFile, CancellationToken ct)
+    public async Task RunAsync(Action<string, long>? onFile, Action<string>? onError, CancellationToken ct)
     {
         var files = Plan();
         var buf = new byte[Constants.StreamBufferSize];
@@ -73,8 +73,9 @@ public sealed class BackupEngine
 
             long size;
             try { size = new FileInfo(srcPath).Length; }
-            catch
+            catch (Exception ex)
             {
+                onError?.Invoke(rel + "  无法读取（文件被占用等）: " + ex.Message);
                 onFile?.Invoke(rel, 0);
                 continue;
             }
@@ -100,9 +101,10 @@ public sealed class BackupEngine
                 File.Move(tmp, dstPath, overwrite: true);
                 try { File.SetLastWriteTimeUtc(dstPath, File.GetLastWriteTimeUtc(srcPath)); } catch { }
             }
-            catch (Exception)
+            catch (Exception ex)
             {
                 try { if (File.Exists(tmp)) File.Delete(tmp); } catch { }
+                onError?.Invoke(rel + "  复制失败（文件被占用等，已跳过）: " + ex.Message);
             }
 
             onFile?.Invoke(rel, size);

@@ -124,6 +124,13 @@ public sealed class TransferEngine
                 break;
             if (op == "err")
                 throw new InvalidOperationException(frame.GetProperty("msg").GetString());
+            if (op == "skip")
+            {
+                string sp = frame.GetProperty("p").GetString() ?? "";
+                string sm = frame.GetProperty("msg").GetString() ?? "";
+                onError?.Invoke($"{sp}  源文件读取失败，已跳过: {sm}");
+                continue;
+            }
             if (op != "data")
                 throw new InvalidOperationException("未知消息: " + op);
 

@@ -143,7 +143,7 @@ string role = hello.GetProperty("role").GetString()!;
                     {
                         var be = new BackupEngine(_root, dest, _backupOptions);
                         var files = be.Plan();
-                        await be.RunAsync(null, ct);
+                        await be.RunAsync(null, m => _onError("同步前备份跳过: " + m), ct);
                         _log($"同步前备份完成（{files.Count} 项）");
                         //await CompressAndRemoveFolderAsync(dest);
                     }
