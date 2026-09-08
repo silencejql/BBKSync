@@ -108,14 +108,17 @@ string role = hello.GetProperty("role").GetString()!;
             };
             _log($"收到连接（角色: {roleDesc}）{tcp.Client.RemoteEndPoint}");
 
-            if (role == Constants.RoleProbe)
+if (role == Constants.RoleProbe)
             {
                 var (name, line) = DeviceConfig.ReadFromRoot(_root);
                 await conn.SendJsonAsync(new { op = "cfg", name, line }, CancellationToken.None);
                 _log("已返回设备配置");
             }
-            else if (role == Constants.RolePull)
+            else
             {
+                _log("----------------");
+                if (role == Constants.RolePull)
+                {
                 await SourceSide.SendManifestAsync(conn, _root, ct);
                 _log("文件清单已发送，等待对方选择需要更新的文件...");
 
@@ -209,9 +212,10 @@ var engine = new SyncEngine(_root, _options);
                 await conn.SendJsonAsync(new { op = "bye", msgs = engine.TransferMessages }, ct);
                 _log("传输应用完成");
             }
-            else
+else
             {
                 await conn.SendJsonAsync(new { op = "err", msg = "未知角色: " + role }, CancellationToken.None);
+            }
             }
         }
         catch (OperationCanceledException) { }

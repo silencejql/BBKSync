@@ -178,6 +178,8 @@ public partial class MainWindow : Window
 
     private void LogLineError(string msg) => LogLine(msg, Brushes.Red);
 
+    private void LogDivider() => LogLine("----------------");
+
     private void LogLine(string msg, System.Windows.Media.Brush brush)
     {
         string line = $"[{DateTime.Now:HH:mm:ss}] {msg}";
@@ -371,6 +373,7 @@ public partial class MainWindow : Window
             var files = engine.Plan();
             _totalCount = files.Count;
             progressBar.Maximum = Math.Max(1, files.Count);
+            LogDivider();
             LogLine($"同步前先备份本机 {src} → {dest}（共 {files.Count} 项）...");
             await engine.RunAsync(OnFileProgress, m => LogLineError("跳过: " + m), _cts!.Token);
             LogBackupSummary("同步前备份", engine, files.Count);
@@ -449,6 +452,7 @@ public partial class MainWindow : Window
             _totalCount = files.Count;
             _opLabel = "备份";
             progressBar.Maximum = Math.Max(1, files.Count);
+            LogDivider();
             LogLine($"开始备份 {src} → {target}（共 {files.Count} 项）...");
             await engine.RunAsync(OnFileProgress, m => LogLineError("跳过: " + m), _cts!.Token);
             LogBackupSummary("备份", engine, files.Count);
@@ -539,6 +543,7 @@ public partial class MainWindow : Window
                 {
                     using var client = new PeerClient();
                     await client.ConnectAsync(host, port, Constants.RolePull, ct);
+                    LogDivider();
                     LogLine($"已连接对方 {host}:{port}，开始拉取备份 → {target} ...");
                     _opLabel = "备份";
                     await client.BackupPullAsync(target, ReadBackupOptions(), LogLine, OnFileProgress, OnTotal,
@@ -623,6 +628,7 @@ public partial class MainWindow : Window
             _totalCount = files.Count;
             _opLabel = "备份";
             progressBar.Maximum = Math.Max(1, files.Count);
+            LogDivider();
             LogLine($"开始从共享 {unc} 备份 → {target}（共 {files.Count} 项）...");
             await engine.RunAsync(OnFileProgress, m => LogLineError("跳过: " + m), _cts!.Token);
             LogBackupSummary("共享备份", engine, files.Count);
@@ -887,12 +893,14 @@ public partial class MainWindow : Window
 
                     if (push)
                     {
+                        LogDivider();
                         LogLine($"以本机为源连接对方 {host}:{port} 成功，推送 {root} 的文件清单...");
                         await client.PushAsync(root, options, LogLine, OnFileProgress, OnTotal,
                             m => LogLineError("远端电脑: " + m), ct);
                     }
                     else
                     {
+                        LogDivider();
                         LogLine($"以对方为源连接对方 {host}:{port} 成功，更新到本机 {root} ...");
                         await client.PullAsync(root, options, LogLine, OnFileProgress, OnTotal,
                             m => LogLineError("传输失败，跳过: " + m), ct);
@@ -956,6 +964,7 @@ public partial class MainWindow : Window
             var engine = new SyncEngine(root, options);
             engine.Plan(remote);
             OnTotal(engine.NeedList.Count);
+            LogDivider();
             LogLine($"共享 {unc} 现共有 {remote.Count} 个文件，需要更新 {engine.NeedList.Count} 个...");
             if (engine.NeedList.Count == 0)
             {
@@ -1036,6 +1045,7 @@ public partial class MainWindow : Window
                 {
                     using var client = new PeerClient();
                     await client.ConnectAsync(host, port, Constants.RoleTransfer, ct);
+                    LogDivider();
                     LogLine($"传输到 {host}:{port}（目标路径不变，同名同大小同时跳过）...");
                     await client.TransferAsync(itemPath, isDir,
                         cbTransferSameSkip.IsChecked == true,
