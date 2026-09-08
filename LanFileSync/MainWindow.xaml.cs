@@ -226,6 +226,16 @@ public partial class MainWindow : Window
         });
     }
 
+    private void LogBackupSummary(string what, BackupEngine engine, int total)
+    {
+        int copied = engine.CopiedCount;
+        int skipped = engine.SkippedCount;
+        if (copied == 0)
+            LogLine($"{what}完成：共 {total} 项，全部与备份目标相同，无需传输。");
+        else
+            LogLine($"{what}完成：共 {total} 项，复制 {copied} 项" + (skipped > 0 ? $"，跳过相同 {skipped} 项" : "") + "。");
+    }
+
     private static string FormatSize(long bytes)
     {
         const long K = 1024, M = 1024 * K, G = 1024 * M;
@@ -363,7 +373,7 @@ public partial class MainWindow : Window
             progressBar.Maximum = Math.Max(1, files.Count);
             LogLine($"同步前先备份本机 {src} → {dest}（共 {files.Count} 项）...");
             await engine.RunAsync(OnFileProgress, m => LogLineError("跳过: " + m), _cts!.Token);
-            LogLine("同步前备份完成");
+            LogBackupSummary("同步前备份", engine, files.Count);
             await CompressAndRemoveFolderAsync(dest);
             return true;
         }
@@ -441,7 +451,7 @@ public partial class MainWindow : Window
             progressBar.Maximum = Math.Max(1, files.Count);
             LogLine($"开始备份 {src} → {target}（共 {files.Count} 项）...");
             await engine.RunAsync(OnFileProgress, m => LogLineError("跳过: " + m), _cts!.Token);
-            LogLine("备份完成");
+            LogBackupSummary("备份", engine, files.Count);
             txtStatus.Text = "备份完成";
             await CompressAndRemoveFolderAsync(target);
         }
@@ -615,7 +625,7 @@ public partial class MainWindow : Window
             progressBar.Maximum = Math.Max(1, files.Count);
             LogLine($"开始从共享 {unc} 备份 → {target}（共 {files.Count} 项）...");
             await engine.RunAsync(OnFileProgress, m => LogLineError("跳过: " + m), _cts!.Token);
-            LogLine("备份完成");
+            LogBackupSummary("共享备份", engine, files.Count);
             txtStatus.Text = "备份完成";
             await CompressAndRemoveFolderAsync(target);
         }
@@ -946,6 +956,12 @@ public partial class MainWindow : Window
             engine.Plan(remote);
             OnTotal(engine.NeedList.Count);
             LogLine($"共享 {unc} 现共有 {remote.Count} 个文件，需要更新 {engine.NeedList.Count} 个...");
+            if (engine.NeedList.Count == 0)
+            {
+                LogLine("所有文件与共享相同，无需更新。");
+                txtStatus.Text = "共享同步完成";
+                return;
+            }
             await engine.CopyNeededFromAsync(unc, OnFileProgress, m => LogLineError("跳过: " + m), ct);
             LogLine("共享同步完成");
             txtStatus.Text = "共享同步完成";

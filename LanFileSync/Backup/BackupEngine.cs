@@ -22,6 +22,9 @@ public sealed class BackupEngine
             throw new ArgumentException("备份目标不能位于要备份的文件夹内部。");
     }
 
+    public int CopiedCount { get; private set; }
+    public int SkippedCount { get; private set; }
+
     public IReadOnlyList<string> Plan()
     {
         if (_plan != null)
@@ -61,6 +64,8 @@ public sealed class BackupEngine
 
     public async Task RunAsync(Action<string, long>? onFile, Action<string>? onError, CancellationToken ct)
     {
+        CopiedCount = 0;
+        SkippedCount = 0;
         var files = Plan();
         var buf = new byte[Constants.StreamBufferSize];
 
@@ -82,12 +87,14 @@ public sealed class BackupEngine
 
             if (!NeedsCopy(srcPath, dstPath))
             {
+                SkippedCount++;
                 onFile?.Invoke(rel, size);
                 continue;
             }
 
             Directory.CreateDirectory(Path.GetDirectoryName(dstPath)!);
             string tmp = dstPath + "." + Guid.NewGuid().ToString("N") + ".tmp";
+            bool copied = false;
             try
             {
                 await using (var src = new FileStream(srcPath, FileMode.Open, FileAccess.Read, FileShare.ReadWrite, Constants.StreamBufferSize, FileOptions.SequentialScan))
@@ -100,6 +107,7 @@ public sealed class BackupEngine
 
                 File.Move(tmp, dstPath, overwrite: true);
                 try { File.SetLastWriteTimeUtc(dstPath, File.GetLastWriteTimeUtc(srcPath)); } catch { }
+                copied = true;
             }
             catch (Exception ex)
             {
@@ -107,6 +115,8 @@ public sealed class BackupEngine
                 onError?.Invoke(rel + "  复制失败（文件被占用等，已跳过）: " + ex.Message);
             }
 
+            if (copied)
+                CopiedCount++;
             onFile?.Invoke(rel, size);
         }
     }

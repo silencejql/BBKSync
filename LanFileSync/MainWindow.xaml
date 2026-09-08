@@ -26,7 +26,8 @@
         <Grid Margin="14">
             <Grid.RowDefinitions>
                 <RowDefinition Height="*"/>
-                <RowDefinition Height="210"/>
+                <RowDefinition Height="Auto"/>
+                <RowDefinition Height="210" MinHeight="90"/>
             </Grid.RowDefinitions>
 
             <!-- 主操作区：整窗横跨排列 -->
@@ -312,8 +313,15 @@
                 </StackPanel>
             </ScrollViewer>
 
+            <!-- 日志区拖拽分隔条 -->
+            <GridSplitter Grid.Row="1" Height="7" HorizontalAlignment="Stretch" VerticalAlignment="Center"
+                          Background="Transparent" Cursor="SizeNS" ResizeBehavior="PreviousAndNext"
+                          ResizeDirection="Rows"/>
+            <Border Grid.Row="1" Height="1" HorizontalAlignment="Stretch" VerticalAlignment="Center"
+                    Background="{StaticResource CardBorderBrush}"/>
+
             <!-- 日志 -->
-            <GroupBox Grid.Row="1" Header="日志" Margin="0,15,0,0">
+            <GroupBox Grid.Row="2" Header="日志" Margin="0,15,0,0">
                 <DockPanel>
                     <StackPanel DockPanel.Dock="Bottom" Orientation="Horizontal" HorizontalAlignment="Right" Margin="0,0,0,0">
                         <Button Content="清空日志" Padding="12,5" Click="BtnClearLog_Click"/>

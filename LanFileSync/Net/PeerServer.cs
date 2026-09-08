@@ -124,7 +124,8 @@ string role = hello.GetProperty("role").GetString()!;
                 var paths = req.GetProperty("paths").EnumerateArray().Select(x => x.GetString()!).ToList();
                 _log($"对方需要 {paths.Count} 个文件，开始发送...");
 
-                int sent = 0;
+int sent = 0;
+                _log(paths.Count == 0 ? "对方无需更新/备份（所有文件相同）。" : $"对方需要 {paths.Count} 个文件，开始发送...");
                 await SourceSide.SendRequestedFilesAsync(conn, _root, paths,
                     (_ , _) => { if (++sent % 25 == 0 || sent == paths.Count) _log($"已发送 {sent}/{paths.Count} 个文件..."); }, ct);
                 _log("文件发送完成");
