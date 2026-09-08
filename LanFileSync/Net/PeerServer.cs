@@ -159,14 +159,19 @@ int sent = 0;
                     }
                 }
 
-                var engine = new SyncEngine(_root, _options);
+var engine = new SyncEngine(_root, _options);
                 engine.Plan(list);
                 _onTotal(engine.NeedList.Count);
 
+                var applyMsgs = new List<string>();
                 await conn.SendJsonAsync(new { op = "need", paths = engine.NeedList }, ct);
-                await engine.ReceiveAndApplyAsync(conn, _onFile, _onError, ct);
-                await conn.SendJsonAsync(new { op = "bye" }, ct);
-_log("接收并应用完成");
+                await engine.ReceiveAndApplyAsync(conn, _onFile, m =>
+                {
+                    applyMsgs.Add(m);
+                    _onError(m);
+                }, ct);
+                await conn.SendJsonAsync(new { op = "bye", msgs = applyMsgs }, ct);
+                _log("接收并应用完成");
             }
             else if (role == Constants.RoleTransfer)
             {

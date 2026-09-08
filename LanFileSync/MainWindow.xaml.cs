@@ -888,7 +888,8 @@ public partial class MainWindow : Window
                     if (push)
                     {
                         LogLine($"以本机为源连接对方 {host}:{port} 成功，推送 {root} 的文件清单...");
-                        await client.PushAsync(root, options, LogLine, OnFileProgress, OnTotal, ct);
+                        await client.PushAsync(root, options, LogLine, OnFileProgress, OnTotal,
+                            m => LogLineError("远端电脑: " + m), ct);
                     }
                     else
                     {

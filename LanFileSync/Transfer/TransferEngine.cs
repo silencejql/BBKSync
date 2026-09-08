@@ -215,14 +215,14 @@ public sealed class TransferEngine
             catch (IOException)
             {
                 attempt++;
-                if (attempt == 1)
+                if (killFreeForm && attempt <= Constants.MaxRetryCount)
                 {
-                    int killed = killFreeForm ? FreeFormKiller.KillAll() : 0;
-                    ReceiveMessage($"更新出错: {target}，已结束远端电脑 {killed} 个 FreeFormAlways 进程，重试一次...", onError);
-                    Thread.Sleep(Constants.RetryDelayMs);
+                    int killed = FreeFormKiller.KillAll();
+                    ReceiveMessage($"更新出错: {target}，已结束远端电脑 {killed} 个 FreeFormAlways 进程，重试第 {attempt} 次...", onError);
+                    Thread.Sleep(Constants.RetryDelayMs * attempt);
                     continue;
                 }
-                ReceiveMessage($"更新失败（已重试一次）: {target}", onError);
+                ReceiveMessage($"更新失败（已重试 {attempt - 1} 次）: {target}", onError);
                 return false;
             }
         }

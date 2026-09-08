@@ -47,6 +47,7 @@ public sealed class PeerClient : IDisposable
         Action<string> log,
         Action<string, long> onFile,
         Action<int> onTotal,
+        Action<string> onError,
         CancellationToken ct)
     {
         await SourceSide.SendManifestAsync(_conn!, root, ct);
@@ -68,6 +69,9 @@ public sealed class PeerClient : IDisposable
             ?? throw new EndOfStreamException("连接已断开");
         if (resp.GetProperty("op").GetString() == "err")
             throw new InvalidOperationException(resp.GetProperty("msg").GetString());
+
+        foreach (var m in resp.GetProperty("msgs").EnumerateArray())
+            onError?.Invoke(m.GetString() ?? "");
 
         log("对方已应用完成");
     }
