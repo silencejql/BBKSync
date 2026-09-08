@@ -228,7 +228,7 @@ public sealed class TransferEngine
                 if (killFreeForm && attempt <= Constants.MaxRetryCount)
                 {
                     int killed = FreeFormKiller.KillAll();
-                    ReceiveMessage($"更新出错: {target}，已结束远端电脑 {killed} 个 FreeFormAlways 进程，重试第 {attempt} 次...", onError);
+                    ReceiveMessage($"更新出错: {target}，已结束远端电脑 {killed} 个 {FreeFormKiller.ProcessPrefixAsterisk} 进程，重试第 {attempt} 次...", onError);
                     Thread.Sleep(Constants.RetryDelayMs * attempt);
                     continue;
                 }

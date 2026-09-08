@@ -4,13 +4,20 @@ namespace LanFileSync;
 
 public static class FreeFormKiller
 {
+    public static string ProcessPrefix { get; set; } = "FreeFormAlways";
+
+    public static string ProcessPrefixAsterisk => ProcessPrefix + "*";
+
     public static IEnumerable<Process> FindFreeFormProcesses()
     {
+        string prefix = ProcessPrefix;
+        if (string.IsNullOrWhiteSpace(prefix))
+            return Array.Empty<Process>();
         return Process.GetProcesses().Where(p =>
         {
             try
             {
-                return p.ProcessName.StartsWith("FreeFormAlways", StringComparison.OrdinalIgnoreCase);
+                return p.ProcessName.StartsWith(prefix, StringComparison.OrdinalIgnoreCase);
             }
             catch
             {

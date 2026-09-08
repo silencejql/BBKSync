@@ -41,6 +41,11 @@ public partial class MainWindow : Window
         txtTransferPath.Text = _settings.Settings.TransferPath;
         cbTransferSameSkip.IsChecked = _settings.Settings.TransferSameSkip;
         cbTransferKillFreeForm.IsChecked = _settings.Settings.TransferKillFreeForm;
+        FreeFormKiller.ProcessPrefix = _settings.Settings.FreeFormProcessPrefix;
+        cbKillFreeForm.Content = "替换出错时结束 " + FreeFormKiller.ProcessPrefixAsterisk + " 后重试";
+        cbTransferKillFreeForm.Content = "出错时结束 " + FreeFormKiller.ProcessPrefixAsterisk + " 后重试一次";
+        cbKillFreeForm.ToolTip = "相当于自动打开任务管理器结束 " + FreeFormKiller.ProcessPrefixAsterisk + " 开头的进程，最多重试3次。";
+        cbTransferKillFreeForm.ToolTip = "更新报错时输出日志，并关闭目标电脑 " + FreeFormKiller.ProcessPrefixAsterisk + " 开头的进程后重试一次；仍失败则输出日志跳过。";
         chkAutoStart.IsChecked = _settings.Settings.AutoStartAndListen;
         rbReceive.IsChecked = true;
         RbBackupSource_Changed(null, null!);

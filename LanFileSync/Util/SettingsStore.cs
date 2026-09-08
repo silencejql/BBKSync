@@ -26,6 +26,7 @@ public sealed class AppSettings
     public string TransferPath { get; set; } = "";
     public bool TransferSameSkip { get; set; } = true;
     public bool TransferKillFreeForm { get; set; } = true;
+    public string FreeFormProcessPrefix { get; set; } = "FreeFormAlways";
     public List<ComputerMapping> Computers { get; set; } = new();
 }
 
