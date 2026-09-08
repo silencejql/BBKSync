@@ -18,6 +18,7 @@ public sealed class AppSettings
     public bool BackupBeforeSync { get; set; } = true;
     public bool BackupLogRule { get; set; } = true;
     public int BackupLogDays { get; set; } = 2;
+    public bool RunPreBackupBat { get; set; } = true;
     public string BackupIgnoreRegexes { get; set; } = "";
     public bool IgnoreRegexEnabled { get; set; } = true;
     public bool CompressZip { get; set; } = true;

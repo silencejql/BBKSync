@@ -37,6 +37,7 @@ public partial class MainWindow : Window
         txtBackupIgnore.Text = _settings.Settings.BackupIgnoreRegexes;
         cbIgnoreEnabled.IsChecked = _settings.Settings.IgnoreRegexEnabled;
         cbCompressZip.IsChecked = _settings.Settings.CompressZip;
+        cbRunPreBackupBat.IsChecked = _settings.Settings.RunPreBackupBat;
         cbAutoFetchName.IsChecked = _settings.Settings.AutoFetchComputerName;
         txtTransferPath.Text = _settings.Settings.TransferPath;
         cbTransferSameSkip.IsChecked = _settings.Settings.TransferSameSkip;
@@ -406,12 +407,67 @@ public partial class MainWindow : Window
             return;
         }
 
+        if (!await RunPreBackupBatAsync())
+        {
+            LogLineError("备份前脚本未通过，已中止备份");
+            return;
+        }
+
         if (rbBackupRemote.IsChecked == true)
             await BackupFromRemoteAsync(dest);
         else if (rbBackupShare.IsChecked == true)
             await BackupFromShareAsync(dest);
         else
             await BackupLocalAsync(dest);
+    }
+
+    private async Task<bool> RunPreBackupBatAsync()
+    {
+        if (cbRunPreBackupBat.IsChecked != true)
+            return true;
+
+        string batDir = AppPaths.ExeDir();
+        string batPath = Path.Combine(batDir, "LocalDB_Backup.bat");
+        if (!File.Exists(batPath))
+        {
+            LogLineError($"未找到 {batPath}，跳过备份前脚本");
+            return false;
+        }
+
+        LogDivider();
+        LogLine($"开始执行备份前脚本: {batPath} ...");
+        try
+        {
+            bool ok = await Task.Run(() =>
+            {
+                try
+                {
+                    var psi = new ProcessStartInfo
+                    {
+                        FileName = "cmd.exe",
+                        Arguments = $"/c \"{batPath}\"",
+                        WorkingDirectory = batDir,
+                        UseShellExecute = false,
+                        CreateNoWindow = true,
+                    };
+                    using var p = Process.Start(psi);
+                    p?.WaitForExit();
+                    return p == null || p.ExitCode == 0;
+                }
+                catch (Exception ex)
+                {
+                    LogLineError("执行备份前脚本失败: " + ex.Message);
+                    return false;
+                }
+            });
+            LogLine(ok ? "备份前脚本执行完成" : "备份前脚本执行失败（ExitCode 非 0）");
+            return ok;
+        }
+        catch (Exception ex)
+        {
+            LogLineError("执行备份前脚本异常: " + ex.Message);
+            return false;
+        }
     }
 
     private string BackupNameFor(string fallback)
@@ -1239,6 +1295,7 @@ LogLine, OnFileProgress, OnTotal,
         _settings.Settings.BackupIgnoreRegexes = txtBackupIgnore.Text;
         _settings.Settings.IgnoreRegexEnabled = cbIgnoreEnabled.IsChecked ?? true;
         _settings.Settings.CompressZip = cbCompressZip.IsChecked ?? true;
+        _settings.Settings.RunPreBackupBat = cbRunPreBackupBat.IsChecked ?? true;
         _settings.Settings.AutoFetchComputerName = cbAutoFetchName.IsChecked == true;
         _settings.Settings.TransferPath = txtTransferPath.Text.Trim();
         _settings.Settings.TransferSameSkip = cbTransferSameSkip.IsChecked ?? true;

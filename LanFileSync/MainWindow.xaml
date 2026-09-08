@@ -159,6 +159,8 @@
                                     </StackPanel>
                                     <CheckBox x:Name="cbCompressZip" Content="备份完成后自动压缩为 zip（删除原文件夹）" IsChecked="True" Margin="0,8,0,0"
                                               ToolTip="备份完成后将备份文件夹打包成同名 zip 文件并删除文件夹，节省空间。"/>
+                                    <CheckBox x:Name="cbRunPreBackupBat" Content="备份前先执行 LocalDB_Backup.bat" IsChecked="True" Margin="0,8,0,0"
+                                              ToolTip="开始备份前先完整执行程序目录下的 LocalDB_Backup.bat 文件（如用于备份数据库），执行完成后才开始备份。"/>
                                 </StackPanel>
                                 <Rectangle Grid.Column="1" Width="1" Fill="{StaticResource CardBorderBrush}" Margin="14,0"/>
                                 <StackPanel Grid.Column="2" Margin="14,0,0,0">
