@@ -47,7 +47,17 @@ public sealed class TransferEngine
 
     public bool BackupItem(Action<string> log, Action<string> onError)
     {
-        string backupPath = _itemPath + "-更新自动备份-" + DateTime.Now.ToString("yyyyMMdd");
+        string date = DateTime.Now.ToString("yyyyMMdd");
+        string backupPath;
+        if (_itemIsDir)
+            backupPath = _itemPath + "-更新自动备份-" + date;
+        else
+        {
+            string dirOf = Path.GetDirectoryName(_itemPath) ?? "";
+            string nameOf = Path.GetFileNameWithoutExtension(_itemPath);
+            string extOf = Path.GetExtension(_itemPath);
+            backupPath = Path.Combine(dirOf, nameOf + "-更新自动备份-" + date + extOf);
+        }
         if (File.Exists(backupPath) || Directory.Exists(backupPath))
         {
             log("已存在本次备份，跳过: " + backupPath);
@@ -80,12 +90,12 @@ public sealed class TransferEngine
                 log("目标文件不存在，无需备份: " + _itemPath);
                 return true;
             }
-            log("更新前自动备份目标文件: " + _itemPath + " → " + backupPath);
+            log("更新前将原文件重命名为备份: " + _itemPath + " → " + backupPath);
             try
             {
                 Directory.CreateDirectory(Path.GetDirectoryName(backupPath)!);
-                File.Copy(_itemPath, backupPath, overwrite: true);
-                log("备份完成: " + backupPath);
+                File.Move(_itemPath, backupPath);
+                log("已重命名备份原文件: " + backupPath);
                 return true;
             }
             catch (Exception ex)
