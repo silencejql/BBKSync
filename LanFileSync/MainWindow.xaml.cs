@@ -828,7 +828,7 @@ public partial class MainWindow : Window
 
     private async void BtnSync_Click(object sender, RoutedEventArgs e)
     {
-        if (MessageBox.Show("确认开始更新？\n\n将按当前配置对一台或多台电脑执行文件同步。",
+        if (MessageBox.Show($"确认开始更新？\n\n将按当前配置对[{cboPeerIp.Text}]电脑执行文件同步。",
                 "确认", MessageBoxButton.OKCancel, MessageBoxImage.Question) != MessageBoxResult.OK)
             return;
 
