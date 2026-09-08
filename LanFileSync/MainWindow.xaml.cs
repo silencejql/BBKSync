@@ -3,7 +3,6 @@ using System.IO;
 using System.IO.Compression;
 using System.Net.NetworkInformation;
 using System.Net.Sockets;
-using System.Xml.Linq;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Media;
@@ -39,6 +38,9 @@ public partial class MainWindow : Window
         cbIgnoreEnabled.IsChecked = _settings.Settings.IgnoreRegexEnabled;
         cbCompressZip.IsChecked = _settings.Settings.CompressZip;
         cbAutoFetchName.IsChecked = _settings.Settings.AutoFetchComputerName;
+        txtTransferPath.Text = _settings.Settings.TransferPath;
+        cbTransferSameSkip.IsChecked = _settings.Settings.TransferSameSkip;
+        cbTransferKillFreeForm.IsChecked = _settings.Settings.TransferKillFreeForm;
         chkAutoStart.IsChecked = _settings.Settings.AutoStartAndListen;
         rbReceive.IsChecked = true;
         RbBackupSource_Changed(null, null!);
@@ -149,101 +151,19 @@ public partial class MainWindow : Window
     private static string BackupFolderName(string machineName, string tag = "备份")
         => $"BBK_{tag}_{DateTime.Now:yyyyMMdd}";
 
-    private string BackupTargetPath(string dest, string name)
+    private string BackupTargetPath(string dest, string name, string line = "")
     {
-        string line = AutoDetectedLine();
+        if (string.IsNullOrWhiteSpace(line))
+            line = AutoDetectedLine();
         string basePath = string.IsNullOrEmpty(line) ? dest : Path.Combine(dest, "Line" + SanitizeName(line));
         return Path.Combine(basePath, $"BBK_{SanitizeName(name)}_{DateTime.Now:yyyyMMdd}");
     }
 
     private string AutoDetectedName()
-    {
-        string root = txtRoot.Text.Trim();
-        if (string.IsNullOrWhiteSpace(root) || !Directory.Exists(root))
-            return "";
-        try
-        {
-            string? newest = null;
-            DateTime newestTime = DateTime.MinValue;
-            foreach (var dir in Directory.EnumerateDirectories(root))
-            {
-                string folder = Path.GetFileName(dir);
-                if (folder.StartsWith("Bin", StringComparison.OrdinalIgnoreCase))
-                    continue;
-                string cfg = Path.Combine(dir, "Config", "SystemConfig.xml");
-                if (!File.Exists(cfg))
-                    continue;
-                DateTime t = File.GetLastWriteTimeUtc(cfg);
-                if (t > newestTime)
-                {
-                    newestTime = t;
-                    newest = cfg;
-                }
-            }
-            if (newest == null)
-                return "";
-            return ReadDeviceNo(newest).Trim();
-        }
-        catch
-        {
-            return "";
-        }
-    }
+        => DeviceConfig.ReadFromRoot(txtRoot.Text.Trim()).Name;
 
     private string AutoDetectedLine()
-    {
-        string root = txtRoot.Text.Trim();
-        if (string.IsNullOrWhiteSpace(root) || !Directory.Exists(root))
-            return "";
-        try
-        {
-            string? newest = null;
-            DateTime newestTime = DateTime.MinValue;
-            foreach (var dir in Directory.EnumerateDirectories(root))
-            {
-                string folder = Path.GetFileName(dir);
-                if (folder.StartsWith("Bin", StringComparison.OrdinalIgnoreCase))
-                    continue;
-                string cfg = Path.Combine(dir, "Config", "SystemConfig.xml");
-                if (!File.Exists(cfg))
-                    continue;
-                DateTime t = File.GetLastWriteTimeUtc(cfg);
-                if (t > newestTime)
-                {
-                    newestTime = t;
-                    newest = cfg;
-                }
-            }
-            if (newest == null)
-                return "";
-            return ReadKeyValue(newest, "LineNo").Trim();
-        }
-        catch
-        {
-            return "";
-        }
-    }
-
-    private static string ReadKeyValue(string xmlPath, string keyName)
-    {
-        try
-        {
-            var doc = XDocument.Load(xmlPath);
-            foreach (var other in doc.Descendants("Other"))
-            {
-                string key = other.Element("KeyName")?.Value.Trim() ?? "";
-                if (string.Equals(key, keyName, StringComparison.OrdinalIgnoreCase))
-                    return other.Element("Value")?.Value.Trim() ?? "";
-            }
-            return "";
-        }
-        catch
-        {
-            return "";
-        }
-    }
-
-    private static string ReadDeviceNo(string xmlPath) => ReadKeyValue(xmlPath, "DeviceNo");
+        => DeviceConfig.ReadFromRoot(txtRoot.Text.Trim()).Line;
 
     private static string SanitizeName(string s)
     {
@@ -327,6 +247,25 @@ public partial class MainWindow : Window
         using var dlg = new Forms.FolderBrowserDialog { Description = "选择备份目标文件夹", UseDescriptionForTitle = true };
         if (dlg.ShowDialog() == Forms.DialogResult.OK)
             txtBackupDest.Text = dlg.SelectedPath;
+    }
+
+    private void BtnTransferFile_Click(object sender, RoutedEventArgs e)
+    {
+        var dlg = new Microsoft.Win32.OpenFileDialog
+        {
+            Title = "选择要传输的文件",
+            CheckFileExists = true,
+            Multiselect = false,
+        };
+        if (dlg.ShowDialog() == true)
+            txtTransferPath.Text = dlg.FileName;
+    }
+
+    private void BtnTransferDir_Click(object sender, RoutedEventArgs e)
+    {
+        using var dlg = new Forms.FolderBrowserDialog { Description = "选择要传输的文件夹", UseDescriptionForTitle = true };
+        if (dlg.ShowDialog() == Forms.DialogResult.OK)
+            txtTransferPath.Text = dlg.SelectedPath;
     }
 
     private BackupOptions ReadBackupOptions()
@@ -553,7 +492,39 @@ public partial class MainWindow : Window
         {
             foreach (var host in hosts)
             {
-                string target = BackupTargetPath(dest, BackupNameFor(ComputerNameFor(host)));
+                string target;
+                if (cbAutoFetchName.IsChecked == true)
+                {
+                    string name = "";
+                    string line = "";
+                    try
+                    {
+                        using (var probe = new PeerClient())
+                        {
+                            await probe.ConnectAsync(host, port, Constants.RoleProbe, ct);
+                            (name, line) = await probe.ProbeDeviceAsync(ct);
+                        }
+                    }
+                    catch (Exception ex)
+                    {
+                        LogLineError($"从 {host} 读取设备配置失败: {ex.Message}");
+                    }
+                    if (string.IsNullOrWhiteSpace(name))
+                    {
+                        LogLineError($"未能从 {host} 的 BBK 配置获取电脑名称，使用默认名称。");
+                        name = ComputerNameFor(host);
+                    }
+                    else
+                    {
+                        LogLine($"已从 {host} 获取设备配置：DeviceNo={name}，LineNo={line}");
+                    }
+                    target = BackupTargetPath(dest, name, line);
+                }
+                else
+                {
+                    target = BackupTargetPath(dest, ComputerNameFor(host));
+                }
+
                 try
                 {
                     using var client = new PeerClient();
@@ -604,7 +575,25 @@ public partial class MainWindow : Window
         if (unc == null)
             return;
 
-        string target = BackupTargetPath(dest, BackupNameFor(ComputerNameFor(txtShareIp.Text.Trim())));
+        string target;
+        if (cbAutoFetchName.IsChecked == true)
+        {
+            var (name, line) = DeviceConfig.ReadFromRoot(unc);
+            if (string.IsNullOrWhiteSpace(name))
+            {
+                LogLineError($"未能从共享 {unc} 的 BBK 配置获取电脑名称，使用默认名称。");
+                name = ComputerNameFor(txtShareIp.Text.Trim());
+            }
+            else
+            {
+                LogLine($"已从共享 {unc} 获取设备配置：DeviceNo={name}，LineNo={line}");
+            }
+            target = BackupTargetPath(dest, name, line);
+        }
+        else
+        {
+            target = BackupTargetPath(dest, ComputerNameFor(txtShareIp.Text.Trim()));
+        }
 
         BackupEngine engine;
         try
@@ -828,6 +817,12 @@ public partial class MainWindow : Window
 
     private async void BtnSync_Click(object sender, RoutedEventArgs e)
     {
+        if (tabs.SelectedIndex == 2)
+        {
+            await TransferToRemoteAsync();
+            return;
+        }
+
         if (MessageBox.Show($"确认开始更新？\n\n将按当前配置对[{cboPeerIp.Text}]电脑执行文件同步。",
                 "确认", MessageBoxButton.OKCancel, MessageBoxImage.Question) != MessageBoxResult.OK)
             return;
@@ -970,6 +965,101 @@ public partial class MainWindow : Window
         }
     }
 
+    private async Task TransferToRemoteAsync()
+    {
+        string itemPath = txtTransferPath.Text.Trim();
+        if (string.IsNullOrWhiteSpace(itemPath))
+        {
+            MessageBox.Show("请先选择要传输的文件或文件夹。", "提示", MessageBoxButton.OK, MessageBoxImage.Information);
+            return;
+        }
+        if (!Directory.Exists(itemPath) && !File.Exists(itemPath))
+        {
+            MessageBox.Show("路径无效或不存在：" + itemPath, "错误", MessageBoxButton.OK, MessageBoxImage.Warning);
+            return;
+        }
+
+        List<string> hosts;
+        try
+        {
+            hosts = IpHelper.ExpandIps(cboPeerIp.Text ?? "");
+        }
+        catch (FormatException ex)
+        {
+            MessageBox.Show(ex.Message, "错误", MessageBoxButton.OK, MessageBoxImage.Warning);
+            return;
+        }
+        if (hosts.Count == 0)
+        {
+            MessageBox.Show("请输入对方 IP 或范围。", "提示", MessageBoxButton.OK, MessageBoxImage.Information);
+            return;
+        }
+        if (!TryGetPeerPort(out int port))
+        {
+            MessageBox.Show("对方端口无效。", "错误", MessageBoxButton.OK, MessageBoxImage.Warning);
+            return;
+        }
+
+        bool isDir = Directory.Exists(itemPath);
+        if (MessageBox.Show($"确认开始传输？\n\n将把 [{itemPath}] 传输到对方电脑的相同路径（{(isDir ? "文件夹" : "文件")}）。\n传输前会自动备份对方相应的文件/文件夹，出错时结束 FreeFormAlways* 进程后重试一次。",
+                "确认", MessageBoxButton.OKCancel, MessageBoxImage.Question) != MessageBoxResult.OK)
+            return;
+
+        StartBusy();
+        var ct = _cts!.Token;
+        _opLabel = "传输";
+
+        var okIps = new List<string>();
+        var failed = new List<string>();
+        try
+        {
+            foreach (var host in hosts)
+            {
+                try
+                {
+                    using var client = new PeerClient();
+                    await client.ConnectAsync(host, port, Constants.RoleTransfer, ct);
+                    LogLine($"传输到 {host}:{port}（目标路径不变，同名同大小同时跳过）...");
+                    await client.TransferAsync(itemPath, isDir,
+                        cbTransferSameSkip.IsChecked == true,
+                        cbTransferKillFreeForm.IsChecked == true,
+                        LogLine, OnFileProgress, OnTotal, ct);
+                    okIps.Add(host);
+                    LogLine($"传输完成: {host}");
+                }
+                catch (OperationCanceledException)
+                {
+                    throw;
+                }
+                catch (Exception ex)
+                {
+                    failed.Add($"{host} - {ex.Message}");
+                    LogLineError($"传输失败 {host}: {ex.Message}");
+                }
+            }
+        }
+        catch (OperationCanceledException)
+        {
+            LogLine("已取消");
+        }
+        finally
+        {
+            if (okIps.Count > 0)
+            {
+                foreach (var ip in okIps)
+                    _history.Upsert(ip, port);
+                ReloadHistoryCombo();
+            }
+            EndBusy();
+        }
+
+        if (okIps.Count > 0)
+            txtStatus.Text = hosts.Count > 1 ? $"传输完成（{okIps.Count}/{hosts.Count} 台）" : "传输完成";
+        if (failed.Count > 0)
+            MessageBox.Show("以下电脑传输失败：\n" + string.Join("\n", failed), "部分失败",
+                MessageBoxButton.OK, MessageBoxImage.Warning);
+    }
+
     private void BtnCancel_Click(object sender, RoutedEventArgs e)
     {
         _cts?.Cancel();
@@ -986,9 +1076,10 @@ public partial class MainWindow : Window
     {
         if (btnSync == null || btnBackup == null || tabs == null)
             return;
-        bool isUpdate = tabs.SelectedIndex == 1;
-        btnSync.IsEnabled = !_busy && isUpdate;
-        btnBackup.IsEnabled = !_busy && !isUpdate;
+        int idx = tabs.SelectedIndex;
+        bool isBackup = idx == 0;
+        btnBackup.IsEnabled = !_busy && isBackup;
+        btnSync.IsEnabled = !_busy && !isBackup;
     }
 
     private void SetBusy(bool busy)
@@ -1021,6 +1112,9 @@ public partial class MainWindow : Window
         btnShareTest.IsEnabled = !busy;
         rbSyncShare.IsEnabled = !busy;
         chkAutoStart.IsEnabled = !busy;
+        txtTransferPath.IsEnabled = !busy;
+        cbTransferSameSkip.IsEnabled = !busy;
+        cbTransferKillFreeForm.IsEnabled = !busy;
     }
 
     private void BtnClearLog_Click(object sender, RoutedEventArgs e)
@@ -1113,6 +1207,9 @@ public partial class MainWindow : Window
         _settings.Settings.IgnoreRegexEnabled = cbIgnoreEnabled.IsChecked ?? true;
         _settings.Settings.CompressZip = cbCompressZip.IsChecked ?? true;
         _settings.Settings.AutoFetchComputerName = cbAutoFetchName.IsChecked == true;
+        _settings.Settings.TransferPath = txtTransferPath.Text.Trim();
+        _settings.Settings.TransferSameSkip = cbTransferSameSkip.IsChecked ?? true;
+        _settings.Settings.TransferKillFreeForm = cbTransferKillFreeForm.IsChecked ?? true;
         _settings.Save();
     }
 

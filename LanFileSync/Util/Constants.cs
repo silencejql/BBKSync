@@ -15,6 +15,8 @@ internal static class Constants
     internal const long MaxFrameSize = 512_000_000;
     internal const string RolePush = "push";
     internal const string RolePull = "pull";
+    internal const string RoleProbe = "probe";
+    internal const string RoleTransfer = "transfer";
     internal const string DefaultShareName = "c$";
     internal const string DefaultSharePath = "c$\\BBK";
 

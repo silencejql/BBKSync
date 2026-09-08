@@ -98,10 +98,23 @@ public sealed class PeerServer : IDisposable
         {
             var hello = await conn.RecvJsonAsync(ct)
                 ?? throw new EndOfStreamException("连接未发送握手信息");
-            string role = hello.GetProperty("role").GetString()!;
-            _log($"收到连接（角色: {(role == Constants.RolePush ? "本机为更新目标" : "本机为文件源")}）{tcp.Client.RemoteEndPoint}");
+string role = hello.GetProperty("role").GetString()!;
+            string roleDesc = role switch
+            {
+                Constants.RolePush => "本机为更新目标",
+                Constants.RoleProbe => "读取本机设备配置",
+                Constants.RoleTransfer => "本机为传输目标",
+                _ => "本机为文件源",
+            };
+            _log($"收到连接（角色: {roleDesc}）{tcp.Client.RemoteEndPoint}");
 
-            if (role == Constants.RolePull)
+            if (role == Constants.RoleProbe)
+            {
+                var (name, line) = DeviceConfig.ReadFromRoot(_root);
+                await conn.SendJsonAsync(new { op = "cfg", name, line }, CancellationToken.None);
+                _log("已返回设备配置");
+            }
+            else if (role == Constants.RolePull)
             {
                 await SourceSide.SendManifestAsync(conn, _root, ct);
                 _log("文件清单已发送，等待对方选择需要更新的文件...");
@@ -152,7 +165,43 @@ public sealed class PeerServer : IDisposable
                 await conn.SendJsonAsync(new { op = "need", paths = engine.NeedList }, ct);
                 await engine.ReceiveAndApplyAsync(conn, _onFile, _onError, ct);
                 await conn.SendJsonAsync(new { op = "bye" }, ct);
-                _log("接收并应用完成");
+_log("接收并应用完成");
+            }
+            else if (role == Constants.RoleTransfer)
+            {
+                var init = await conn.RecvJsonAsync(ct)
+                    ?? throw new EndOfStreamException("连接已断开");
+                string op0 = init.GetProperty("op").GetString()!;
+                if (op0 != "tinit")
+                    throw new InvalidOperationException("未知的传输起始消息: " + op0);
+                string itemPath = init.GetProperty("p").GetString()!;
+                bool isDir = init.GetProperty("isDir").GetBoolean();
+                bool sameSkip = init.GetProperty("sameSkip").GetBoolean();
+                bool killFreeForm = init.GetProperty("killFreeForm").GetBoolean();
+                _log($"收到传输请求（本机为目标）：{itemPath}（{(isDir ? "文件夹" : "文件")}）...");
+
+                var list = new List<FileEntry>();
+                await TargetSide.ReceiveManifestAsync(conn, ct, list);
+                _log($"已收到对方文件清单（{list.Count} 项），按本机电脑相同路径计算需要更新的文件...");
+
+                var engine = new TransferEngine(itemPath, isDir, sameSkip, killFreeForm);
+                engine.Plan(list);
+
+                if (engine.NeedList.Count > 0)
+                {
+                    bool ok = engine.BackupItem(_log, m => _onError("备份: " + m));
+                    if (!ok)
+                    {
+                        await conn.SendJsonAsync(new { op = "err", msg = "目标电脑更新前自动备份失败" }, CancellationToken.None);
+                        throw new InvalidOperationException("更新前自动备份失败");
+                    }
+                }
+
+                _onTotal(engine.NeedList.Count);
+                await conn.SendJsonAsync(new { op = "need", paths = engine.NeedList }, ct);
+                await engine.ReceiveAndApplyAsync(conn, _log, _onFile, _onError, ct);
+                await conn.SendJsonAsync(new { op = "bye" }, ct);
+                _log("传输应用完成");
             }
             else
             {

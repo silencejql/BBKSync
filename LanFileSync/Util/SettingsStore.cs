@@ -23,6 +23,9 @@ public sealed class AppSettings
     public bool CompressZip { get; set; } = true;
     public string LocalBackupName { get; set; } = "";
     public bool AutoFetchComputerName { get; set; } = true;
+    public string TransferPath { get; set; } = "";
+    public bool TransferSameSkip { get; set; } = true;
+    public bool TransferKillFreeForm { get; set; } = true;
     public List<ComputerMapping> Computers { get; set; } = new();
 }
 
