@@ -1,0 +1,3 @@
+缺少安装包 NDP48-x86-x64-AllOS-ENU.exe，无法自动安装。
+请从微软官网下载 .NET Framework 4.8 离线安装包后放回本目录：
+https://dotnet.microsoft.com/download/dotnet-framework/net48

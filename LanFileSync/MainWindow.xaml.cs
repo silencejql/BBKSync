@@ -185,7 +185,7 @@ public partial class MainWindow : Window
 
     private void LogLineError(string msg) => LogLine(msg, Brushes.Red);
 
-    private void LogDivider() => LogLine("----------------");
+    private void LogDivider() => LogLine("------------------------------------------------");
 
     private void LogLine(string msg, System.Windows.Media.Brush brush)
     {
@@ -420,6 +420,7 @@ public partial class MainWindow : Window
             else
                 await BackupLocalAsync(dest);
         }
+        LogLine("备份程序执行完成");
     }
 
     private async Task RunPreBackupBatAsync()
@@ -794,7 +795,7 @@ public partial class MainWindow : Window
         var options = ReadOptions();
 
         _server = new PeerServer(root, port, options,
-            LogLine, OnFileProgress, OnTotal, m => LogLineError("接收失败: " + m),
+            LogLine, OnFileProgress, OnTotal, m => LogLineError("执行失败: " + m),
             cbBackupBeforeSync.IsChecked ?? true,
             txtBackupDest.Text.Trim(),
             ReadBackupOptions());
@@ -1180,6 +1181,7 @@ LogLine, OnFileProgress, OnTotal,
         btnHistory.IsEnabled = !busy;
         btnTestConnect.IsEnabled = !busy;
         txtBackupDest.IsEnabled = !busy;
+        cbAutoFetchName.IsEnabled = !busy;
         cbBackupLogRule.IsEnabled = !busy;
         cbBackupBeforeSync.IsEnabled = !busy;
         cbCompressZip.IsEnabled = !busy;

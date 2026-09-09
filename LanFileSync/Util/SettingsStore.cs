@@ -14,7 +14,7 @@ public sealed class AppSettings
     public string Root { get; set; } = "D:\\BBK";
     public int Port { get; set; } = 25010;
     public bool AutoStartAndListen { get; set; } = false;
-    public string BackupDest { get; set; } = "D:\\BBK_Backup";
+    public string BackupDest { get; set; } = "D:\\BBK_AutoBackup";
     public bool BackupBeforeSync { get; set; } = true;
     public bool BackupLogRule { get; set; } = true;
     public int BackupLogDays { get; set; } = 2;

@@ -1,9 +1,8 @@
+using System.Diagnostics;
 using System.IO;
 using System.IO.Compression;
 using System.Net;
 using System.Net.Sockets;
-using System.Xml.Linq;
-using System.Diagnostics;
 
 namespace LanFileSync;
 
@@ -130,7 +129,7 @@ public sealed class PeerServer : IDisposable
         {
             var hello = await conn.RecvJsonAsync(ct)
                 ?? throw new EndOfStreamException("连接未发送握手信息");
-string role = hello.GetProperty("role").GetString()!;
+            string role = hello.GetProperty("role").GetString()!;
             string roleDesc = role switch
             {
                 Constants.RolePush => "本机为更新目标",
@@ -138,9 +137,10 @@ string role = hello.GetProperty("role").GetString()!;
                 Constants.RoleTransfer => "本机为传输目标",
                 _ => "本机为文件源",
             };
+            _log("------------------------------------------------");
             _log($"收到连接（角色: {roleDesc}）{tcp.Client.RemoteEndPoint}");
 
-if (role == Constants.RoleProbe)
+            if (role == Constants.RoleProbe)
             {
                 var (name, line) = DeviceConfig.ReadFromRoot(_root);
                 await conn.SendJsonAsync(new { op = "cfg", name, line }, CancellationToken.None);
@@ -148,121 +148,120 @@ if (role == Constants.RoleProbe)
             }
             else
             {
-                _log("----------------");
                 if (role == Constants.RolePull)
                 {
-                if (hello.TryGetProperty("preBackupBat", out var pb) && pb.GetBoolean())
-                {
-                    _log("对方要求先执行备份前脚本 LocalDB_Backup.bat ...");
-                    string? batErr = RunLocalBackupBat(_log);
-                    if (batErr != null)
+                    if (hello.TryGetProperty("preBackupBat", out var pb) && pb.GetBoolean())
                     {
-                        _log(batErr + "，继续备份");
-                        await conn.SendJsonAsync(new { op = "bat", ok = false, msg = batErr }, CancellationToken.None);
+                        _log("对方要求先执行备份前脚本 LocalDB_Backup.bat ...");
+                        string? batErr = RunLocalBackupBat(_log);
+                        if (batErr != null)
+                        {
+                            _onError(batErr + "，继续备份");
+                            await conn.SendJsonAsync(new { op = "bat", ok = false, msg = batErr }, CancellationToken.None);
+                        }
+                        else
+                        {
+                            _log("备份前脚本执行完成");
+                            await conn.SendJsonAsync(new { op = "bat", ok = true, msg = "已执行 LocalDB_Backup.bat" }, CancellationToken.None);
+                        }
                     }
-                    else
-                    {
-                        _log("备份前脚本执行完成");
-                        await conn.SendJsonAsync(new { op = "bat", ok = true, msg = "已执行 LocalDB_Backup.bat" }, CancellationToken.None);
-                    }
+                    await SourceSide.SendManifestAsync(conn, _root, ct);
+                    _log("文件清单已发送，等待对方选择需要更新的文件...");
+
+                    var req = await conn.RecvJsonAsync(ct)
+                        ?? throw new EndOfStreamException("连接已断开");
+                    var paths = req.GetProperty("paths").EnumerateArray().Select(x => x.GetString()!).ToList();
+                    _log($"对方需要 {paths.Count} 个文件，开始发送...");
+
+                    int sent = 0;
+                    _log(paths.Count == 0 ? "对方无需更新/备份（所有文件相同）。" : $"对方需要 {paths.Count} 个文件，开始发送...");
+                    await SourceSide.SendRequestedFilesAsync(conn, _root, paths,
+                        (_, _) => { if (++sent % 25 == 0 || sent == paths.Count) _log($"已发送 {sent}/{paths.Count} 个文件..."); }, ct);
+                    _log("文件发送完成");
                 }
-                await SourceSide.SendManifestAsync(conn, _root, ct);
-                _log("文件清单已发送，等待对方选择需要更新的文件...");
-
-                var req = await conn.RecvJsonAsync(ct)
-                    ?? throw new EndOfStreamException("连接已断开");
-                var paths = req.GetProperty("paths").EnumerateArray().Select(x => x.GetString()!).ToList();
-                _log($"对方需要 {paths.Count} 个文件，开始发送...");
-
-int sent = 0;
-                _log(paths.Count == 0 ? "对方无需更新/备份（所有文件相同）。" : $"对方需要 {paths.Count} 个文件，开始发送...");
-                await SourceSide.SendRequestedFilesAsync(conn, _root, paths,
-                    (_ , _) => { if (++sent % 25 == 0 || sent == paths.Count) _log($"已发送 {sent}/{paths.Count} 个文件..."); }, ct);
-                _log("文件发送完成");
-            }
-            else if (role == Constants.RolePush)
-            {
-                var list = new List<FileEntry>();
-                await TargetSide.ReceiveManifestAsync(conn, ct, list);
-                _log($"已收到对方文件清单（{list.Count} 项），按本机规则计算需要更新的文件...");
-
-                if (_backupBeforeSync && !string.IsNullOrWhiteSpace(_backupDest))
+                else if (role == Constants.RolePush)
                 {
-                    string dest = Path.Combine(_backupDest, $"BBK_推送更新备份_{DateTime.Now:yyyyMMdd}");
-                    _log($"同步前先备份本机 BBK 到{dest}");
-                    try
+                    var list = new List<FileEntry>();
+                    await TargetSide.ReceiveManifestAsync(conn, ct, list);
+                    _log($"已收到对方文件清单（{list.Count} 项），按本机规则计算需要更新的文件...");
+
+                    if (_backupBeforeSync && !string.IsNullOrWhiteSpace(_backupDest))
                     {
-                        var be = new BackupEngine(_root, dest, _backupOptions);
-                        var files = be.Plan();
-                        await be.RunAsync(null, m => _onError("同步前备份跳过: " + m), ct);
-                        _log($"同步前备份完成（{files.Count} 项）");
-                        //await CompressAndRemoveFolderAsync(dest);
+                        string dest = Path.Combine(_backupDest, $"BBK_推送更新备份_{DateTime.Now:yyyyMMdd}");
+                        _log($"同步前先备份本机 BBK 到{dest}");
+                        try
+                        {
+                            var be = new BackupEngine(_root, dest, _backupOptions);
+                            var files = be.Plan();
+                            await be.RunAsync(null, m => _onError("同步前备份跳过: " + m), ct);
+                            _log($"同步前备份完成（{files.Count} 项）");
+                            //await CompressAndRemoveFolderAsync(dest);
+                        }
+                        catch (ArgumentException)
+                        {
+                            _log(_backupDest + " 为空或与同步目录相同/位于其内部，跳过同步前备份。");
+                        }
+                        catch (Exception ex)
+                        {
+                            await conn.SendJsonAsync(new { op = "err", msg = "目标电脑同步前备份失败: " + ex.Message }, CancellationToken.None);
+                            throw;
+                        }
                     }
-                    catch (ArgumentException)
+
+                    var engine = new SyncEngine(_root, _options);
+                    engine.Plan(list);
+                    _onTotal(engine.NeedList.Count);
+
+                    var applyMsgs = new List<string>();
+                    await conn.SendJsonAsync(new { op = "need", paths = engine.NeedList }, ct);
+                    await engine.ReceiveAndApplyAsync(conn, _onFile, m =>
                     {
-                        _log(_backupDest + " 为空或与同步目录相同/位于其内部，跳过同步前备份。");
-                    }
-                    catch (Exception ex)
-                    {
-                        await conn.SendJsonAsync(new { op = "err", msg = "目标电脑同步前备份失败: " + ex.Message }, CancellationToken.None);
-                        throw;
-                    }
+                        applyMsgs.Add(m);
+                        _onError(m);
+                    }, ct);
+                    await conn.SendJsonAsync(new { op = "bye", msgs = applyMsgs }, ct);
+                    _log("接收并应用完成");
                 }
-
-var engine = new SyncEngine(_root, _options);
-                engine.Plan(list);
-                _onTotal(engine.NeedList.Count);
-
-                var applyMsgs = new List<string>();
-                await conn.SendJsonAsync(new { op = "need", paths = engine.NeedList }, ct);
-                await engine.ReceiveAndApplyAsync(conn, _onFile, m =>
+                else if (role == Constants.RoleTransfer)
                 {
-                    applyMsgs.Add(m);
-                    _onError(m);
-                }, ct);
-                await conn.SendJsonAsync(new { op = "bye", msgs = applyMsgs }, ct);
-                _log("接收并应用完成");
-            }
-            else if (role == Constants.RoleTransfer)
-            {
-                var init = await conn.RecvJsonAsync(ct)
-                    ?? throw new EndOfStreamException("连接已断开");
-                string op0 = init.GetProperty("op").GetString()!;
-                if (op0 != "tinit")
-                    throw new InvalidOperationException("未知的传输起始消息: " + op0);
-                string itemPath = init.GetProperty("p").GetString()!;
-                bool isDir = init.GetProperty("isDir").GetBoolean();
-                bool sameSkip = init.GetProperty("sameSkip").GetBoolean();
-                bool killFreeForm = init.GetProperty("killFreeForm").GetBoolean();
-                _log($"收到传输请求（本机为目标）：{itemPath}（{(isDir ? "文件夹" : "文件")}）...");
+                    var init = await conn.RecvJsonAsync(ct)
+                        ?? throw new EndOfStreamException("连接已断开");
+                    string op0 = init.GetProperty("op").GetString()!;
+                    if (op0 != "tinit")
+                        throw new InvalidOperationException("未知的传输起始消息: " + op0);
+                    string itemPath = init.GetProperty("p").GetString()!;
+                    bool isDir = init.GetProperty("isDir").GetBoolean();
+                    bool sameSkip = init.GetProperty("sameSkip").GetBoolean();
+                    bool killFreeForm = init.GetProperty("killFreeForm").GetBoolean();
+                    _log($"收到传输请求（本机为目标）：{itemPath}（{(isDir ? "文件夹" : "文件")}）...");
 
-                var list = new List<FileEntry>();
-                await TargetSide.ReceiveManifestAsync(conn, ct, list);
-                _log($"已收到对方文件清单（{list.Count} 项），按本机电脑相同路径计算需要更新的文件...");
+                    var list = new List<FileEntry>();
+                    await TargetSide.ReceiveManifestAsync(conn, ct, list);
+                    _log($"已收到对方文件清单（{list.Count} 项），按本机电脑相同路径计算需要更新的文件...");
 
-                var engine = new TransferEngine(itemPath, isDir, sameSkip, killFreeForm);
-                engine.Plan(list);
+                    var engine = new TransferEngine(itemPath, isDir, sameSkip, killFreeForm);
+                    engine.Plan(list);
 
-                if (engine.NeedList.Count > 0)
-                {
-                    bool ok = engine.BackupItem(_log, m => _onError("备份: " + m));
-                    if (!ok)
+                    if (engine.NeedList.Count > 0)
                     {
-                        await conn.SendJsonAsync(new { op = "err", msg = "目标电脑更新前自动备份失败" }, CancellationToken.None);
-                        throw new InvalidOperationException("更新前自动备份失败");
+                        bool ok = engine.BackupItem(_log, m => _onError("备份: " + m));
+                        if (!ok)
+                        {
+                            await conn.SendJsonAsync(new { op = "err", msg = "目标电脑更新前自动备份失败" }, CancellationToken.None);
+                            throw new InvalidOperationException("更新前自动备份失败");
+                        }
                     }
-                }
 
-                _onTotal(engine.NeedList.Count);
-                await conn.SendJsonAsync(new { op = "need", paths = engine.NeedList }, ct);
-                await engine.ReceiveAndApplyAsync(conn, _log, _onFile, _onError, ct);
-                await conn.SendJsonAsync(new { op = "bye", msgs = engine.TransferMessages }, ct);
-                _log("传输应用完成");
-            }
-else
-            {
-                await conn.SendJsonAsync(new { op = "err", msg = "未知角色: " + role }, CancellationToken.None);
-            }
+                    _onTotal(engine.NeedList.Count);
+                    await conn.SendJsonAsync(new { op = "need", paths = engine.NeedList }, ct);
+                    await engine.ReceiveAndApplyAsync(conn, _log, _onFile, _onError, ct);
+                    await conn.SendJsonAsync(new { op = "bye", msgs = engine.TransferMessages }, ct);
+                    _log("传输应用完成");
+                }
+                else
+                {
+                    await conn.SendJsonAsync(new { op = "err", msg = "未知角色: " + role }, CancellationToken.None);
+                }
             }
         }
         catch (OperationCanceledException) { }
@@ -272,6 +271,7 @@ else
         }
         finally
         {
+            _log("执行完成，关闭连接");
             try { tcp.Close(); } catch { }
         }
     }

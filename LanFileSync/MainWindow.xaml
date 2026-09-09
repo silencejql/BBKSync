@@ -119,7 +119,7 @@
 
                     <!-- 选项卡：备份 / 更新（横跨整个界面） -->
                     <TabControl x:Name="tabs" Margin="-2,10,0,0" SelectionChanged="Tabs_SelectionChanged">
-                        <TabItem Header="备份" Width="100">
+                        <TabItem Header="BBK备份" Width="100">
                             <Grid Margin="6,10,6,06">
                                 <Grid.ColumnDefinitions>
                                     <ColumnDefinition Width="*"/>
@@ -178,7 +178,7 @@
                                 </StackPanel>
                             </Grid>
                         </TabItem>
-                        <TabItem Header="更新" Width="100">
+                        <TabItem Header="BBK更新" Width="100">
                             <Grid Margin="6,10,6,6">
                                 <Grid.ColumnDefinitions>
                                     <ColumnDefinition Width="*"/>
@@ -193,7 +193,7 @@
                                     <TextBlock x:Name="txtHint" Margin="0,8,0,0" Foreground="{StaticResource TextSubBrush}" TextWrapping="Wrap"
                                                Text="接收对方更新：对方需先&#x201c;启动服务&#x201d;。更新规则按本机设置执行。"/>
                                     <TextBlock Margin="0,6,0,0" Foreground="{StaticResource TextSubBrush}" TextWrapping="Wrap"
-                                               Text="说明：更新会跳过 Log 与 Config 文件夹；传输失败会输出提示并跳过。"/>
+                                               Text="说明：更新BBK文件夹，自动跳过 Log 与 Config 文件夹。"/>
                                 </StackPanel>
                                 <Rectangle Grid.Column="1" Width="1" Fill="{StaticResource CardBorderBrush}" Margin="14,0"/>
                                 <StackPanel Grid.Column="2" Margin="14,0,0,0">
@@ -201,7 +201,7 @@
                                                Foreground="{StaticResource TextSubBrush}" Margin="0,0,0,6"/>
                                     <CheckBox x:Name="cbBinReplace" Content="Bin 整体替换（不勾则按日期增量）" Margin="0,3,0,0"
                                               ToolTip="勾选：先删除本地 Bin 再整体拷贝。不勾选：按修改日期/大小只传输不同的文件。"/>
-                                    <CheckBox x:Name="cbKillFreeForm" Content="替换出错时结束 FreeFormAlways* 后重试" Margin="0,6,0,0" IsChecked="True"
+                                    <CheckBox x:Name="cbKillFreeForm" Content="替换出错时自动结束 BBK软件 后重试" Margin="0,6,0,0" IsChecked="True"
                                               ToolTip="相当于自动打开任务管理器结束进程，最多重试3次。"/>
                                     <CheckBox x:Name="cbBackupBeforeSync" Margin="0,10,0,0" IsChecked="True"
                                               Content="同步更新前先备份被更新电脑的 BBK（规则同备份）"
@@ -233,9 +233,9 @@
                                         <Button Grid.Column="3" Content="选择文件夹..." Padding="10,6" Margin="8,0,0,0" Click="BtnTransferDir_Click"/>
                                     </Grid>
                                     <TextBlock x:Name="txtTransferHint" Margin="0,10,0,0" Foreground="{StaticResource TextSubBrush}" TextWrapping="Wrap"
-                                               Text="将选中的文件/文件夹更新到对方电脑的相同路径（对方需先&#x201c;启动服务&#x201d;）。同名同大小同修改时间的文件会跳过，其余自动覆盖并保留原文件时间。"/>
+                                               Text="将选中的文件/文件夹更新到对方电脑的相同路径（对方需先&#x201c;启动服务&#x201d;）。同名同大小同修改时间的文件会跳过。"/>
                                     <TextBlock Margin="0,8,0,0" Foreground="{StaticResource TextSubBrush}" TextWrapping="Wrap"
-                                               Text="更新前自动备份对方相应的文件/文件夹（复制并重命名为&#x201c;原名-更新自动备份-日期&#x201d;，如 app.exe-更新自动备份-20260908）。"/>
+                                               Text="更新前会自动备份对方相应的文件/文件夹（原文件重命名为&#x201c;原名-更新自动备份-日期&#x201d;，如 app.exe-更新自动备份-20260908）。"/>
                                 </StackPanel>
                                 <Rectangle Grid.Column="1" Width="1" Fill="{StaticResource CardBorderBrush}" Margin="14,0"/>
                                 <StackPanel Grid.Column="2" Margin="14,0,0,0">
