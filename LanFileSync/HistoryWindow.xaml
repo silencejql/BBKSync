@@ -8,26 +8,26 @@
         TextElement.FontSize="13">
     <Grid Margin="10">
         <Grid.RowDefinitions>
-            <RowDefinition Height="*"/>
-            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="*" />
+            <RowDefinition Height="Auto" />
         </Grid.RowDefinitions>
 
         <ListView x:Name="lvHistory">
             <ListView.View>
                 <GridView>
-                    <GridViewColumn Header="IP/主机" Width="150" DisplayMemberBinding="{Binding Host}"/>
-                    <GridViewColumn Header="备注" Width="200" DisplayMemberBinding="{Binding Note}"/>
-                    <GridViewColumn Header="最后使用" Width="120" DisplayMemberBinding="{Binding LastUsed}"/>
-                    <GridViewColumn Header="次数" Width="60" DisplayMemberBinding="{Binding Connects}"/>
+                    <GridViewColumn Header="IP/主机" Width="150" DisplayMemberBinding="{Binding Host}" />
+                    <GridViewColumn Header="备注" Width="200" DisplayMemberBinding="{Binding Note}" />
+                    <GridViewColumn Header="最后使用" Width="120" DisplayMemberBinding="{Binding LastUsed}" />
+                    <GridViewColumn Header="次数" Width="60" DisplayMemberBinding="{Binding Connects}" />
                 </GridView>
             </ListView.View>
         </ListView>
 
         <StackPanel Grid.Row="1" Orientation="Horizontal" Margin="0,8,0,0">
-            <TextBlock Text="备注名称:" VerticalAlignment="Center"/>
-            <TextBox x:Name="txtNote" Width="220" Margin="6,0" VerticalContentAlignment="Center"/>
-            <Button Content="保存备注" Padding="10,3" Click="BtnSaveNote_Click"/>
-            <Button Content="删除记录" Padding="10,3" Margin="6,0,0,0" Click="BtnDelete_Click"/>
+            <TextBlock Text="备注名称:" VerticalAlignment="Center" />
+            <TextBox x:Name="txtNote" Width="220" Margin="6,0" VerticalContentAlignment="Center" />
+            <Button Content="保存备注" Padding="10,3" Click="BtnSaveNote_Click" />
+            <Button Content="删除记录" Padding="10,3" Margin="6,0,0,0" Click="BtnDelete_Click" />
         </StackPanel>
     </Grid>
 </Window>

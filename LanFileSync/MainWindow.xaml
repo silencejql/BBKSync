@@ -17,17 +17,17 @@
                 BorderBrush="{StaticResource CardBorderBrush}" BorderThickness="0,1,0,0">
             <DockPanel Margin="12,0">
                 <TextBlock DockPanel.Dock="Right" x:Name="txtLocalIp" VerticalAlignment="Center"
-                           Foreground="{StaticResource TextSubBrush}" Text="未启动服务" TextElement.FontSize="12"/>
+                           Foreground="{StaticResource TextSubBrush}" Text="未启动服务" TextElement.FontSize="12" />
                 <TextBlock x:Name="txtStatus" VerticalAlignment="Center"
-                           Foreground="{StaticResource TextMainBrush}" Text="就绪" TextElement.FontSize="12"/>
+                           Foreground="{StaticResource TextMainBrush}" Text="就绪" TextElement.FontSize="12" />
             </DockPanel>
         </Border>
 
         <Grid Margin="14">
             <Grid.RowDefinitions>
-                <RowDefinition Height="*"/>
-                <RowDefinition Height="Auto"/>
-                <RowDefinition Height="210" MinHeight="90"/>
+                <RowDefinition Height="*" />
+                <RowDefinition Height="Auto" />
+                <RowDefinition Height="210" MinHeight="90" />
             </Grid.RowDefinitions>
 
             <!-- 主操作区：整窗横跨排列 -->
@@ -36,39 +36,39 @@
                     <!-- 第一行：本机服务 | 对方电脑 -->
                     <Grid>
                         <Grid.ColumnDefinitions>
-                            <ColumnDefinition Width="*"/>
-                            <ColumnDefinition Width="*"/>
+                            <ColumnDefinition Width="*" />
+                            <ColumnDefinition Width="*" />
                         </Grid.ColumnDefinitions>
                         <GroupBox Header="本机配置">
                             <StackPanel>
                                 <Grid>
                                     <Grid.ColumnDefinitions>
-                                        <ColumnDefinition Width="Auto"/>
-                                        <ColumnDefinition Width="Auto"/>
-                                        <ColumnDefinition Width="Auto"/>
-                                        <ColumnDefinition Width="Auto"/>
-                                        <ColumnDefinition Width="Auto"/>
+                                        <ColumnDefinition Width="Auto" />
+                                        <ColumnDefinition Width="Auto" />
+                                        <ColumnDefinition Width="Auto" />
+                                        <ColumnDefinition Width="Auto" />
+                                        <ColumnDefinition Width="Auto" />
                                     </Grid.ColumnDefinitions>
-                                    <TextBlock Text="BBK文件夹:" VerticalAlignment="Center"/>
-                                    <TextBox x:Name="txtRoot" Grid.Column="1" Margin="8,0,0,0" Height="30" HorizontalAlignment="Left"/>
-                                    <Button Grid.Column="2" Content="浏览..." Padding="12,6" Margin="8,0,0,0" Click="BtnBrowse_Click"/>
-                                    <TextBlock Text="端口:" Grid.Column="3" Margin="8,0,0,0" VerticalAlignment="Center" HorizontalAlignment="Center"/>
+                                    <TextBlock Text="BBK文件夹:" VerticalAlignment="Center" />
+                                    <TextBox x:Name="txtRoot" Grid.Column="1" Margin="8,0,0,0" Height="30" HorizontalAlignment="Left" />
+                                    <Button Grid.Column="2" Content="浏览..." Padding="12,6" Margin="8,0,0,0" Click="BtnBrowse_Click" />
+                                    <TextBlock Text="端口:" Grid.Column="3" Margin="8,0,0,0" VerticalAlignment="Center" HorizontalAlignment="Center" />
                                     <TextBox x:Name="txtPort" Grid.Column="4" Margin="8,0,0,0" Height="30" Width="80" HorizontalAlignment="Right"
-                                             ToolTip="本机服务监听端口"/>
+                                             ToolTip="本机服务监听端口" />
                                 </Grid>
                                 <Grid Margin="0,10,0,0">
                                     <Grid.ColumnDefinitions>
-                                        <ColumnDefinition Width="Auto"/>
-                                        <ColumnDefinition Width="Auto"/>
-                                        <ColumnDefinition Width="*"/>
-                                        <ColumnDefinition Width="*"/>
+                                        <ColumnDefinition Width="Auto" />
+                                        <ColumnDefinition Width="Auto" />
+                                        <ColumnDefinition Width="*" />
+                                        <ColumnDefinition Width="*" />
                                     </Grid.ColumnDefinitions>
-                                    <Button x:Name="btnStart" Grid.Column="2" Content="启动服务" Margin="10,0,0,0" Click="BtnStartServer_Click"/>
-                                    <Button x:Name="btnStop" Grid.Column="3" Content="停止服务" IsEnabled="False" Margin="10,0,0,0" Click="BtnStopServer_Click"/>
+                                    <Button x:Name="btnStart" Grid.Column="2" Content="启动服务" Margin="10,0,0,0" Click="BtnStartServer_Click" />
+                                    <Button x:Name="btnStop" Grid.Column="3" Content="停止服务" IsEnabled="False" Margin="10,0,0,0" Click="BtnStopServer_Click" />
                                     <CheckBox x:Name="chkAutoStart" Grid.Column="1" Margin="0,0,0,0"
                                               Content="开机自启并后台监听（驻留托盘）"
                                               VerticalAlignment="Center" IsChecked="False"
-                                              Checked="ChkAutoStart_Changed" Unchecked="ChkAutoStart_Changed"/>
+                                              Checked="ChkAutoStart_Changed" Unchecked="ChkAutoStart_Changed" />
                                 </Grid>
                             </StackPanel>
                         </GroupBox>
@@ -77,41 +77,41 @@
                             <StackPanel>
                                 <Grid>
                                     <Grid.ColumnDefinitions>
-                                        <ColumnDefinition Width="Auto"/>
-                                        <ColumnDefinition Width="*"/>
-                                        <ColumnDefinition Width="Auto"/>
-                                        <ColumnDefinition Width="Auto"/>
-                                        <ColumnDefinition Width="Auto"/>
+                                        <ColumnDefinition Width="Auto" />
+                                        <ColumnDefinition Width="*" />
+                                        <ColumnDefinition Width="Auto" />
+                                        <ColumnDefinition Width="Auto" />
+                                        <ColumnDefinition Width="Auto" />
                                     </Grid.ColumnDefinitions>
-                                    <TextBlock Text="IP/范围:" VerticalAlignment="Center"/>
+                                    <TextBlock Text="IP/范围:" VerticalAlignment="Center" />
                                     <ComboBox x:Name="cboPeerIp" Grid.Column="1" Margin="8,0,0,0" Height="30" IsEditable="True"
                                           VerticalContentAlignment="Center"
                                           ToolTip="可下拉选择历史记录或配置过的电脑，也可直接输入多个 IP（逗号分隔）或范围。例：192.168.1.5,192.168.1.8-10。">
                                         <ComboBox.ItemTemplate>
                                             <DataTemplate>
-                                                <TextBlock Text="{Binding Label}"/>
+                                                <TextBlock Text="{Binding Label}" />
                                             </DataTemplate>
                                         </ComboBox.ItemTemplate>
                                     </ComboBox>
                                     <Button x:Name="btnTestConnect" Grid.Column="2" Content="测试连接" Margin="8,0,0,0" Padding="10,6"
-                                            Click="BtnTestConnect_Click" ToolTip="验证与对方 IP 和端口的 TCP 连接是否可达"/>
+                                            Click="BtnTestConnect_Click" ToolTip="验证与对方 IP 和端口的 TCP 连接是否可达" />
                                     <Button x:Name="btnHistory" Grid.Column="3" Content="历史" Margin="8,0,0,0" Padding="10,6"
-                                            Click="BtnHistory_Click" ToolTip="管理历史连接的 IP 与备注"/>
+                                            Click="BtnHistory_Click" ToolTip="管理历史连接的 IP 与备注" />
                                     <Button x:Name="btnComputers" Grid.Column="4" Content="电脑名称" Margin="8,0,0,0" Padding="10,6"
-                                            Click="BtnComputers_Click" ToolTip="配置 IP 与电脑名称的对应关系，用于下拉选择和备份自动命名"/>
+                                            Click="BtnComputers_Click" ToolTip="配置 IP 与电脑名称的对应关系，用于下拉选择和备份自动命名" />
                                 </Grid>
                                 <Grid Margin="0,8,0,0">
                                     <Grid.ColumnDefinitions>
-                                        <ColumnDefinition Width="Auto"/>
-                                        <ColumnDefinition Width="Auto"/>
-                                        <ColumnDefinition Width="*"/>
+                                        <ColumnDefinition Width="Auto" />
+                                        <ColumnDefinition Width="Auto" />
+                                        <ColumnDefinition Width="*" />
                                     </Grid.ColumnDefinitions>
-                                    <TextBlock Text="对方端口:" VerticalAlignment="Center"/>
+                                    <TextBlock Text="对方端口:" VerticalAlignment="Center" />
                                     <TextBox x:Name="txtPeerPort" Grid.Column="1" Width="90" Margin="8,0,0,0" Height="30"
-                                             ToolTip="对方服务监听端口。软件打开后会自动启动服务，端口即以本机端口为准"/>
+                                             ToolTip="对方服务监听端口。软件打开后会自动启动服务，端口即以本机端口为准" />
                                     <TextBlock Grid.Column="2" Margin="12,0,0,0" VerticalAlignment="Center"
                                                Foreground="{StaticResource TextSubBrush}" TextWrapping="Wrap" FontSize="10"
-                                               Text="多台依次处理：逗号分隔，或范围如 192.168.1.5-8、192.168.1.5-192.168.1.8"/>
+                                               Text="多台依次处理：逗号分隔，或范围如 192.168.1.5-8、192.168.1.5-192.168.1.8" />
                                 </Grid>
                             </StackPanel>
                         </GroupBox>
@@ -122,131 +122,131 @@
                         <TabItem Header="BBK备份" Width="100">
                             <Grid Margin="6,10,6,06">
                                 <Grid.ColumnDefinitions>
-                                    <ColumnDefinition Width="*"/>
-                                    <ColumnDefinition Width="Auto"/>
-                                    <ColumnDefinition Width="*"/>
+                                    <ColumnDefinition Width="*" />
+                                    <ColumnDefinition Width="Auto" />
+                                    <ColumnDefinition Width="*" />
                                 </Grid.ColumnDefinitions>
                                 <StackPanel>
                                     <StackPanel Orientation="Horizontal">
-                                        <TextBlock Text="来源:" VerticalAlignment="Center"/>
-                                        <RadioButton x:Name="rbBackupLocal" GroupName="bsrc" Content="本机" IsChecked="True" Margin="10,0,0,0" VerticalAlignment="Center" Checked="RbBackupSource_Changed"/>
-                                        <RadioButton x:Name="rbBackupRemote" GroupName="bsrc" Content="局域网电脑(可多台)" Margin="10,0,0,0" VerticalAlignment="Center" Checked="RbBackupSource_Changed"/>
-                                        <RadioButton x:Name="rbBackupShare" GroupName="bsrc" Content="Windows共享" Margin="10,0,0,0" VerticalAlignment="Center" Checked="RbBackupSource_Changed"/>
+                                        <TextBlock Text="来源:" VerticalAlignment="Center" />
+                                        <RadioButton x:Name="rbBackupLocal" GroupName="bsrc" Content="本机" IsChecked="True" Margin="10,0,0,0" VerticalAlignment="Center" Checked="RbBackupSource_Changed" />
+                                        <RadioButton x:Name="rbBackupRemote" GroupName="bsrc" Content="局域网电脑(可多台)" Margin="10,0,0,0" VerticalAlignment="Center" Checked="RbBackupSource_Changed" />
+                                        <RadioButton x:Name="rbBackupShare" GroupName="bsrc" Content="Windows共享" Margin="10,0,0,0" VerticalAlignment="Center" Checked="RbBackupSource_Changed" />
                                     </StackPanel>
                                     <TextBlock x:Name="txtBackupHint" Margin="0,7,0,0" Foreground="{StaticResource TextSubBrush}" TextWrapping="Wrap" FontSize="10"
-                                               Text="局域网电脑备份用上方&#x201c;远端电脑&#x201d;的 IP/范围，逐台处理；Windows共享用下方连接。"/>
+                                               Text="局域网电脑备份用上方&#x201c;远端电脑&#x201d;的 IP/范围，逐台处理；Windows共享用下方连接。" />
                                     <Grid Margin="0,10,0,0">
                                         <Grid.ColumnDefinitions>
-                                            <ColumnDefinition Width="Auto"/>
-                                            <ColumnDefinition Width="*"/>
-                                            <ColumnDefinition Width="Auto"/>
+                                            <ColumnDefinition Width="Auto" />
+                                            <ColumnDefinition Width="*" />
+                                            <ColumnDefinition Width="Auto" />
                                         </Grid.ColumnDefinitions>
-                                        <TextBlock Text="备份到:" VerticalAlignment="Center"/>
+                                        <TextBlock Text="备份到:" VerticalAlignment="Center" />
                                         <TextBox x:Name="txtBackupDest" Grid.Column="1" Margin="8,0,0,0" Height="30"
-                                                 ToolTip="备份目标父目录，实际自动存入 备份目录\BBK_电脑名称_日期（可为本地盘或已映射的网络盘）"/>
-                                        <Button Grid.Column="2" Content="浏览..." Padding="12,6" Margin="8,0,0,0" Click="BtnBackupBrowse_Click"/>
+                                                 ToolTip="备份目标父目录，实际自动存入 备份目录\BBK_电脑名称_日期（可为本地盘或已映射的网络盘）" />
+                                        <Button Grid.Column="2" Content="浏览..." Padding="12,6" Margin="8,0,0,0" Click="BtnBackupBrowse_Click" />
                                     </Grid>
                                     <StackPanel x:Name="rowLocalName" Orientation="Horizontal" Margin="0,8,0,0">
                                         <CheckBox x:Name="cbAutoFetchName" VerticalAlignment="Center"
                                                   IsChecked="True"
                                                   Content="自动获取设备配置"
-                                                  ToolTip="勾选后自动从备份电脑 BBK 文件夹子目录的 Config\SystemConfig.xml 解析 DeviceNo/LineNo 作为备份命名与存放。"/>
+                                                  ToolTip="勾选后自动从备份电脑 BBK 文件夹子目录的 Config\SystemConfig.xml 解析 DeviceNo/LineNo 作为备份命名与存放。" />
                                     </StackPanel>
                                     <StackPanel Orientation="Horizontal" Margin="0,8,0,0">
-                                        <CheckBox x:Name="cbBackupLogRule" Content="Log 文件夹只备份最近" IsChecked="True" VerticalAlignment="Center"/>
-                                        <TextBox x:Name="txtBackupLogDays" Width="50" Height="20" Margin="6,0" Text="2" VerticalContentAlignment="Center"/>
-                                        <TextBlock Text="天" VerticalAlignment="Center"/>
+                                        <CheckBox x:Name="cbBackupLogRule" Content="Log 文件夹只备份最近" IsChecked="True" VerticalAlignment="Center" />
+                                        <TextBox x:Name="txtBackupLogDays" Width="50" Height="20" Margin="6,0" Text="2" VerticalContentAlignment="Center" />
+                                        <TextBlock Text="天" VerticalAlignment="Center" />
                                     </StackPanel>
                                     <CheckBox x:Name="cbCompressZip" Content="备份完成后自动压缩为 zip（删除备份文件夹）" IsChecked="True" Margin="0,8,0,0"
-                                              ToolTip="备份完成后将备份文件夹打包成同名 zip 文件并删除文件夹，节省空间。"/>
+                                              ToolTip="备份完成后将备份文件夹打包成同名 zip 文件并删除文件夹，节省空间。" />
                                     <CheckBox x:Name="cbRunPreBackupBat" Content="备份前先执行 LocalDB_Backup.bat" IsChecked="False" Margin="0,8,0,0"
-                                              ToolTip="勾选后先执行 LocalDB_Backup.bat 再开始备份：局域网电脑备份时在对方电脑执行（成功后才拉取备份文件）；本机/Windows共享备份时在本机程序目录执行。"/>
+                                              ToolTip="勾选后先执行 LocalDB_Backup.bat 再开始备份：局域网电脑备份时在对方电脑执行（成功后才拉取备份文件）；本机/Windows共享备份时在本机程序目录执行。" />
                                 </StackPanel>
-                                <Rectangle Grid.Column="1" Width="1" Fill="{StaticResource CardBorderBrush}" Margin="14,0"/>
+                                <Rectangle Grid.Column="1" Width="1" Fill="{StaticResource CardBorderBrush}" Margin="14,0" />
                                 <StackPanel Grid.Column="2" Margin="14,0,0,0">
                                     <CheckBox x:Name="cbIgnoreEnabled" Content="启用忽略规则（正则表达式）" IsChecked="True"
-                                              ToolTip="取消勾选后，下面的忽略规则不生效，所有文件都会被备份。"/>
+                                              ToolTip="取消勾选后，下面的忽略规则不生效，所有文件都会被备份。" />
                                     <TextBlock Margin="0,6,0,0" Foreground="{StaticResource TextSubBrush}" TextWrapping="Wrap"
-                                               Text="忽略文件/文件夹（每行一条正则表达式，匹配相对路径）："/>
+                                               Text="忽略文件/文件夹（每行一条正则表达式，匹配相对路径）：" />
                                     <TextBox x:Name="txtBackupIgnore" Margin="0,4,0,0" Height="60" AcceptsReturn="True"
                                              TextWrapping="Wrap" VerticalScrollBarVisibility="Auto" HorizontalAlignment="Stretch"
                                              ToolTip="每行一条合法正则表达式，大小写不敏感，匹配文件/文件夹相对源目录的路径，命中即忽略备份。&#x0a;&#x0a;忽略文件示例：&#x0a;&#x0a;  Log\.log$           结尾为 Log.log 的文件&#x0a;&#x0a;  \.bak$              所有 .bak 文件（注意 * 号无效，这是正则）&#x0a;&#x0a;  副本                 路径中含&#x201c;副本&#x201d;的文件&#x0a;&#x0a;忽略文件夹示例：&#x0a;&#x0a;  (^|/)\.git(/|$)      任何路径下的 .git 文件夹&#x0a;&#x0a;  (^|/)Temp(/|$)       顶层 Temp 文件夹&#x0a;&#x0a;  若要整条容错，可用 ^ 和 $ 锁定。" />
                                     <TextBlock x:Name="txtIgnoreExample" Margin="0,6,0,0" Foreground="{StaticResource TextSubBrush}" TextWrapping="Wrap"
-                                               Text="示例：忽略 .bak 文件：\.bak$；忽略全部副本文件：副本；忽略 .git 文件夹：(^|/)\.git(/|$)。"/>
+                                               Text="示例：忽略 .bak 文件：\.bak$；忽略全部副本文件：副本；忽略 .git 文件夹：(^|/)\.git(/|$)。" />
                                     <TextBlock Margin="0,4,0,0" Foreground="{StaticResource TextSubBrush}" TextWrapping="Wrap"
-                                               Text="备份自动存入 备份目录\BBK_电脑名称_日期。"/>
+                                               Text="备份自动存入 备份目录\BBK_电脑名称_日期。" />
                                 </StackPanel>
                             </Grid>
                         </TabItem>
                         <TabItem Header="BBK更新" Width="100">
                             <Grid Margin="6,10,6,6">
                                 <Grid.ColumnDefinitions>
-                                    <ColumnDefinition Width="*"/>
-                                    <ColumnDefinition Width="Auto"/>
-                                    <ColumnDefinition Width="*"/>
+                                    <ColumnDefinition Width="*" />
+                                    <ColumnDefinition Width="Auto" />
+                                    <ColumnDefinition Width="*" />
                                 </Grid.ColumnDefinitions>
                                 <StackPanel>
-                                    <TextBlock Text="更新方式" FontWeight="SemiBold" Foreground="{StaticResource TextSubBrush}" Margin="0,0,0,6"/>
-                                    <RadioButton x:Name="rbReceive" GroupName="dir" Content="接收对方更新（对方为源）" Checked="RbDir_Changed" Margin="0,3,0,0"/>
-                                    <RadioButton x:Name="rbPush" GroupName="dir" Content="推送本机给对方（本机为源）" Margin="0,6,0,0" Checked="RbDir_Changed"/>
-                                    <RadioButton x:Name="rbSyncShare" GroupName="dir" Content="从共享文件夹更新本机（免安装）" Margin="0,6,0,0" Checked="RbDir_Changed"/>
+                                    <TextBlock Text="更新方式" FontWeight="SemiBold" Foreground="{StaticResource TextSubBrush}" Margin="0,0,0,6" />
+                                    <RadioButton x:Name="rbReceive" GroupName="dir" Content="接收对方更新（对方为源）" Checked="RbDir_Changed" Margin="0,3,0,0" />
+                                    <RadioButton x:Name="rbPush" GroupName="dir" Content="推送本机给对方（本机为源）" Margin="0,6,0,0" Checked="RbDir_Changed" />
+                                    <RadioButton x:Name="rbSyncShare" GroupName="dir" Content="从共享文件夹更新本机（免安装）" Margin="0,6,0,0" Checked="RbDir_Changed" />
                                     <TextBlock x:Name="txtHint" Margin="0,8,0,0" Foreground="{StaticResource TextSubBrush}" TextWrapping="Wrap"
-                                               Text="接收对方更新：对方需先&#x201c;启动服务&#x201d;。更新规则按本机设置执行。"/>
+                                               Text="接收对方更新：对方需先&#x201c;启动服务&#x201d;。更新规则按本机设置执行。" />
                                     <TextBlock Margin="0,6,0,0" Foreground="{StaticResource TextSubBrush}" TextWrapping="Wrap"
-                                               Text="说明：更新BBK文件夹，自动跳过 Log 与 Config 文件夹。"/>
+                                               Text="说明：更新BBK文件夹，自动跳过 Log 与 Config 文件夹。" />
                                 </StackPanel>
-                                <Rectangle Grid.Column="1" Width="1" Fill="{StaticResource CardBorderBrush}" Margin="14,0"/>
+                                <Rectangle Grid.Column="1" Width="1" Fill="{StaticResource CardBorderBrush}" Margin="14,0" />
                                 <StackPanel Grid.Column="2" Margin="14,0,0,0">
                                     <TextBlock Text="更新规则（接收 / 从共享时生效）" FontWeight="SemiBold"
-                                               Foreground="{StaticResource TextSubBrush}" Margin="0,0,0,6"/>
+                                               Foreground="{StaticResource TextSubBrush}" Margin="0,0,0,6" />
                                     <CheckBox x:Name="cbBinReplace" Content="Bin 整体替换（不勾则按日期增量）" Margin="0,3,0,0"
-                                              ToolTip="勾选：先删除本地 Bin 再整体拷贝。不勾选：按修改日期/大小只传输不同的文件。"/>
+                                              ToolTip="勾选：先删除本地 Bin 再整体拷贝。不勾选：按修改日期/大小只传输不同的文件。" />
                                     <CheckBox x:Name="cbKillFreeForm" Content="替换出错时自动结束 BBK软件 后重试" Margin="0,6,0,0" IsChecked="True"
-                                              ToolTip="相当于自动打开任务管理器结束进程，最多重试3次。"/>
+                                              ToolTip="相当于自动打开任务管理器结束进程，最多重试3次。" />
                                     <CheckBox x:Name="cbBackupBeforeSync" Margin="0,10,0,0" IsChecked="True"
                                               Content="同步更新前先备份被更新电脑的 BBK（规则同备份）"
-                                              ToolTip="TCP 接收更新、从共享更新本机、或对方推送更新时，都会先把被更新那台电脑的 BBK 备份到&#x201c;备份目录&#x201d;再开始同步。"/>
+                                              ToolTip="TCP 接收更新、从共享更新本机、或对方推送更新时，都会先把被更新那台电脑的 BBK 备份到&#x201c;备份目录&#x201d;再开始同步。" />
                                 </StackPanel>
                             </Grid>
                         </TabItem>
                         <TabItem Header="传输文件" Width="100">
                             <Grid Margin="6,10,6,6">
                                 <Grid.ColumnDefinitions>
-                                    <ColumnDefinition Width="*"/>
-                                    <ColumnDefinition Width="Auto"/>
-                                    <ColumnDefinition Width="*"/>
+                                    <ColumnDefinition Width="*" />
+                                    <ColumnDefinition Width="Auto" />
+                                    <ColumnDefinition Width="*" />
                                 </Grid.ColumnDefinitions>
                                 <StackPanel>
                                     <TextBlock Text="选择本地文件或文件夹（LAN 远程传输）" FontWeight="SemiBold"
-                                               Foreground="{StaticResource TextSubBrush}" Margin="0,0,0,6"/>
+                                               Foreground="{StaticResource TextSubBrush}" Margin="0,0,0,6" />
                                     <Grid>
                                         <Grid.ColumnDefinitions>
-                                            <ColumnDefinition Width="Auto"/>
-                                            <ColumnDefinition Width="*"/>
-                                            <ColumnDefinition Width="Auto"/>
-                                            <ColumnDefinition Width="Auto"/>
+                                            <ColumnDefinition Width="Auto" />
+                                            <ColumnDefinition Width="*" />
+                                            <ColumnDefinition Width="Auto" />
+                                            <ColumnDefinition Width="Auto" />
                                         </Grid.ColumnDefinitions>
-                                        <TextBlock Text="路径:" VerticalAlignment="Center"/>
+                                        <TextBlock Text="路径:" VerticalAlignment="Center" />
                                         <TextBox x:Name="txtTransferPath" Grid.Column="1" Margin="8,0,0,0" Height="30"
-                                                 ToolTip="本机要传输到对方电脑的文件或文件夹完整路径（保留原名，传到对方电脑的相同路径）"/>
-                                        <Button Grid.Column="2" Content="选择文件..." Padding="10,6" Margin="8,0,0,0" Click="BtnTransferFile_Click"/>
-                                        <Button Grid.Column="3" Content="选择文件夹..." Padding="10,6" Margin="8,0,0,0" Click="BtnTransferDir_Click"/>
+                                                 ToolTip="本机要传输到对方电脑的文件或文件夹完整路径（保留原名，传到对方电脑的相同路径）" />
+                                        <Button Grid.Column="2" Content="选择文件..." Padding="10,6" Margin="8,0,0,0" Click="BtnTransferFile_Click" />
+                                        <Button Grid.Column="3" Content="选择文件夹..." Padding="10,6" Margin="8,0,0,0" Click="BtnTransferDir_Click" />
                                     </Grid>
                                     <TextBlock x:Name="txtTransferHint" Margin="0,10,0,0" Foreground="{StaticResource TextSubBrush}" TextWrapping="Wrap"
-                                               Text="将选中的文件/文件夹更新到对方电脑的相同路径（对方需先&#x201c;启动服务&#x201d;）。同名同大小同修改时间的文件会跳过。"/>
+                                               Text="将选中的文件/文件夹更新到对方电脑的相同路径（对方需先&#x201c;启动服务&#x201d;）。同名同大小同修改时间的文件会跳过。" />
                                     <TextBlock Margin="0,8,0,0" Foreground="{StaticResource TextSubBrush}" TextWrapping="Wrap"
-                                               Text="更新前会自动备份对方相应的文件/文件夹（原文件重命名为&#x201c;原名-更新自动备份-日期&#x201d;，如 app.exe-更新自动备份-20260908）。"/>
+                                               Text="更新前会自动备份对方相应的文件/文件夹（原文件重命名为&#x201c;原名-更新自动备份-日期&#x201d;，如 app.exe-更新自动备份-20260908）。" />
                                 </StackPanel>
-                                <Rectangle Grid.Column="1" Width="1" Fill="{StaticResource CardBorderBrush}" Margin="14,0"/>
+                                <Rectangle Grid.Column="1" Width="1" Fill="{StaticResource CardBorderBrush}" Margin="14,0" />
                                 <StackPanel Grid.Column="2" Margin="14,0,0,0">
                                     <TextBlock Text="更新设置" FontWeight="SemiBold"
-                                               Foreground="{StaticResource TextSubBrush}" Margin="0,0,0,6"/>
+                                               Foreground="{StaticResource TextSubBrush}" Margin="0,0,0,6" />
                                     <CheckBox x:Name="cbTransferSameSkip" Content="修改时间与大小都相同则跳过传输" IsChecked="True" Margin="0,3,0,0"
-                                              ToolTip="勾选后，目标电脑上已存在且大小、修改时间相同的文件不再重复传输。"/>
+                                              ToolTip="勾选后，目标电脑上已存在且大小、修改时间相同的文件不再重复传输。" />
                                     <CheckBox x:Name="cbTransferKillFreeForm" Content="出错时结束 FreeFormAlways* 后重试一次" IsChecked="True" Margin="0,8,0,0"
-                                              ToolTip="更新报错时输出日志，并关闭目标电脑 FreeFormAlways 开头的进程后重试一次；仍失败则输出日志跳过。"/>
+                                              ToolTip="更新报错时输出日志，并关闭目标电脑 FreeFormAlways 开头的进程后重试一次；仍失败则输出日志跳过。" />
                                     <TextBlock Margin="0,8,0,0" Foreground="{StaticResource TextSubBrush}" TextWrapping="Wrap"
-                                               Text="说明：传输的目标路径与本机完全相同（如本机 D:\X\bin\app.exe 将传到对方 D:\X\bin\app.exe）。"/>
+                                               Text="说明：传输的目标路径与本机完全相同（如本机 D:\X\bin\app.exe 将传到对方 D:\X\bin\app.exe）。" />
                                 </StackPanel>
                             </Grid>
                         </TabItem>
@@ -257,19 +257,19 @@
                         <StackPanel>
                             <Grid>
                                 <Grid.ColumnDefinitions>
-                                    <ColumnDefinition Width="Auto"/>
-                                    <ColumnDefinition Width="Auto"/>
-                                    <ColumnDefinition Width="*"/>
-                                    <ColumnDefinition Width="Auto"/>
+                                    <ColumnDefinition Width="Auto" />
+                                    <ColumnDefinition Width="Auto" />
+                                    <ColumnDefinition Width="*" />
+                                    <ColumnDefinition Width="Auto" />
                                 </Grid.ColumnDefinitions>
                                 <Button x:Name="btnBackup" Content="开始备份" Style="{StaticResource AccentButton}" Padding="20,7" IsEnabled="False"
-                                        Click="BtnBackup_Click"/>
+                                        Click="BtnBackup_Click" />
                                 <Button x:Name="btnSync" Grid.Column="1" Content="开始更新" IsEnabled="False" Margin="8,0,0,0"
-                                        Padding="20,7" Style="{StaticResource AccentButton}" Click="BtnSync_Click"/>
-                                <Button x:Name="btnCancel" Grid.Column="3" Content="取消" IsEnabled="False" Click="BtnCancel_Click"/>
+                                        Padding="20,7" Style="{StaticResource AccentButton}" Click="BtnSync_Click" />
+                                <Button x:Name="btnCancel" Grid.Column="3" Content="取消" IsEnabled="False" Click="BtnCancel_Click" />
                             </Grid>
-                            <ProgressBar x:Name="progressBar" Margin="0,12,0,0" Minimum="0" Maximum="1"/>
-                            <TextBlock x:Name="txtCur" Margin="0,7,0,0" Text="进度: -" TextTrimming="CharacterEllipsis"/>
+                            <ProgressBar x:Name="progressBar" Margin="0,12,0,0" Minimum="0" Maximum="1" />
+                            <TextBlock x:Name="txtCur" Margin="0,7,0,0" Text="进度: -" TextTrimming="CharacterEllipsis" />
                         </StackPanel>
                     </GroupBox>
 
@@ -278,37 +278,37 @@
                         <StackPanel>
                             <Grid>
                                 <Grid.ColumnDefinitions>
-                                    <ColumnDefinition Width="Auto"/>
-                                    <ColumnDefinition Width="*"/>
-                                    <ColumnDefinition Width="Auto"/>
-                                    <ColumnDefinition Width="*"/>
-                                    <ColumnDefinition Width="Auto"/>
-                                    <ColumnDefinition Width="*"/>
-                                    <ColumnDefinition Width="Auto"/>
-                                    <ColumnDefinition Width="*"/>
+                                    <ColumnDefinition Width="Auto" />
+                                    <ColumnDefinition Width="*" />
+                                    <ColumnDefinition Width="Auto" />
+                                    <ColumnDefinition Width="*" />
+                                    <ColumnDefinition Width="Auto" />
+                                    <ColumnDefinition Width="*" />
+                                    <ColumnDefinition Width="Auto" />
+                                    <ColumnDefinition Width="*" />
                                 </Grid.ColumnDefinitions>
-                                <TextBlock Text="对方IP:" VerticalAlignment="Center"/>
+                                <TextBlock Text="对方IP:" VerticalAlignment="Center" />
                                 <TextBox x:Name="txtShareIp" Grid.Column="1" Margin="8,0,0,0" Height="30"
-                                         ToolTip="对方电脑 IP，例如 192.168.1.8"/>
-                                <TextBlock Grid.Column="2" Text="用户名:" Margin="16,0,0,0" VerticalAlignment="Center"/>
+                                         ToolTip="对方电脑 IP，例如 192.168.1.8" />
+                                <TextBlock Grid.Column="2" Text="用户名:" Margin="16,0,0,0" VerticalAlignment="Center" />
                                 <TextBox x:Name="txtShareUser" Grid.Column="3" Margin="8,0,0,0" Height="30"
-                                         ToolTip="共享账号（留空用当前 Windows 账号）"/>
-                                <TextBlock Grid.Column="4" Text="共享路径:" Margin="16,0,0,0" VerticalAlignment="Center"/>
+                                         ToolTip="共享账号（留空用当前 Windows 账号）" />
+                                <TextBlock Grid.Column="4" Text="共享路径:" Margin="16,0,0,0" VerticalAlignment="Center" />
                                 <TextBox x:Name="txtSharePath" Grid.Column="5" Margin="8,0,0,0" Height="30" Text="c$\BBK"
-                                         ToolTip="对方共享的 BBK 路径。默认 c$\BBK 即对方 C 盘下的 BBK；若对方把 BBK 文件夹直接共享为“BBK”则填 BBK"/>
-                                <TextBlock Grid.Column="6" Text="密码:" Margin="16,0,0,0" VerticalAlignment="Center"/>
+                                         ToolTip="对方共享的 BBK 路径。默认 c$\BBK 即对方 C 盘下的 BBK；若对方把 BBK 文件夹直接共享为“BBK”则填 BBK" />
+                                <TextBlock Grid.Column="6" Text="密码:" Margin="16,0,0,0" VerticalAlignment="Center" />
                                 <PasswordBox x:Name="pwdSharePass" Grid.Column="7" Margin="8,0,0,0" Height="30"
-                                             ToolTip="共享密码（可留空）"/>
+                                             ToolTip="共享密码（可留空）" />
                             </Grid>
                             <Grid Margin="0,12,0,0">
                                 <Grid.ColumnDefinitions>
-                                    <ColumnDefinition Width="Auto"/>
-                                    <ColumnDefinition Width="*"/>
+                                    <ColumnDefinition Width="Auto" />
+                                    <ColumnDefinition Width="*" />
                                 </Grid.ColumnDefinitions>
-                                <Button x:Name="btnShareTest" Content="测试连接" Padding="14,6" Click="BtnShareTest_Click"/>
+                                <Button x:Name="btnShareTest" Content="测试连接" Padding="14,6" Click="BtnShareTest_Click" />
                                 <TextBlock Grid.Column="1" Margin="12,0,0,0" VerticalAlignment="Center"
                                            Foreground="{StaticResource TextSubBrush}" TextWrapping="Wrap"
-                                           Text="对方只需共享 D:\BBK（或开放 c$ 管理共享），无需安装本程序。"/>
+                                           Text="对方只需共享 D:\BBK（或开放 c$ 管理共享），无需安装本程序。" />
                             </Grid>
                         </StackPanel>
                     </GroupBox>
@@ -318,19 +318,19 @@
             <!-- 日志区拖拽分隔条 -->
             <GridSplitter Grid.Row="1" Height="7" HorizontalAlignment="Stretch" VerticalAlignment="Center"
                           Background="Transparent" Cursor="SizeNS" ResizeBehavior="PreviousAndNext"
-                          ResizeDirection="Rows"/>
+                          ResizeDirection="Rows" />
             <Border Grid.Row="1" Height="1" HorizontalAlignment="Stretch" VerticalAlignment="Center"
-                    Background="{StaticResource CardBorderBrush}"/>
+                    Background="{StaticResource CardBorderBrush}" />
 
             <!-- 日志 -->
             <GroupBox Grid.Row="2" Header="日志" Margin="0,15,0,0">
                 <DockPanel>
                     <StackPanel DockPanel.Dock="Bottom" Orientation="Horizontal" HorizontalAlignment="Right" Margin="0,0,0,0">
-                        <Button Content="清空日志" Padding="12,5" Click="BtnClearLog_Click"/>
+                        <Button Content="清空日志" Padding="12,5" Click="BtnClearLog_Click" />
                     </StackPanel>
                     <ListBox x:Name="lbLog" FontFamily="Consolas" FontSize="12"
                              Background="#FBFCFE" BorderBrush="{StaticResource CardBorderBrush}" BorderThickness="1"
-                             ScrollViewer.HorizontalScrollBarVisibility="Auto"/>
+                             ScrollViewer.HorizontalScrollBarVisibility="Auto" />
                 </DockPanel>
             </GroupBox>
         </Grid>

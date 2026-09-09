@@ -5,6 +5,7 @@ namespace LanFileSync;
 public static class UploadRules
 {
     private static readonly Regex TmpRegex = new(@"\.[0-9a-fA-F]{32}\.tmp$", RegexOptions.Compiled);
+
     public static string ToRel(string path, string root)
         => System.IO.Path.GetRelativePath(root, path).Replace('\\', '/');
 

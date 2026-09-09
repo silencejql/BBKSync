@@ -62,6 +62,7 @@ public partial class MainWindow : Window
     {
         public string Ip { get; init; } = "";
         public string Label { get; init; } = "";
+
         public override string ToString() => Ip;
     }
 
@@ -604,7 +605,7 @@ public partial class MainWindow : Window
                     LogLine($"已连接对方 {host}:{port}，开始拉取备份 → {target} ...");
                     _opLabel = "备份";
                     await client.BackupPullAsync(target, ReadBackupOptions(), preBackupBat, LogLine, OnFileProgress, OnTotal,
-                        m => LogLineError("跳过: " + m), ct, LogLineError);                    okIps.Add(host);
+                        m => LogLineError("跳过: " + m), ct, LogLineError); okIps.Add(host);
                     LogLine($"备份完成: {host}");
                     await CompressAndRemoveFolderAsync(target);
                 }

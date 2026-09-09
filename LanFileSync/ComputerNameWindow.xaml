@@ -8,12 +8,12 @@
         TextElement.FontSize="13">
     <DockPanel Margin="14">
         <TextBlock DockPanel.Dock="Top" Foreground="{StaticResource TextSubBrush}" TextWrapping="Wrap"
-                   Text="配置 IP 与电脑名称的对应关系，备份时会自动命名「备份目录\BBK_日期_电脑名称」。未配置名称的 IP 用 IP 自身命名。" Margin="0,0,0,10"/>
+                   Text="配置 IP 与电脑名称的对应关系，备份时会自动命名「备份目录\BBK_日期_电脑名称」。未配置名称的 IP 用 IP 自身命名。" Margin="0,0,0,10" />
         <Border DockPanel.Dock="Top" BorderBrush="{StaticResource CardBorderBrush}" BorderThickness="0,0,0,1" Margin="0,0,0,10" Padding="0,0,0,10">
             <StackPanel Orientation="Horizontal">
-                <Button Content="添加一行" Padding="14,6" Click="Add_Click"/>
-                <Button Content="删除所选" Margin="8,0,0,0" Padding="14,6" Click="Remove_Click"/>
-                <Button Content="保存并关闭" Margin="12,0,0,0" Style="{StaticResource AccentButton}" Padding="14,6" Click="SaveClose_Click"/>
+                <Button Content="添加一行" Padding="14,6" Click="Add_Click" />
+                <Button Content="删除所选" Margin="8,0,0,0" Padding="14,6" Click="Remove_Click" />
+                <Button Content="保存并关闭" Margin="12,0,0,0" Style="{StaticResource AccentButton}" Padding="14,6" Click="SaveClose_Click" />
             </StackPanel>
         </Border>
         <DataGrid x:Name="grid" AutoGenerateColumns="False" CanUserAddRows="False" CanUserDeleteRows="False"
@@ -21,8 +21,8 @@
                   VerticalGridLinesBrush="{StaticResource CardBorderBrush}" BorderBrush="{StaticResource CardBorderBrush}"
                   RowHeight="30">
             <DataGrid.Columns>
-                <DataGridTextColumn Header="电脑 IP" Binding="{Binding Path=Ip, UpdateSourceTrigger=PropertyChanged}" Width="*"/>
-                <DataGridTextColumn Header="电脑名称" Binding="{Binding Path=Name, UpdateSourceTrigger=PropertyChanged}" Width="*"/>
+                <DataGridTextColumn Header="电脑 IP" Binding="{Binding Path=Ip, UpdateSourceTrigger=PropertyChanged}" Width="*" />
+                <DataGridTextColumn Header="电脑名称" Binding="{Binding Path=Name, UpdateSourceTrigger=PropertyChanged}" Width="*" />
             </DataGrid.Columns>
         </DataGrid>
     </DockPanel>
