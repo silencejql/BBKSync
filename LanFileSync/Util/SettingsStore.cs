@@ -1,4 +1,5 @@
 using System.IO;
+using System.Text.Encodings.Web;
 using System.Text.Json;
 
 namespace LanFileSync;
@@ -69,7 +70,11 @@ public sealed class SettingsStore
     {
         try
         {
-            string json = JsonSerializer.Serialize(Settings, new JsonSerializerOptions { WriteIndented = true });
+            string json = JsonSerializer.Serialize(Settings, new JsonSerializerOptions
+            {
+                WriteIndented = true,
+                Encoder = JavaScriptEncoder.UnsafeRelaxedJsonEscaping,
+            });
             File.WriteAllText(_file, json);
         }
         catch { }
