@@ -133,14 +133,14 @@ public partial class MainWindow : Window
         using var tcp = new TcpClient();
         try
         {
-            using var cts = new CancellationTokenSource(TimeSpan.FromSeconds(1));
+            using var cts = new CancellationTokenSource(TimeSpan.FromSeconds(4));
             await tcp.ConnectAsync(host, port, cts.Token);
             LogLine($"已连上 {host}:{port}，正在校验对方协议应答...");
         }
         catch (OperationCanceledException)
         {
-            LogLineError($"连接超时：{host}:{port} - 1 秒内未建立连接（10060 超时：对方不可达，或防火墙静默丢弃）。");
-            MessageBox.Show($"连接超时：{host}:{port}\n1 秒内未建立连接（10060 超时：对方不可达，或防火墙静默丢弃）。",
+            LogLineError($"连接超时：{host}:{port} - 4 秒内未建立连接（10060 超时：对方不可达，或防火墙静默丢弃）。");
+            MessageBox.Show($"连接超时：{host}:{port}\n4 秒内未建立连接（10060 超时：对方不可达，或防火墙静默丢弃）。",
                 "测试结果", MessageBoxButton.OK, MessageBoxImage.Warning);
             return;
         }
@@ -162,7 +162,7 @@ public partial class MainWindow : Window
         try
         {
             using var client = new PeerClient();
-            using var cts = new CancellationTokenSource(TimeSpan.FromSeconds(3));
+            using var cts = new CancellationTokenSource(TimeSpan.FromSeconds(5));
             await client.ConnectAsync(host, port, Constants.RoleProbe, cts.Token);
             var (name, line) = await client.ProbeDeviceAsync(cts.Token);
             string info = string.IsNullOrWhiteSpace(name) ? "" : $"（设备 {name}{(string.IsNullOrWhiteSpace(line) ? "" : "/" + line)}）";
@@ -172,7 +172,7 @@ public partial class MainWindow : Window
         }
         catch (OperationCanceledException)
         {
-            LogLineError($"已连上 {host}:{port}，但对方 3 秒内无协议应答：多为对方 BBKSync 进程僵死、重复实例占用端口，或对方跑的不是本程序。");
+            LogLineError($"已连上 {host}:{port}，但对方 5 秒内无协议应答：多为对方 BBKSync 进程僵死、重复实例占用端口，或对方跑的不是本程序。");
             MessageBox.Show($"已连上 {host}:{port}，但对方无协议应答。\n多为：对方 BBKSync 进程僵死、重复实例占用端口，或对方跑的不是本程序。\n\n建议到对方机器：tasklist | findstr /i BBKSync 核对实例数，必要时 taskkill /f /im BBKSync 后重启。",
                 "测试结果", MessageBoxButton.OK, MessageBoxImage.Warning);
         }

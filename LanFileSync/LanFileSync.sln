@@ -1,0 +1,25 @@
+﻿
+Microsoft Visual Studio Solution File, Format Version 12.00
+# Visual Studio Version 18
+VisualStudioVersion = 18.3.11520.95 d18.3
+MinimumVisualStudioVersion = 10.0.40219.1
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "LanFileSync", "LanFileSync.csproj", "{8090FE4E-51C8-FC40-8045-3FA0178BA84D}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Any CPU = Debug|Any CPU
+		Release|Any CPU = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{8090FE4E-51C8-FC40-8045-3FA0178BA84D}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{8090FE4E-51C8-FC40-8045-3FA0178BA84D}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{8090FE4E-51C8-FC40-8045-3FA0178BA84D}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{8090FE4E-51C8-FC40-8045-3FA0178BA84D}.Release|Any CPU.Build.0 = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(ExtensibilityGlobals) = postSolution
+		SolutionGuid = {A81A85CF-8D54-4B63-805D-6BBA43ABC0AA}
+	EndGlobalSection
+EndGlobal
