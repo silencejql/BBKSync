@@ -429,36 +429,22 @@ public partial class MainWindow : Window
         if (cbRunPreBackupBat.IsChecked != true)
             return;
 
-        string batDir = AppPaths.ExeDir();
-        string batPath = Path.Combine(batDir, "LocalDB_Backup.bat");
-        if (!File.Exists(batPath))
+        string script = _settings.Settings.PreBackupScript;
+        if (string.IsNullOrWhiteSpace(script))
         {
-            LogLineError($"未找到 {batPath}，跳过备份前脚本并继续备份");
+            LogLineError("未配置备份前脚本（settings.json 的 PreBackupScript 为空），跳过");
             return;
         }
 
         LogDivider();
-        LogLine($"开始执行备份前脚本: {batPath} ...");
+        LogLine("开始执行备份前脚本 ...");
         try
         {
-            bool ok = await Task.Run(() =>
-            {
-                var psi = new ProcessStartInfo
-                {
-                    FileName = "cmd.exe",
-                    Arguments = $"/c \"{batPath}\"",
-                    WorkingDirectory = batDir,
-                    UseShellExecute = false,
-                    CreateNoWindow = true,
-                };
-                using var p = Process.Start(psi);
-                p?.WaitForExit();
-                return p == null || p.ExitCode == 0;
-            });
-            if (ok)
-                LogLine("备份前脚本执行完成");
+            string? err = await Task.Run(() => ScriptRunner.Run(script, AppPaths.ExeDir(), LogLine));
+            if (err != null)
+                LogLineError(err + "，继续备份");
             else
-                LogLineError("备份前脚本执行失败（ExitCode 非 0），继续备份");
+                LogLine("备份前脚本执行完成");
         }
         catch (Exception ex)
         {
@@ -799,7 +785,8 @@ public partial class MainWindow : Window
             LogLine, OnFileProgress, OnTotal, m => LogLineError("执行失败: " + m),
             cbBackupBeforeSync.IsChecked ?? true,
             txtBackupDest.Text.Trim(),
-            ReadBackupOptions());
+            ReadBackupOptions(),
+            _settings.Settings.PreBackupScript);
         try
         {
             _server.Start();

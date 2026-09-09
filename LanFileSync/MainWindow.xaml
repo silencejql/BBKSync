@@ -159,8 +159,8 @@
                                     </StackPanel>
                                     <CheckBox x:Name="cbCompressZip" Content="备份完成后自动压缩为 zip（删除备份文件夹）" IsChecked="True" Margin="0,8,0,0"
                                               ToolTip="备份完成后将备份文件夹打包成同名 zip 文件并删除文件夹，节省空间。" />
-                                    <CheckBox x:Name="cbRunPreBackupBat" Content="备份前先执行 LocalDB_Backup.bat" IsChecked="False" Margin="0,8,0,0"
-                                              ToolTip="勾选后先执行 LocalDB_Backup.bat 再开始备份：局域网电脑备份时在对方电脑执行（成功后才拉取备份文件）；本机/Windows共享备份时在本机程序目录执行。" />
+                                    <CheckBox x:Name="cbRunPreBackupBat" Content="备份前先执行配置的备份脚本" IsChecked="False" Margin="0,8,0,0"
+                                              ToolTip="勾选后开始备份前先执行配置文件中预设的脚本（settings.json 的 PreBackupScript，默认含 pg_dump 数据库备份命令）：本机/Windows 共享备份在本机执行；局域网备份在对方电脑执行（成功后才拉取备份文件）。" />
                                 </StackPanel>
                                 <Rectangle Grid.Column="1" Width="1" Fill="{StaticResource CardBorderBrush}" Margin="14,0" />
                                 <StackPanel Grid.Column="2" Margin="14,0,0,0">

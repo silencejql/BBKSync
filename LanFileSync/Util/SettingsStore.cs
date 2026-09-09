@@ -19,6 +19,13 @@ public sealed class AppSettings
     public bool BackupLogRule { get; set; } = true;
     public int BackupLogDays { get; set; } = 2;
     public bool RunPreBackupBat { get; set; } = false;
+    public string PreBackupScript { get; set; } =
+        "echo off\r\n" +
+        "set DBName=LocalDB\r\n" +
+        "set FileName=%DBName%_AutoBackup_%date:~0,4%%date:~5,2%%date:~8,2%.backup\r\n" +
+        "set BACKUP_DIR=D:\\BBK\\DataBase\r\n" +
+        "if not exist \"D:\\BBK\\DataBase\" (md D:\\BBK\\DataBase)\r\n" +
+        "C:/\"" + "Program Files (x86)" + "\"/PostgreSQL/9.5/bin/pg_dump.exe --host localhost --port 5432 --username \"postgres\" --no-password  --format custom --verbose --file \"%BACKUP_DIR%\\%FileName%\" \"%DBName%\"";
     public string BackupIgnoreRegexes { get; set; } = "";
     public bool IgnoreRegexEnabled { get; set; } = true;
     public bool CompressZip { get; set; } = true;

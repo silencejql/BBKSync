@@ -18,18 +18,20 @@ public sealed class PeerServer : IDisposable
     private readonly Action<string, long> _onFile;
     private readonly Action<int> _onTotal;
     private readonly Action<string> _onError;
+    private readonly string _preBackupScript;
     private CancellationTokenSource _cts = new();
 
     public bool Running { get; private set; }
 
     public PeerServer(string root, int port, SyncOptions options, Action<string> log, Action<string, long> onFile, Action<int> onTotal,
-        Action<string> onError, bool backupBeforeSync, string backupDest, BackupOptions backupOptions)
+        Action<string> onError, bool backupBeforeSync, string backupDest, BackupOptions backupOptions, string preBackupScript)
     {
         _root = root;
         _options = options;
         _backupBeforeSync = backupBeforeSync;
         _backupDest = backupDest;
         _backupOptions = backupOptions;
+        _preBackupScript = preBackupScript;
         _log = log;
         _onFile = onFile;
         _onTotal = onTotal;
@@ -62,35 +64,9 @@ public sealed class PeerServer : IDisposable
         });
     }
 
-    private static string? RunLocalBackupBat(Action<string> log)
+    private string? RunPreBackupScript(Action<string> log)
     {
-        string dir = AppPaths.ExeDir();
-        string bat = Path.Combine(dir, "LocalDB_Backup.bat");
-        if (!File.Exists(bat))
-            return "未找到备份前脚本: " + bat;
-        try
-        {
-            var psi = new ProcessStartInfo
-            {
-                FileName = "cmd.exe",
-                Arguments = $"/c \"{bat}\"",
-                WorkingDirectory = dir,
-                UseShellExecute = false,
-                CreateNoWindow = true,
-            };
-            using var p = Process.Start(psi);
-            p?.WaitForExit();
-            if (p == null)
-                return "启动备份前脚本失败";
-            if (p.ExitCode != 0)
-                return $"备份前脚本执行失败（ExitCode {p.ExitCode}）";
-            return null;
-        }
-        catch (Exception ex)
-        {
-            log("执行备份前脚本异常: " + ex.Message);
-            return "执行备份前脚本异常: " + ex.Message;
-        }
+        return ScriptRunner.Run(_preBackupScript, AppPaths.ExeDir(), log);
     }
 
     public void Stop()
@@ -152,17 +128,25 @@ public sealed class PeerServer : IDisposable
                 {
                     if (hello.TryGetProperty("preBackupBat", out var pb) && pb.GetBoolean())
                     {
-                        _log("对方要求先执行备份前脚本 LocalDB_Backup.bat ...");
-                        string? batErr = RunLocalBackupBat(_log);
-                        if (batErr != null)
+                        if (string.IsNullOrWhiteSpace(_preBackupScript))
                         {
-                            _onError(batErr + "，继续备份");
-                            await conn.SendJsonAsync(new { op = "bat", ok = false, msg = batErr }, CancellationToken.None);
+                            _log("对方要求先执行备份前脚本，本机未配置脚本（PreBackupScript 为空），跳过");
+                            await conn.SendJsonAsync(new { op = "bat", ok = true, msg = "本机未配置备份前脚本，跳过" }, CancellationToken.None);
                         }
                         else
                         {
-                            _log("备份前脚本执行完成");
-                            await conn.SendJsonAsync(new { op = "bat", ok = true, msg = "已执行 LocalDB_Backup.bat" }, CancellationToken.None);
+                            _log("对方要求先执行备份前脚本 ...");
+                            string? batErr = RunPreBackupScript(_log);
+                            if (batErr != null)
+                            {
+                                _onError(batErr + "，继续备份");
+                                await conn.SendJsonAsync(new { op = "bat", ok = false, msg = batErr }, CancellationToken.None);
+                            }
+                            else
+                            {
+                                _log("备份前脚本执行完成");
+                                await conn.SendJsonAsync(new { op = "bat", ok = true, msg = "已执行备份前脚本" }, CancellationToken.None);
+                            }
                         }
                     }
                     await SourceSide.SendManifestAsync(conn, _root, ct);
