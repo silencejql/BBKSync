@@ -408,18 +408,22 @@ public partial class MainWindow : Window
             return;
         }
 
-        if (!await RunPreBackupBatAsync())
-        {
-            LogLineError("备份前脚本未通过，已中止备份");
-            return;
-        }
-
         if (rbBackupRemote.IsChecked == true)
+        {
             await BackupFromRemoteAsync(dest);
-        else if (rbBackupShare.IsChecked == true)
-            await BackupFromShareAsync(dest);
+        }
         else
-            await BackupLocalAsync(dest);
+        {
+            if (!await RunPreBackupBatAsync())
+            {
+                LogLineError("备份前脚本未通过，已中止备份");
+                return;
+            }
+            if (rbBackupShare.IsChecked == true)
+                await BackupFromShareAsync(dest);
+            else
+                await BackupLocalAsync(dest);
+        }
     }
 
     private async Task<bool> RunPreBackupBatAsync()
@@ -603,12 +607,13 @@ public partial class MainWindow : Window
 
                 try
                 {
+                    bool preBackupBat = cbRunPreBackupBat.IsChecked == true;
                     using var client = new PeerClient();
-                    await client.ConnectAsync(host, port, Constants.RolePull, ct);
+                    await client.ConnectAsync(host, port, Constants.RolePull, ct, preBackupBat);
                     LogDivider();
                     LogLine($"已连接对方 {host}:{port}，开始拉取备份 → {target} ...");
                     _opLabel = "备份";
-                    await client.BackupPullAsync(target, ReadBackupOptions(), LogLine, OnFileProgress, OnTotal,
+                    await client.BackupPullAsync(target, ReadBackupOptions(), preBackupBat, LogLine, OnFileProgress, OnTotal,
                         m => LogLineError("跳过: " + m), ct);                    okIps.Add(host);
                     LogLine($"备份完成: {host}");
                     await CompressAndRemoveFolderAsync(target);

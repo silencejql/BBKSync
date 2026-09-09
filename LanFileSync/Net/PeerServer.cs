@@ -3,6 +3,7 @@ using System.IO.Compression;
 using System.Net;
 using System.Net.Sockets;
 using System.Xml.Linq;
+using System.Diagnostics;
 
 namespace LanFileSync;
 
@@ -62,6 +63,37 @@ public sealed class PeerServer : IDisposable
         });
     }
 
+    private static string? RunLocalBackupBat(Action<string> log)
+    {
+        string dir = AppPaths.ExeDir();
+        string bat = Path.Combine(dir, "LocalDB_Backup.bat");
+        if (!File.Exists(bat))
+            return "未找到备份前脚本: " + bat;
+        try
+        {
+            var psi = new ProcessStartInfo
+            {
+                FileName = "cmd.exe",
+                Arguments = $"/c \"{bat}\"",
+                WorkingDirectory = dir,
+                UseShellExecute = false,
+                CreateNoWindow = true,
+            };
+            using var p = Process.Start(psi);
+            p?.WaitForExit();
+            if (p == null)
+                return "启动备份前脚本失败";
+            if (p.ExitCode != 0)
+                return $"备份前脚本执行失败（ExitCode {p.ExitCode}）";
+            return null;
+        }
+        catch (Exception ex)
+        {
+            log("执行备份前脚本异常: " + ex.Message);
+            return "执行备份前脚本异常: " + ex.Message;
+        }
+    }
+
     public void Stop()
     {
         Running = false;
@@ -119,6 +151,18 @@ if (role == Constants.RoleProbe)
                 _log("----------------");
                 if (role == Constants.RolePull)
                 {
+                if (hello.TryGetProperty("preBackupBat", out var pb) && pb.GetBoolean())
+                {
+                    _log("对方要求先执行备份前脚本 LocalDB_Backup.bat ...");
+                    string? batErr = RunLocalBackupBat(_log);
+                    if (batErr != null)
+                    {
+                        await conn.SendJsonAsync(new { op = "err", msg = batErr }, CancellationToken.None);
+                        throw new InvalidOperationException(batErr);
+                    }
+                    _log("备份前脚本执行完成");
+                    await conn.SendJsonAsync(new { op = "bat", ok = true, msg = "已执行 LocalDB_Backup.bat" }, CancellationToken.None);
+                }
                 await SourceSide.SendManifestAsync(conn, _root, ct);
                 _log("文件清单已发送，等待对方选择需要更新的文件...");
 

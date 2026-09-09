@@ -39,7 +39,7 @@
                             <ColumnDefinition Width="*"/>
                             <ColumnDefinition Width="*"/>
                         </Grid.ColumnDefinitions>
-                        <GroupBox Header="本机文件夹与服务">
+                        <GroupBox Header="本机配置">
                             <StackPanel>
                                 <Grid>
                                     <Grid.ColumnDefinitions>
@@ -73,7 +73,7 @@
                             </StackPanel>
                         </GroupBox>
 
-                        <GroupBox Grid.Column="1" Header="对方电脑（更新 / 局域网备份）" Margin="14,0,0,0">
+                        <GroupBox Grid.Column="1" Header="远端电脑（备份 / 更新）" Margin="14,0,0,0">
                             <StackPanel>
                                 <Grid>
                                     <Grid.ColumnDefinitions>
@@ -110,7 +110,7 @@
                                     <TextBox x:Name="txtPeerPort" Grid.Column="1" Width="90" Margin="8,0,0,0" Height="30"
                                              ToolTip="对方服务监听端口。软件打开后会自动启动服务，端口即以本机端口为准"/>
                                     <TextBlock Grid.Column="2" Margin="12,0,0,0" VerticalAlignment="Center"
-                                               Foreground="{StaticResource TextSubBrush}" TextWrapping="Wrap"
+                                               Foreground="{StaticResource TextSubBrush}" TextWrapping="Wrap" FontSize="10"
                                                Text="多台依次处理：逗号分隔，或范围如 192.168.1.5-8、192.168.1.5-192.168.1.8"/>
                                 </Grid>
                             </StackPanel>
@@ -120,7 +120,7 @@
                     <!-- 选项卡：备份 / 更新（横跨整个界面） -->
                     <TabControl x:Name="tabs" Margin="-2,10,0,0" SelectionChanged="Tabs_SelectionChanged">
                         <TabItem Header="备份" Width="100">
-                            <Grid Margin="6,10,6,6">
+                            <Grid Margin="6,10,6,06">
                                 <Grid.ColumnDefinitions>
                                     <ColumnDefinition Width="*"/>
                                     <ColumnDefinition Width="Auto"/>
@@ -133,8 +133,8 @@
                                         <RadioButton x:Name="rbBackupRemote" GroupName="bsrc" Content="局域网电脑(可多台)" Margin="10,0,0,0" VerticalAlignment="Center" Checked="RbBackupSource_Changed"/>
                                         <RadioButton x:Name="rbBackupShare" GroupName="bsrc" Content="Windows共享" Margin="10,0,0,0" VerticalAlignment="Center" Checked="RbBackupSource_Changed"/>
                                     </StackPanel>
-                                    <TextBlock x:Name="txtBackupHint" Margin="0,7,0,0" Foreground="{StaticResource TextSubBrush}" TextWrapping="Wrap"
-                                               Text="局域网电脑备份用上方&#x201c;对方电脑&#x201d;的 IP/范围，逐台处理；Windows共享用下方连接。"/>
+                                    <TextBlock x:Name="txtBackupHint" Margin="0,7,0,0" Foreground="{StaticResource TextSubBrush}" TextWrapping="Wrap" FontSize="10"
+                                               Text="局域网电脑备份用上方&#x201c;远端电脑&#x201d;的 IP/范围，逐台处理；Windows共享用下方连接。"/>
                                     <Grid Margin="0,10,0,0">
                                         <Grid.ColumnDefinitions>
                                             <ColumnDefinition Width="Auto"/>
@@ -143,24 +143,24 @@
                                         </Grid.ColumnDefinitions>
                                         <TextBlock Text="备份到:" VerticalAlignment="Center"/>
                                         <TextBox x:Name="txtBackupDest" Grid.Column="1" Margin="8,0,0,0" Height="30"
-                                                 ToolTip="备份目标父目录，实际自动存入 备份目录\BBK_标识_日期_电脑名称（可为本地盘或已映射的网络盘）"/>
+                                                 ToolTip="备份目标父目录，实际自动存入 备份目录\BBK_电脑名称_日期（可为本地盘或已映射的网络盘）"/>
                                         <Button Grid.Column="2" Content="浏览..." Padding="12,6" Margin="8,0,0,0" Click="BtnBackupBrowse_Click"/>
                                     </Grid>
                                     <StackPanel x:Name="rowLocalName" Orientation="Horizontal" Margin="0,8,0,0">
                                         <CheckBox x:Name="cbAutoFetchName" VerticalAlignment="Center"
                                                   IsChecked="True"
                                                   Content="自动获取设备配置"
-                                                  ToolTip="勾选后自动从本机 BBK 文件夹子目录的 Config\SystemConfig.xml 解析 DeviceNo/LineNo 作为备份命名与存放（跳过 Bin 开头的子目录）。"/>
+                                                  ToolTip="勾选后自动从备份电脑 BBK 文件夹子目录的 Config\SystemConfig.xml 解析 DeviceNo/LineNo 作为备份命名与存放。"/>
                                     </StackPanel>
-                                    <StackPanel Orientation="Horizontal" Margin="0,10,0,0">
+                                    <StackPanel Orientation="Horizontal" Margin="0,8,0,0">
                                         <CheckBox x:Name="cbBackupLogRule" Content="Log 文件夹只备份最近" IsChecked="True" VerticalAlignment="Center"/>
-                                        <TextBox x:Name="txtBackupLogDays" Width="50" Height="28" Margin="6,0" Text="2" VerticalContentAlignment="Center"/>
+                                        <TextBox x:Name="txtBackupLogDays" Width="50" Height="20" Margin="6,0" Text="2" VerticalContentAlignment="Center"/>
                                         <TextBlock Text="天" VerticalAlignment="Center"/>
                                     </StackPanel>
-                                    <CheckBox x:Name="cbCompressZip" Content="备份完成后自动压缩为 zip（删除原文件夹）" IsChecked="True" Margin="0,8,0,0"
+                                    <CheckBox x:Name="cbCompressZip" Content="备份完成后自动压缩为 zip（删除备份文件夹）" IsChecked="True" Margin="0,8,0,0"
                                               ToolTip="备份完成后将备份文件夹打包成同名 zip 文件并删除文件夹，节省空间。"/>
-                                    <CheckBox x:Name="cbRunPreBackupBat" Content="备份前先执行 LocalDB_Backup.bat" IsChecked="True" Margin="0,8,0,0"
-                                              ToolTip="开始备份前先完整执行程序目录下的 LocalDB_Backup.bat 文件（如用于备份数据库），执行完成后才开始备份。"/>
+                                    <CheckBox x:Name="cbRunPreBackupBat" Content="备份前先执行 LocalDB_Backup.bat" IsChecked="False" Margin="0,8,0,0"
+                                              ToolTip="勾选后先执行 LocalDB_Backup.bat 再开始备份：局域网电脑备份时在对方电脑执行（成功后才拉取备份文件）；本机/Windows共享备份时在本机程序目录执行。"/>
                                 </StackPanel>
                                 <Rectangle Grid.Column="1" Width="1" Fill="{StaticResource CardBorderBrush}" Margin="14,0"/>
                                 <StackPanel Grid.Column="2" Margin="14,0,0,0">

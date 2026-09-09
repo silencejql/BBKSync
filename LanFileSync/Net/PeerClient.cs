@@ -8,12 +8,12 @@ public sealed class PeerClient : IDisposable
     private TcpClient? _tcp;
     private PeerConnection? _conn;
 
-    public async Task ConnectAsync(string host, int port, string role, CancellationToken ct)
+    public async Task ConnectAsync(string host, int port, string role, CancellationToken ct, bool preBackupBat = false)
     {
         _tcp = new TcpClient();
         await _tcp.ConnectAsync(host, port, ct);
         _conn = new PeerConnection(_tcp);
-        await _conn.SendJsonAsync(new { hello = true, role }, ct);
+        await _conn.SendJsonAsync(new { hello = true, role, preBackupBat }, ct);
     }
 
     public async Task PullAsync(
@@ -79,12 +79,28 @@ public sealed class PeerClient : IDisposable
     public async Task BackupPullAsync(
         string dest,
         BackupOptions options,
+        bool runPreBackupBat,
         Action<string> log,
         Action<string, long> onFile,
         Action<int> onTotal,
         Action<string> onError,
         CancellationToken ct)
     {
+        if (runPreBackupBat)
+        {
+            var bat = await _conn!.RecvJsonAsync(ct)
+                ?? throw new EndOfStreamException("连接已断开");
+            string op = bat.GetProperty("op").GetString()!;
+            if (op == "err")
+                throw new InvalidOperationException(bat.GetProperty("msg").GetString());
+            if (op != "bat")
+                throw new InvalidOperationException("未知消息: " + op);
+            string msg = bat.GetProperty("msg").GetString() ?? "";
+            if (!bat.GetProperty("ok").GetBoolean())
+                throw new InvalidOperationException(msg);
+            log("对方备份前脚本: " + msg);
+        }
+
         var engine = new BackupSyncEngine(dest, options);
         var list = new List<FileEntry>();
 
