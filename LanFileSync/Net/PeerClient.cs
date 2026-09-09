@@ -84,7 +84,8 @@ public sealed class PeerClient : IDisposable
         Action<string, long> onFile,
         Action<int> onTotal,
         Action<string> onError,
-        CancellationToken ct)
+        CancellationToken ct,
+        Action<string>? logError = null)
     {
         if (runPreBackupBat)
         {
@@ -96,9 +97,10 @@ public sealed class PeerClient : IDisposable
             if (op != "bat")
                 throw new InvalidOperationException("未知消息: " + op);
             string msg = bat.GetProperty("msg").GetString() ?? "";
-            if (!bat.GetProperty("ok").GetBoolean())
-                throw new InvalidOperationException(msg);
-            log("对方备份前脚本: " + msg);
+            if (bat.GetProperty("ok").GetBoolean())
+                log("对方备份前脚本: " + msg);
+            else
+                (logError ?? log)("对方备份前脚本失败，已继续备份: " + msg);
         }
 
         var engine = new BackupSyncEngine(dest, options);

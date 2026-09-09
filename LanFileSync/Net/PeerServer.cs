@@ -157,11 +157,14 @@ if (role == Constants.RoleProbe)
                     string? batErr = RunLocalBackupBat(_log);
                     if (batErr != null)
                     {
-                        await conn.SendJsonAsync(new { op = "err", msg = batErr }, CancellationToken.None);
-                        throw new InvalidOperationException(batErr);
+                        _log(batErr + "，继续备份");
+                        await conn.SendJsonAsync(new { op = "bat", ok = false, msg = batErr }, CancellationToken.None);
                     }
-                    _log("备份前脚本执行完成");
-                    await conn.SendJsonAsync(new { op = "bat", ok = true, msg = "已执行 LocalDB_Backup.bat" }, CancellationToken.None);
+                    else
+                    {
+                        _log("备份前脚本执行完成");
+                        await conn.SendJsonAsync(new { op = "bat", ok = true, msg = "已执行 LocalDB_Backup.bat" }, CancellationToken.None);
+                    }
                 }
                 await SourceSide.SendManifestAsync(conn, _root, ct);
                 _log("文件清单已发送，等待对方选择需要更新的文件...");

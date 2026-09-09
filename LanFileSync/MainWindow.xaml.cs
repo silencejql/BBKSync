@@ -414,11 +414,7 @@ public partial class MainWindow : Window
         }
         else
         {
-            if (!await RunPreBackupBatAsync())
-            {
-                LogLineError("备份前脚本未通过，已中止备份");
-                return;
-            }
+            await RunPreBackupBatAsync();
             if (rbBackupShare.IsChecked == true)
                 await BackupFromShareAsync(dest);
             else
@@ -426,17 +422,17 @@ public partial class MainWindow : Window
         }
     }
 
-    private async Task<bool> RunPreBackupBatAsync()
+    private async Task RunPreBackupBatAsync()
     {
         if (cbRunPreBackupBat.IsChecked != true)
-            return true;
+            return;
 
         string batDir = AppPaths.ExeDir();
         string batPath = Path.Combine(batDir, "LocalDB_Backup.bat");
         if (!File.Exists(batPath))
         {
-            LogLineError($"未找到 {batPath}，跳过备份前脚本");
-            return false;
+            LogLineError($"未找到 {batPath}，跳过备份前脚本并继续备份");
+            return;
         }
 
         LogDivider();
@@ -445,33 +441,26 @@ public partial class MainWindow : Window
         {
             bool ok = await Task.Run(() =>
             {
-                try
+                var psi = new ProcessStartInfo
                 {
-                    var psi = new ProcessStartInfo
-                    {
-                        FileName = "cmd.exe",
-                        Arguments = $"/c \"{batPath}\"",
-                        WorkingDirectory = batDir,
-                        UseShellExecute = false,
-                        CreateNoWindow = true,
-                    };
-                    using var p = Process.Start(psi);
-                    p?.WaitForExit();
-                    return p == null || p.ExitCode == 0;
-                }
-                catch (Exception ex)
-                {
-                    LogLineError("执行备份前脚本失败: " + ex.Message);
-                    return false;
-                }
+                    FileName = "cmd.exe",
+                    Arguments = $"/c \"{batPath}\"",
+                    WorkingDirectory = batDir,
+                    UseShellExecute = false,
+                    CreateNoWindow = true,
+                };
+                using var p = Process.Start(psi);
+                p?.WaitForExit();
+                return p == null || p.ExitCode == 0;
             });
-            LogLine(ok ? "备份前脚本执行完成" : "备份前脚本执行失败（ExitCode 非 0）");
-            return ok;
+            if (ok)
+                LogLine("备份前脚本执行完成");
+            else
+                LogLineError("备份前脚本执行失败（ExitCode 非 0），继续备份");
         }
         catch (Exception ex)
         {
-            LogLineError("执行备份前脚本异常: " + ex.Message);
-            return false;
+            LogLineError("执行备份前脚本异常，继续备份: " + ex.Message);
         }
     }
 
@@ -614,7 +603,7 @@ public partial class MainWindow : Window
                     LogLine($"已连接对方 {host}:{port}，开始拉取备份 → {target} ...");
                     _opLabel = "备份";
                     await client.BackupPullAsync(target, ReadBackupOptions(), preBackupBat, LogLine, OnFileProgress, OnTotal,
-                        m => LogLineError("跳过: " + m), ct);                    okIps.Add(host);
+                        m => LogLineError("跳过: " + m), ct, LogLineError);                    okIps.Add(host);
                     LogLine($"备份完成: {host}");
                     await CompressAndRemoveFolderAsync(target);
                 }
