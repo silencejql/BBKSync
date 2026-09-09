@@ -28,27 +28,27 @@ public partial class MainWindow : Window
     {
         InitializeComponent();
         Icon = AppIcons.WindowIcon() ?? Icon;
-        txtRoot.Text = _settings.Settings.Root;
-        txtPort.Text = _settings.Settings.Port.ToString();
-        txtPeerPort.Text = _settings.Settings.Port.ToString();
-        txtBackupDest.Text = _settings.Settings.BackupDest;
-        cbBackupBeforeSync.IsChecked = _settings.Settings.BackupBeforeSync;
-        cbBackupLogRule.IsChecked = _settings.Settings.BackupLogRule;
-        txtBackupLogDays.Text = _settings.Settings.BackupLogDays.ToString();
-        txtBackupIgnore.Text = _settings.Settings.BackupIgnoreRegexes;
-        cbIgnoreEnabled.IsChecked = _settings.Settings.IgnoreRegexEnabled;
-        cbCompressZip.IsChecked = _settings.Settings.CompressZip;
-        cbRunPreBackupBat.IsChecked = _settings.Settings.RunPreBackupBat;
-        cbAutoFetchName.IsChecked = _settings.Settings.AutoFetchComputerName;
-        txtTransferPath.Text = _settings.Settings.TransferPath;
-        cbTransferSameSkip.IsChecked = _settings.Settings.TransferSameSkip;
-        cbTransferKillFreeForm.IsChecked = _settings.Settings.TransferKillFreeForm;
-        FreeFormKiller.ProcessPrefix = _settings.Settings.FreeFormProcessPrefix;
+        txtRoot.Text = _settings.Settings.Server.Root;
+        txtPort.Text = _settings.Settings.Server.Port.ToString();
+        txtPeerPort.Text = _settings.Settings.Server.Port.ToString();
+        txtBackupDest.Text = _settings.Settings.Backup.Dest;
+        cbBackupBeforeSync.IsChecked = _settings.Settings.Backup.BeforeSync;
+        cbBackupLogRule.IsChecked = _settings.Settings.Backup.LogRule;
+        txtBackupLogDays.Text = _settings.Settings.Backup.LogDays.ToString();
+        txtBackupIgnore.Text = _settings.Settings.Backup.IgnoreRegexes;
+        cbIgnoreEnabled.IsChecked = _settings.Settings.Backup.IgnoreRegexEnabled;
+        cbCompressZip.IsChecked = _settings.Settings.Backup.CompressZip;
+        cbRunPreBackupBat.IsChecked = _settings.Settings.Backup.RunPreBackupBat;
+        cbAutoFetchName.IsChecked = _settings.Settings.Backup.AutoFetchComputerName;
+        txtTransferPath.Text = _settings.Settings.Transfer.Path;
+        cbTransferSameSkip.IsChecked = _settings.Settings.Transfer.SameSkip;
+        cbTransferKillFreeForm.IsChecked = _settings.Settings.Transfer.KillFreeForm;
+        FreeFormKiller.ProcessPrefix = _settings.Settings.FreeForm.ProcessPrefix;
         cbKillFreeForm.Content = "替换出错时结束 " + FreeFormKiller.ProcessPrefixAsterisk + " 后重试";
         cbTransferKillFreeForm.Content = "出错时结束 " + FreeFormKiller.ProcessPrefixAsterisk + " 后重试一次";
         cbKillFreeForm.ToolTip = "相当于自动打开任务管理器结束 " + FreeFormKiller.ProcessPrefixAsterisk + " 开头的进程，最多重试3次。";
         cbTransferKillFreeForm.ToolTip = "更新报错时输出日志，并关闭目标电脑 " + FreeFormKiller.ProcessPrefixAsterisk + " 开头的进程后重试一次；仍失败则输出日志跳过。";
-        chkAutoStart.IsChecked = _settings.Settings.AutoStartAndListen;
+        chkAutoStart.IsChecked = _settings.Settings.Server.AutoStartAndListen;
         rbReceive.IsChecked = true;
         RbBackupSource_Changed(null, null!);
         ReloadHistoryCombo();
@@ -429,7 +429,7 @@ public partial class MainWindow : Window
         if (cbRunPreBackupBat.IsChecked != true)
             return;
 
-        string script = _settings.Settings.PreBackupScript;
+        string script = _settings.Settings.Backup.PreBackupScript;
         if (string.IsNullOrWhiteSpace(script))
         {
             LogLineError("未配置备份前脚本（settings.json 的 PreBackupScript 为空），跳过");
@@ -786,7 +786,7 @@ public partial class MainWindow : Window
             cbBackupBeforeSync.IsChecked ?? true,
             txtBackupDest.Text.Trim(),
             ReadBackupOptions(),
-            _settings.Settings.PreBackupScript);
+            _settings.Settings.Backup.PreBackupScript);
         try
         {
             _server.Start();
@@ -1207,7 +1207,7 @@ LogLine, OnFileProgress, OnTotal,
         tabs.SelectedIndex = 0;
         RefreshOpButtons();
         StartServer(showErrors: false);
-        if (_settings.Settings.AutoStartAndListen)
+        if (_settings.Settings.Server.AutoStartAndListen)
         {
             _tray = new TrayIcon(ShowMainWindow, ExitApp);
             _tray.Show();
@@ -1264,27 +1264,27 @@ LogLine, OnFileProgress, OnTotal,
             LogLineError("写入开机自启失败: " + ex.Message);
         }
 
-        _settings.Settings.AutoStartAndListen = enabled;
+        _settings.Settings.Server.AutoStartAndListen = enabled;
         SaveSettings();
         LogLine(enabled ? "已启用：开机自动启动并后台监听" : "已关闭开机自启");
     }
 
     private void SaveSettings()
     {
-        _settings.Settings.Root = txtRoot.Text.Trim();
-        _settings.Settings.Port = int.TryParse(txtPort.Text, out int p) ? p : _settings.Settings.Port;
-        _settings.Settings.BackupDest = txtBackupDest.Text.Trim();
-        _settings.Settings.BackupBeforeSync = cbBackupBeforeSync.IsChecked ?? true;
-        _settings.Settings.BackupLogRule = cbBackupLogRule.IsChecked ?? true;
-        _settings.Settings.BackupLogDays = int.TryParse(txtBackupLogDays.Text, out int d) && d >= 1 ? d : 2;
-        _settings.Settings.BackupIgnoreRegexes = txtBackupIgnore.Text;
-        _settings.Settings.IgnoreRegexEnabled = cbIgnoreEnabled.IsChecked ?? true;
-        _settings.Settings.CompressZip = cbCompressZip.IsChecked ?? true;
-        _settings.Settings.RunPreBackupBat = cbRunPreBackupBat.IsChecked ?? true;
-        _settings.Settings.AutoFetchComputerName = cbAutoFetchName.IsChecked == true;
-        _settings.Settings.TransferPath = txtTransferPath.Text.Trim();
-        _settings.Settings.TransferSameSkip = cbTransferSameSkip.IsChecked ?? true;
-        _settings.Settings.TransferKillFreeForm = cbTransferKillFreeForm.IsChecked ?? true;
+        _settings.Settings.Server.Root = txtRoot.Text.Trim();
+        _settings.Settings.Server.Port = int.TryParse(txtPort.Text, out int p) ? p : _settings.Settings.Server.Port;
+        _settings.Settings.Backup.Dest = txtBackupDest.Text.Trim();
+        _settings.Settings.Backup.BeforeSync = cbBackupBeforeSync.IsChecked ?? true;
+        _settings.Settings.Backup.LogRule = cbBackupLogRule.IsChecked ?? true;
+        _settings.Settings.Backup.LogDays = int.TryParse(txtBackupLogDays.Text, out int d) && d >= 1 ? d : 2;
+        _settings.Settings.Backup.IgnoreRegexes = txtBackupIgnore.Text;
+        _settings.Settings.Backup.IgnoreRegexEnabled = cbIgnoreEnabled.IsChecked ?? true;
+        _settings.Settings.Backup.CompressZip = cbCompressZip.IsChecked ?? true;
+        _settings.Settings.Backup.RunPreBackupBat = cbRunPreBackupBat.IsChecked ?? true;
+        _settings.Settings.Backup.AutoFetchComputerName = cbAutoFetchName.IsChecked == true;
+        _settings.Settings.Transfer.Path = txtTransferPath.Text.Trim();
+        _settings.Settings.Transfer.SameSkip = cbTransferSameSkip.IsChecked ?? true;
+        _settings.Settings.Transfer.KillFreeForm = cbTransferKillFreeForm.IsChecked ?? true;
         _settings.Save();
     }
 
