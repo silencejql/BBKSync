@@ -38,6 +38,7 @@ public partial class MainWindow : Window
         txtBackupIgnore.Text = _settings.Settings.Backup.IgnoreRegexes;
         cbIgnoreEnabled.IsChecked = _settings.Settings.Backup.IgnoreRegexEnabled;
         cbCompressZip.IsChecked = _settings.Settings.Backup.CompressZip;
+        cbUpdateCompressZip.IsChecked = _settings.Settings.Backup.CompressUpdateZip;
         cbRunPreBackupBat.IsChecked = _settings.Settings.Backup.RunPreBackupBat;
         cbAutoFetchName.IsChecked = _settings.Settings.Backup.AutoFetchComputerName;
         txtTransferPath.Text = _settings.Settings.Transfer.Path;
@@ -326,9 +327,9 @@ public partial class MainWindow : Window
 
     private bool ShouldCompress => cbCompressZip.IsChecked == true;
 
-    private async Task CompressAndRemoveFolderAsync(string folderPath)
+    private async Task CompressAndRemoveFolderAsync(string folderPath, bool compress)
     {
-        if (!ShouldCompress)
+        if (!compress)
             return;
         try
         {
@@ -367,7 +368,7 @@ public partial class MainWindow : Window
             LogLine("备份目录为空，跳过同步前备份。");
             return true;
         }
-        if (!ShouldCompress && IsBackupDestBad(baseDest, src))
+        if (cbUpdateCompressZip.IsChecked != true && IsBackupDestBad(baseDest, src))
         {
             LogLine($"备份目录 {baseDest} 与同步目录相同/位于其内部，跳过同步前备份。");
             return true;
@@ -385,7 +386,7 @@ public partial class MainWindow : Window
             LogLine($"同步前先备份本机 {src} → {dest}（共 {files.Count} 项）...");
             await engine.RunAsync(OnFileProgress, m => LogLineError("跳过: " + m), _cts!.Token);
             LogBackupSummary("同步前备份", engine, files.Count);
-            await CompressAndRemoveFolderAsync(dest);
+            await CompressAndRemoveFolderAsync(dest, cbUpdateCompressZip.IsChecked == true);
             return true;
         }
         catch (OperationCanceledException)
@@ -500,7 +501,7 @@ public partial class MainWindow : Window
             await engine.RunAsync(OnFileProgress, m => LogLineError("跳过: " + m), _cts!.Token);
             LogBackupSummary("备份", engine, files.Count);
             txtStatus.Text = "备份完成";
-            await CompressAndRemoveFolderAsync(target);
+            await CompressAndRemoveFolderAsync(target, ShouldCompress);
         }
         catch (OperationCanceledException)
         {
@@ -593,7 +594,7 @@ public partial class MainWindow : Window
                     await client.BackupPullAsync(target, ReadBackupOptions(), preBackupBat, LogLine, OnFileProgress, OnTotal,
                         m => LogLineError("跳过: " + m), ct, LogLineError); okIps.Add(host);
                     LogLine($"备份完成: {host}");
-                    await CompressAndRemoveFolderAsync(target);
+                    await CompressAndRemoveFolderAsync(target, ShouldCompress);
                 }
                 catch (OperationCanceledException)
                 {
@@ -677,7 +678,7 @@ public partial class MainWindow : Window
             await engine.RunAsync(OnFileProgress, m => LogLineError("跳过: " + m), _cts!.Token);
             LogBackupSummary("共享备份", engine, files.Count);
             txtStatus.Text = "备份完成";
-            await CompressAndRemoveFolderAsync(target);
+            await CompressAndRemoveFolderAsync(target, ShouldCompress);
         }
         catch (OperationCanceledException)
         {
@@ -786,7 +787,8 @@ public partial class MainWindow : Window
             cbBackupBeforeSync.IsChecked ?? true,
             txtBackupDest.Text.Trim(),
             ReadBackupOptions(),
-            _settings.Settings.Backup.PreBackupScript);
+            _settings.Settings.Backup.PreBackupScript,
+            _settings.Settings.Backup.CompressUpdateZip);
         try
         {
             _server.Start();
@@ -1280,6 +1282,7 @@ LogLine, OnFileProgress, OnTotal,
         _settings.Settings.Backup.IgnoreRegexes = txtBackupIgnore.Text;
         _settings.Settings.Backup.IgnoreRegexEnabled = cbIgnoreEnabled.IsChecked ?? true;
         _settings.Settings.Backup.CompressZip = cbCompressZip.IsChecked ?? true;
+            _settings.Settings.Backup.CompressUpdateZip = cbUpdateCompressZip.IsChecked ?? true;
         _settings.Settings.Backup.RunPreBackupBat = cbRunPreBackupBat.IsChecked ?? true;
         _settings.Settings.Backup.AutoFetchComputerName = cbAutoFetchName.IsChecked == true;
         _settings.Settings.Transfer.Path = txtTransferPath.Text.Trim();

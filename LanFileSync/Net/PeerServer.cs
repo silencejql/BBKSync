@@ -19,12 +19,14 @@ public sealed class PeerServer : IDisposable
     private readonly Action<int> _onTotal;
     private readonly Action<string> _onError;
     private readonly string _preBackupScript;
+    private readonly bool _compressUpdateZip;
     private CancellationTokenSource _cts = new();
 
     public bool Running { get; private set; }
 
     public PeerServer(string root, int port, SyncOptions options, Action<string> log, Action<string, long> onFile, Action<int> onTotal,
-        Action<string> onError, bool backupBeforeSync, string backupDest, BackupOptions backupOptions, string preBackupScript)
+        Action<string> onError, bool backupBeforeSync, string backupDest, BackupOptions backupOptions, string preBackupScript,
+        bool compressUpdateZip)
     {
         _root = root;
         _options = options;
@@ -32,6 +34,7 @@ public sealed class PeerServer : IDisposable
         _backupDest = backupDest;
         _backupOptions = backupOptions;
         _preBackupScript = preBackupScript;
+        _compressUpdateZip = compressUpdateZip;
         _log = log;
         _onFile = onFile;
         _onTotal = onTotal;
@@ -76,8 +79,10 @@ public sealed class PeerServer : IDisposable
         try { _listener.Stop(); } catch { }
     }
 
-    private async Task CompressAndRemoveFolderAsync(string folderPath)
+    private async Task CompressAndRemoveFolderAsync(string folderPath, bool compress)
     {
+        if (!compress)
+            return;
         try
         {
             if (!Directory.Exists(folderPath))
@@ -179,7 +184,7 @@ public sealed class PeerServer : IDisposable
                             var files = be.Plan();
                             await be.RunAsync(null, m => _onError("同步前备份跳过: " + m), ct);
                             _log($"同步前备份完成（{files.Count} 项）");
-                            //await CompressAndRemoveFolderAsync(dest);
+                            await CompressAndRemoveFolderAsync(dest, _compressUpdateZip);
                         }
                         catch (ArgumentException)
                         {

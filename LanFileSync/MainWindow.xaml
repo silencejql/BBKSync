@@ -206,6 +206,9 @@
                                     <CheckBox x:Name="cbBackupBeforeSync" Margin="0,10,0,0" IsChecked="True"
                                               Content="同步更新前先备份被更新电脑的 BBK（规则同备份）"
                                               ToolTip="TCP 接收更新、从共享更新本机、或对方推送更新时，都会先把被更新那台电脑的 BBK 备份到&#x201c;备份目录&#x201d;再开始同步。" />
+                                    <CheckBox x:Name="cbUpdateCompressZip" Margin="0,6,0,0" IsChecked="True"
+                                              Content="备份完成后自动压缩为 zip（删除备份文件夹）"
+                                              ToolTip="勾选后，同步更新前的备份（本机或对方电脑）完成后自动打包成同名 zip 并删除备份文件夹。" />
                                 </StackPanel>
                             </Grid>
                         </TabItem>
