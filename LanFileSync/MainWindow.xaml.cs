@@ -130,13 +130,57 @@ public partial class MainWindow : Window
             return;
         }
 
+        using var tcp = new TcpClient();
         try
         {
-            using var tcp = new TcpClient();
             using var cts = new CancellationTokenSource(TimeSpan.FromSeconds(1));
             await tcp.ConnectAsync(host, port, cts.Token);
-            LogLine($"连接成功：{host}:{port}");
-            MessageBox.Show($"连接成功：{host}:{port}", "测试结果", MessageBoxButton.OK, MessageBoxImage.Information);
+            LogLine($"已连上 {host}:{port}，正在校验对方协议应答...");
+        }
+        catch (OperationCanceledException)
+        {
+            LogLineError($"连接超时：{host}:{port} - 1 秒内未建立连接（10060 超时：对方不可达，或防火墙静默丢弃）。");
+            MessageBox.Show($"连接超时：{host}:{port}\n1 秒内未建立连接（10060 超时：对方不可达，或防火墙静默丢弃）。",
+                "测试结果", MessageBoxButton.OK, MessageBoxImage.Warning);
+            return;
+        }
+        catch (SocketException ex)
+        {
+            string hint = ex.SocketErrorCode switch
+            {
+                SocketError.AccessDenied => "（10013 权限访问：多为本机安全软件/防火墙拦截该端口外发）",
+                SocketError.ConnectionRefused => "（10061 积极拒绝：对方端口未监听，服务没启动）",
+                SocketError.TimedOut => "（10060 超时：对方不可达，或防火墙静默丢弃）",
+                _ => $"（错误码 {(int)ex.SocketErrorCode}）",
+            };
+            LogLineError($"连接失败：{host}:{port} - {ex.Message} {hint}");
+            MessageBox.Show($"连接失败：{host}:{port}\n{ex.Message} {hint}",
+                "测试结果", MessageBoxButton.OK, MessageBoxImage.Warning);
+            return;
+        }
+
+        try
+        {
+            using var client = new PeerClient();
+            using var cts = new CancellationTokenSource(TimeSpan.FromSeconds(3));
+            await client.ConnectAsync(host, port, Constants.RoleProbe, cts.Token);
+            var (name, line) = await client.ProbeDeviceAsync(cts.Token);
+            string info = string.IsNullOrWhiteSpace(name) ? "" : $"（设备 {name}{(string.IsNullOrWhiteSpace(line) ? "" : "/" + line)}）";
+            LogLine($"连接正常：{host}:{port}，对方协议应答正确 {info}");
+            MessageBox.Show($"连接成功，对方服务应答正常。{info}\n{host}:{port}", "测试结果",
+                MessageBoxButton.OK, MessageBoxImage.Information);
+        }
+        catch (OperationCanceledException)
+        {
+            LogLineError($"已连上 {host}:{port}，但对方 3 秒内无协议应答：多为对方 BBKSync 进程僵死、重复实例占用端口，或对方跑的不是本程序。");
+            MessageBox.Show($"已连上 {host}:{port}，但对方无协议应答。\n多为：对方 BBKSync 进程僵死、重复实例占用端口，或对方跑的不是本程序。\n\n建议到对方机器：tasklist | findstr /i BBKSync 核对实例数，必要时 taskkill /f /im BBKSync 后重启。",
+                "测试结果", MessageBoxButton.OK, MessageBoxImage.Warning);
+        }
+        catch (IOException ex)
+        {
+            LogLineError($"已连上 {host}:{port}，但连接被对端立刻关闭：{ex.Message}");
+            MessageBox.Show($"已连上 {host}:{port}，但连接被对方立刻关闭。\n{ex.Message}\n\n多为对方服务未就绪或端口被其他程序占用。",
+                "测试结果", MessageBoxButton.OK, MessageBoxImage.Warning);
         }
         catch (Exception ex)
         {
