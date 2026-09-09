@@ -227,22 +227,26 @@ public partial class MainWindow : Window
         return new string(chars);
     }
 
-    private void LogLine(string msg) => LogLine(msg, SystemColors.ControlTextBrush);
+    private void LogLine(string msg) => LogLine(msg, Brushes.Black);
 
     private void LogLineError(string msg) => LogLine(msg, Brushes.Red);
 
     private void LogDivider() => LogLine("------------------------------------------------");
 
-    private void LogLine(string msg, System.Windows.Media.Brush brush)
+    private void LogLine(string msg, Brush brush)
     {
-        string line = $"[{DateTime.Now:HH:mm:ss}] {msg}";
+        string line = $"[{DateTime.Now:HH:mm:ss}] {msg}\n";
         Dispatcher.Invoke(() =>
         {
-            var tb = new TextBlock { Text = line, Foreground = brush, TextWrapping = TextWrapping.Wrap };
-            lbLog.Items.Add(tb);
-            lbLog.ScrollIntoView(tb);
-            if (lbLog.Items.Count > Constants.MaxLogEntries)
-                lbLog.Items.RemoveAt(0);
+            if (txtLog == null) return;
+            txtLog.AppendText(line);
+            if (txtLog.LineCount > Constants.MaxLogEntries)
+            {
+                int firstNewline = txtLog.Text.IndexOf('\n');
+                if (firstNewline >= 0)
+                    txtLog.Text = txtLog.Text.Substring(firstNewline + 1);
+            }
+            txtLog.ScrollToEnd();
         });
     }
 
@@ -1239,7 +1243,17 @@ LogLine, OnFileProgress, OnTotal,
 
     private void BtnClearLog_Click(object sender, RoutedEventArgs e)
     {
-        lbLog.Items.Clear();
+        if (txtLog != null) txtLog.Clear();
+    }
+
+    private void BtnCopyLog_Click(object sender, RoutedEventArgs e)
+    {
+        if (txtLog != null && !string.IsNullOrEmpty(txtLog.Text))
+        {
+            txtLog.SelectAll();
+            txtLog.Copy();
+            txtLog.SelectionLength = 0;
+        }
     }
 
     private void Window_StateChanged(object sender, EventArgs e)
@@ -1250,6 +1264,13 @@ LogLine, OnFileProgress, OnTotal,
 
     private void MainWindow_Loaded(object sender, RoutedEventArgs e)
     {
+        var screen = SystemParameters.PrimaryScreenWidth > 0 ? SystemParameters.PrimaryScreenWidth : 1920;
+        var screenH = SystemParameters.PrimaryScreenHeight > 0 ? SystemParameters.PrimaryScreenHeight : 1080;
+        Width = Math.Min(1200, screen * 0.85);
+        Height = Math.Min(900, screenH * 0.85);
+        Left = (screen - Width) / 2;
+        Top = (screenH - Height) / 2;
+
         tabs.SelectedIndex = 0;
         RefreshOpButtons();
         StartServer(showErrors: false);
