@@ -148,7 +148,7 @@ public partial class MainWindow : Window
         {
             string hint = ex.SocketErrorCode switch
             {
-                SocketError.AccessDenied => "（10013 权限访问：多为本机安全软件/防火墙拦截该端口外发）",
+                SocketError.AccessDenied => "（10013 权限访问：本机安全软件/防火墙拦截本程序外发连接；若程序放在桌面/深层局部目录运行，请改用纯英文目录如 C:\\BBKApp 再试）",
                 SocketError.ConnectionRefused => "（10061 积极拒绝：对方端口未监听，服务没启动）",
                 SocketError.TimedOut => "（10060 超时：对方不可达，或防火墙静默丢弃）",
                 _ => $"（错误码 {(int)ex.SocketErrorCode}）",
