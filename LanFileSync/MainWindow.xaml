@@ -315,13 +315,13 @@
                                                 <Border HorizontalAlignment="Stretch" Background="#FFFFFF"
                                                             BorderBrush="{StaticResource InputBorderBrush}" BorderThickness="1"
                                                             CornerRadius="5" SnapsToDevicePixels="True">
-                                                    <Grid Height="50" HorizontalAlignment="Stretch">
+                                                    <Grid Height="40" HorizontalAlignment="Stretch">
                                                         <PasswordBox x:Name="pwdUpdate" HorizontalAlignment="Stretch"
-                                                                     FontSize="14" Padding="10,6,36,6" BorderThickness="0"
+                                                                     FontSize="14" Padding="10,6,5,6" BorderThickness="0"
                                                                      Background="Transparent" VerticalContentAlignment="Center"
                                                                      KeyDown="PwdUpdate_KeyDown" />
                                                         <TextBox x:Name="txtUpdatePwd" HorizontalAlignment="Stretch"
-                                                                 FontSize="14" Padding="10,6,36,6" VerticalContentAlignment="Center"
+                                                                 FontSize="14" Padding="10,6,5,6" VerticalContentAlignment="Center"
                                                                  Visibility="Collapsed" BorderThickness="0" Background="Transparent"
                                                                  KeyDown="PwdUpdate_KeyDown" />
                                                         <Button x:Name="btnTogglePwd" Width="28" Height="28"
