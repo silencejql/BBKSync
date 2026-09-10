@@ -24,7 +24,7 @@ public sealed class BackupSection
     public bool LogRule { get; set; } = true;
     public int LogDays { get; set; } = 2;
     public bool IgnoreRegexEnabled { get; set; } = true;
-    public string IgnoreRegexes { get; set; } = "";
+    public string IgnoreRegexes { get; set; } = "副本|copy|-";
     public bool CompressZip { get; set; } = true;
     public bool CompressUpdateZip { get; set; } = true;
     public string LocalBackupName { get; set; } = "";
