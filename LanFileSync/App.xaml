@@ -88,7 +88,7 @@
             </Setter>
         </Style>
 
-        <!-- 输入框 -->
+        <!-- 输入框：圆角 + 蓝色发光聚焦 -->
         <Style TargetType="TextBox">
             <Setter Property="Foreground" Value="{StaticResource TextMainBrush}" />
             <Setter Property="Background" Value="#FFFFFF" />
@@ -105,14 +105,40 @@
                                 BorderBrush="{TemplateBinding BorderBrush}"
                                 BorderThickness="{TemplateBinding BorderThickness}"
                                 Padding="{TemplateBinding Padding}">
-                            <ScrollViewer x:Name="PART_ContentHost" Margin="1,0" VerticalAlignment="Center" />
+                            <Border.Effect>
+                                <DropShadowEffect x:Name="glow" ShadowDepth="0" BlurRadius="0"
+                                                  Color="#2563EB" Opacity="0" />
+                            </Border.Effect>
+                            <ScrollViewer x:Name="PART_ContentHost" Margin="1,0"
+                                          VerticalAlignment="Center" />
                         </Border>
                         <ControlTemplate.Triggers>
                             <Trigger Property="IsKeyboardFocused" Value="True">
-                                <Setter TargetName="bd" Property="BorderBrush" Value="{StaticResource AccentBrush}" />
+                                <Setter TargetName="bd" Property="BorderBrush"
+                                        Value="{StaticResource AccentBrush}" />
+                                <Trigger.EnterActions>
+                                    <BeginStoryboard>
+                                        <Storyboard>
+                                            <DoubleAnimation Storyboard.TargetProperty="(UIElement.Effect).(DropShadowEffect.BlurRadius)"
+                                                             To="5" Duration="0:0:0.10" />
+                                            <DoubleAnimation Storyboard.TargetProperty="(UIElement.Effect).(DropShadowEffect.Opacity)"
+                                                             To="0.12" Duration="0:0:0.10" />
+                                        </Storyboard>
+                                    </BeginStoryboard>
+                                </Trigger.EnterActions>
+                                <Trigger.ExitActions>
+                                    <BeginStoryboard>
+                                        <Storyboard>
+                                            <DoubleAnimation Storyboard.TargetProperty="(UIElement.Effect).(DropShadowEffect.BlurRadius)"
+                                                             To="0" Duration="0:0:0.15" />
+                                            <DoubleAnimation Storyboard.TargetProperty="(UIElement.Effect).(DropShadowEffect.Opacity)"
+                                                             To="0" Duration="0:0:0.15" />
+                                        </Storyboard>
+                                    </BeginStoryboard>
+                                </Trigger.ExitActions>
                             </Trigger>
                             <Trigger Property="IsEnabled" Value="False">
-                                <Setter TargetName="bd" Property="Opacity" Value="0.55" />
+                                <Setter TargetName="bd" Property="Opacity" Value="0.50" />
                             </Trigger>
                         </ControlTemplate.Triggers>
                     </ControlTemplate>
@@ -120,6 +146,7 @@
             </Setter>
         </Style>
 
+        <!-- 密码框：圆角 + 蓝色发光聚焦 -->
         <Style TargetType="PasswordBox">
             <Setter Property="Foreground" Value="{StaticResource TextMainBrush}" />
             <Setter Property="Background" Value="#FFFFFF" />
@@ -136,14 +163,136 @@
                                 BorderBrush="{TemplateBinding BorderBrush}"
                                 BorderThickness="{TemplateBinding BorderThickness}"
                                 Padding="{TemplateBinding Padding}">
-                            <ScrollViewer x:Name="PART_ContentHost" Margin="1,0" VerticalAlignment="Center" />
+                            <Border.Effect>
+                                <DropShadowEffect x:Name="glow" ShadowDepth="0" BlurRadius="0"
+                                                  Color="#2563EB" Opacity="0" />
+                            </Border.Effect>
+                            <ScrollViewer x:Name="PART_ContentHost" Margin="1,0"
+                                          VerticalAlignment="Center" />
                         </Border>
                         <ControlTemplate.Triggers>
                             <Trigger Property="IsKeyboardFocused" Value="True">
-                                <Setter TargetName="bd" Property="BorderBrush" Value="{StaticResource AccentBrush}" />
+                                <Setter TargetName="bd" Property="BorderBrush"
+                                        Value="{StaticResource AccentBrush}" />
+                                <Trigger.EnterActions>
+                                    <BeginStoryboard>
+                                        <Storyboard>
+                                            <DoubleAnimation Storyboard.TargetProperty="(UIElement.Effect).(DropShadowEffect.BlurRadius)"
+                                                             To="5" Duration="0:0:0.10" />
+                                            <DoubleAnimation Storyboard.TargetProperty="(UIElement.Effect).(DropShadowEffect.Opacity)"
+                                                             To="0.12" Duration="0:0:0.10" />
+                                        </Storyboard>
+                                    </BeginStoryboard>
+                                </Trigger.EnterActions>
+                                <Trigger.ExitActions>
+                                    <BeginStoryboard>
+                                        <Storyboard>
+                                            <DoubleAnimation Storyboard.TargetProperty="(UIElement.Effect).(DropShadowEffect.BlurRadius)"
+                                                             To="0" Duration="0:0:0.15" />
+                                            <DoubleAnimation Storyboard.TargetProperty="(UIElement.Effect).(DropShadowEffect.Opacity)"
+                                                             To="0" Duration="0:0:0.15" />
+                                        </Storyboard>
+                                    </BeginStoryboard>
+                                </Trigger.ExitActions>
                             </Trigger>
                             <Trigger Property="IsEnabled" Value="False">
-                                <Setter TargetName="bd" Property="Opacity" Value="0.55" />
+                                <Setter TargetName="bd" Property="Opacity" Value="0.50" />
+                            </Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+
+        <!-- 下拉框：圆角 + 蓝色发光聚焦 + 自定义箭头 -->
+        <Style TargetType="ComboBox">
+            <Setter Property="Foreground" Value="{StaticResource TextMainBrush}" />
+            <Setter Property="Background" Value="#FFFFFF" />
+            <Setter Property="BorderBrush" Value="{StaticResource InputBorderBrush}" />
+            <Setter Property="BorderThickness" Value="1" />
+            <Setter Property="MinHeight" Value="30" />
+            <Setter Property="Padding" Value="8,0" />
+            <Setter Property="VerticalContentAlignment" Value="Center" />
+            <Setter Property="Cursor" Value="Hand" />
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="ComboBox">
+                        <Grid x:Name="root">
+                            <Border x:Name="bd" CornerRadius="5" SnapsToDevicePixels="True"
+                                    Background="{TemplateBinding Background}"
+                                    BorderBrush="{TemplateBinding BorderBrush}"
+                                    BorderThickness="{TemplateBinding BorderThickness}"
+                                    Padding="{TemplateBinding Padding}">
+                                <Border.Effect>
+                                    <DropShadowEffect x:Name="glow" ShadowDepth="0" BlurRadius="0"
+                                                      Color="#2563EB" Opacity="0" />
+                                </Border.Effect>
+                                <Grid>
+                                    <ContentPresenter x:Name="cp" IsHitTestVisible="False"
+                                                      Content="{TemplateBinding SelectionBoxItem}"
+                                                      ContentTemplate="{TemplateBinding SelectionBoxItemTemplate}"
+                                                      Margin="0,1"
+                                                      VerticalAlignment="{TemplateBinding VerticalContentAlignment}"
+                                                      HorizontalAlignment="Left" />
+                                    <ToggleButton x:Name="toggleButton" Focusable="False"
+                                                  IsChecked="{Binding IsDropDownOpen, Mode=TwoWay, RelativeSource={RelativeSource TemplatedParent}}"
+                                                  ClickMode="Press" HorizontalAlignment="Right"
+                                                  Width="24" Background="Transparent" BorderThickness="0">
+                                        <Canvas Width="10" Height="6" HorizontalAlignment="Center" VerticalAlignment="Center">
+                                            <Path Data="M0,0 L5,5 L10,0" Stroke="{StaticResource TextSubBrush}"
+                                                  StrokeThickness="1.5" StrokeStartLineCap="Round"
+                                                  StrokeEndLineCap="Round" StrokeLineJoin="Round"
+                                                  Canvas.Left="0" Canvas.Top="-1" />
+                                        </Canvas>
+                                    </ToggleButton>
+                                </Grid>
+                            </Border>
+                            <Popup x:Name="PART_Popup" IsOpen="{TemplateBinding IsDropDownOpen}"
+                                   Placement="Bottom" AllowsTransparency="True" Focusable="False"
+                                   PopupAnimation="Slide">
+                                <Border x:Name="ddBorder" Background="#FFFFFF"
+                                        BorderBrush="{StaticResource InputBorderBrush}"
+                                        BorderThickness="1" CornerRadius="5"
+                                        MaxHeight="{TemplateBinding MaxDropDownHeight}"
+                                        MinWidth="{TemplateBinding ActualWidth}"
+                                        Margin="0,2,0,0" Padding="2">
+                                    <Border.Effect>
+                                        <DropShadowEffect ShadowDepth="2" BlurRadius="8"
+                                                          Color="#000000" Opacity="0.12" />
+                                    </Border.Effect>
+                                    <ScrollViewer>
+                                        <StackPanel IsItemsHost="True" />
+                                    </ScrollViewer>
+                                </Border>
+                            </Popup>
+                        </Grid>
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="IsKeyboardFocused" Value="True">
+                                <Setter TargetName="bd" Property="BorderBrush"
+                                        Value="{StaticResource AccentBrush}" />
+                                <Trigger.EnterActions>
+                                    <BeginStoryboard>
+                                        <Storyboard>
+                                            <DoubleAnimation Storyboard.TargetProperty="(UIElement.Effect).(DropShadowEffect.BlurRadius)"
+                                                             To="5" Duration="0:0:0.10" />
+                                            <DoubleAnimation Storyboard.TargetProperty="(UIElement.Effect).(DropShadowEffect.Opacity)"
+                                                             To="0.12" Duration="0:0:0.10" />
+                                        </Storyboard>
+                                    </BeginStoryboard>
+                                </Trigger.EnterActions>
+                                <Trigger.ExitActions>
+                                    <BeginStoryboard>
+                                        <Storyboard>
+                                            <DoubleAnimation Storyboard.TargetProperty="(UIElement.Effect).(DropShadowEffect.BlurRadius)"
+                                                             To="0" Duration="0:0:0.15" />
+                                            <DoubleAnimation Storyboard.TargetProperty="(UIElement.Effect).(DropShadowEffect.Opacity)"
+                                                             To="0" Duration="0:0:0.15" />
+                                        </Storyboard>
+                                    </BeginStoryboard>
+                                </Trigger.ExitActions>
+                            </Trigger>
+                            <Trigger Property="IsEnabled" Value="False">
+                                <Setter TargetName="bd" Property="Opacity" Value="0.50" />
                             </Trigger>
                         </ControlTemplate.Triggers>
                     </ControlTemplate>
@@ -171,16 +320,23 @@
             </Setter>
         </Style>
 
-        <!-- 进度条 -->
+        <!-- 进度条：渐变填充 -->
         <Style TargetType="ProgressBar">
             <Setter Property="Height" Value="8" />
             <Setter Property="Template">
                 <Setter.Value>
                     <ControlTemplate TargetType="ProgressBar">
-                        <Border Background="#E9ECF2" CornerRadius="4">
+                        <Border Background="#E9ECF2" CornerRadius="4" SnapsToDevicePixels="True">
                             <Grid x:Name="PART_Track">
                                 <Border x:Name="PART_Indicator" HorizontalAlignment="Left"
-                                        Background="{StaticResource AccentBrush}" CornerRadius="4" />
+                                        CornerRadius="4" ClipToBounds="True">
+                                    <Border.Background>
+                                        <LinearGradientBrush StartPoint="0,0" EndPoint="1,0">
+                                            <GradientStop Color="#2563EB" Offset="0" />
+                                            <GradientStop Color="#60A5FA" Offset="1" />
+                                        </LinearGradientBrush>
+                                    </Border.Background>
+                                </Border>
                             </Grid>
                         </Border>
                     </ControlTemplate>
@@ -188,14 +344,21 @@
             </Setter>
         </Style>
 
-        <!-- 复选/单选 -->
+        <!-- 复选框：粗体 -->
         <Style TargetType="CheckBox">
             <Setter Property="Foreground" Value="{StaticResource TextMainBrush}" />
+            <Setter Property="FontWeight" Value="Bold" />
             <Setter Property="VerticalContentAlignment" Value="Center" />
+            <Setter Property="Cursor" Value="Hand" />
         </Style>
+
+        <!-- 单选按钮 -->
         <Style TargetType="RadioButton">
             <Setter Property="Foreground" Value="{StaticResource TextMainBrush}" />
+            <Setter Property="FontWeight" Value="Bold" />
             <Setter Property="VerticalContentAlignment" Value="Center" />
+            <Setter Property="Cursor" Value="Hand" />
         </Style>
+
     </Application.Resources>
 </Application>
