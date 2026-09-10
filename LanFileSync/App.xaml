@@ -268,40 +268,6 @@
             </Setter>
         </Style>
 
-        <!-- 标签页：圆角 -->
-        <Style TargetType="TabItem">
-            <Setter Property="MinWidth" Value="100" />
-            <Setter Property="Padding" Value="20,10" />
-            <Setter Property="Margin" Value="2,0,2,0" />
-            <Setter Property="Foreground" Value="{StaticResource TextSubBrush}" />
-            <Setter Property="Cursor" Value="Hand" />
-            <Setter Property="Template">
-                <Setter.Value>
-                    <ControlTemplate TargetType="TabItem">
-                        <Border x:Name="tabBorder" CornerRadius="8,8,0,0"
-                                Background="Transparent" Padding="{TemplateBinding Padding}"
-                                BorderThickness="1,1,1,0" BorderBrush="Transparent">
-                            <ContentPresenter x:Name="cp" HorizontalAlignment="Center"
-                                              VerticalAlignment="Center"
-                                              RecognizesAccessKey="True" />
-                        </Border>
-                        <ControlTemplate.Triggers>
-                            <Trigger Property="IsMouseOver" Value="True">
-                                <Setter TargetName="tabBorder" Property="Background" Value="#F1F5F9" />
-                            </Trigger>
-                            <Trigger Property="IsSelected" Value="True">
-                                <Setter TargetName="tabBorder" Property="Background" Value="#FFFFFF" />
-                                <Setter TargetName="tabBorder" Property="BorderBrush"
-                                        Value="{StaticResource CardBorderBrush}" />
-                                <Setter Property="Foreground" Value="{StaticResource AccentBrush}" />
-                                <Setter Property="FontWeight" Value="SemiBold" />
-                            </Trigger>
-                        </ControlTemplate.Triggers>
-                    </ControlTemplate>
-                </Setter.Value>
-            </Setter>
-        </Style>
-
         <!-- 复选框：粗体 -->
         <Style TargetType="CheckBox">
             <Setter Property="Foreground" Value="{StaticResource TextMainBrush}" />
