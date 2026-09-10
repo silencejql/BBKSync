@@ -368,6 +368,24 @@ public partial class MainWindow : Window
     }
     private void Window_StateChanged(object sender, EventArgs e) { if (WindowState == WindowState.Minimized && _tray != null) Hide(); }
 
+    private void TitleMin_Click(object sender, RoutedEventArgs e) { WindowState = WindowState.Minimized; }
+
+    private void TitleMax_Click(object sender, RoutedEventArgs e)
+    {
+        if (WindowState == WindowState.Maximized)
+        {
+            WindowState = WindowState.Normal;
+        }
+        else
+        {
+            MaxHeight = SystemParameters.MaximizedPrimaryScreenHeight;
+            MaxWidth = SystemParameters.MaximizedPrimaryScreenWidth;
+            WindowState = WindowState.Maximized;
+        }
+    }
+
+    private void TitleClose_Click(object sender, RoutedEventArgs e) { Close(); }
+
     private void MainWindow_Loaded(object sender, RoutedEventArgs e)
     {
         var screen = SystemParameters.PrimaryScreenWidth > 0 ? SystemParameters.PrimaryScreenWidth : 1920;
