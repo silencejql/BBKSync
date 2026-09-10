@@ -31,6 +31,7 @@ public partial class MainWindow : Window
         BindSettingsToControls();
         ReloadHistoryCombo();
         EnsureUpdateBat();
+        EnsurePostBackupBat();
         var localIp = GetLocalIPs().FirstOrDefault(ip => !ip.StartsWith("127.", StringComparison.Ordinal)) ?? "";
         if (!string.IsNullOrEmpty(localIp)) cboPeerIp.Text = localIp;
         LogLine("工具已启动，使用目录: " + txtRoot.Text);
@@ -57,7 +58,25 @@ public partial class MainWindow : Window
             "timeout /t 2 /nobreak >nul\r\n" +
             "del /f /q \"" + exeName + "\" >nul 2>&1\r\n" +
             "ren BBKSync_New.exe " + exeName + "\r\n" +
-            "start \"\" \"" + exeDir + "\\" + exeName + "\"\r\n";
+            "start /min \" \" \"" + exeDir + "\\" + exeName + "\"\r\n";
+        File.WriteAllText(batPath, content);
+    }
+
+    private static void EnsurePostBackupBat()
+    {
+        string batPath = Path.Combine(AppPaths.ExeDir(), "PostgreSQL_Backup.bat");
+        if (File.Exists(batPath))
+        {
+            string existing = File.ReadAllText(batPath);
+            if (!string.IsNullOrWhiteSpace(existing)) return;
+        }
+        string content =
+            "@echo off\r\n" +
+            "set DBName=LocalDB\r\n" +
+            "set FileName=%DBName%_AutoBackup_%date:~0,4%%date:~5,2%%date:~8,2%.backup\r\n" +
+            "set BACKUP_DIR=D:\\BBK\\DataBase\r\n" +
+            "if not exist \"D:\\BBK\\DataBase\" (md D:\\BBK\\DataBase)\r\n" +
+            "C:/\"Program Files (x86)\"/PostgreSQL/9.5/bin/pg_dump.exe --host localhost --port 5432 --username \"postgres\" --no-password --format custom --verbose --file \"%BACKUP_DIR%\\%FileName%\" \"%DBName%\"";
         File.WriteAllText(batPath, content);
     }
 
@@ -228,7 +247,7 @@ public partial class MainWindow : Window
         var options = ReadOptions();
         _server = new PeerServer(root, port, options, LogLine, OnFileProgress, OnTotal, m => LogLineError("执行失败: " + m),
             cbBackupBeforeSync.IsChecked ?? true, txtBackupDest.Text.Trim(), ReadBackupOptions(),
-            _settings.Settings.Backup.PreBackupScript, _settings.Settings.Backup.CompressUpdateZip);
+            _settings.Settings.Backup.CompressUpdateZip);
         try
         {
             _server.Start();
@@ -345,8 +364,10 @@ public partial class MainWindow : Window
     private async Task<bool> RunPreBackupBatAsync()
     {
         if (cbRunPreBackupBat.IsChecked != true) return true;
-        string script = _settings.Settings.Backup.PreBackupScript;
-        if (string.IsNullOrWhiteSpace(script)) { LogLineError("未配置备份前脚本（settings.json 的 PreBackupScript 为空），跳过"); return true; }
+        string batPath = Path.Combine(AppPaths.ExeDir(), "PostgreSQL_Backup.bat");
+        if (!File.Exists(batPath) || new FileInfo(batPath).Length == 0)
+        { LogLineError("PostgreSQL_Backup.bat 不存在或为空，跳过备份前脚本"); return true; }
+        string script = File.ReadAllText(batPath);
         LogDivider(); LogLine("开始执行备份前脚本 ...");
         try { string? err = await Task.Run(() => ScriptRunner.Run(script, AppPaths.ExeDir(), LogLine)); if (err != null) { LogLineError(err + "，继续备份"); } else { LogLine("备份前脚本执行完成"); } }
         catch (Exception ex) { LogLineError("执行备份前脚本异常，继续备份: " + ex.Message); }

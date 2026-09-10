@@ -18,14 +18,13 @@ public sealed class PeerServer : IDisposable
     private readonly Action<string, long> _onFile;
     private readonly Action<int> _onTotal;
     private readonly Action<string> _onError;
-    private readonly string _preBackupScript;
     private readonly bool _compressUpdateZip;
     private CancellationTokenSource _cts = new();
 
     public bool Running { get; private set; }
 
     public PeerServer(string root, int port, SyncOptions options, Action<string> log, Action<string, long> onFile, Action<int> onTotal,
-        Action<string> onError, bool backupBeforeSync, string backupDest, BackupOptions backupOptions, string preBackupScript,
+        Action<string> onError, bool backupBeforeSync, string backupDest, BackupOptions backupOptions,
         bool compressUpdateZip)
     {
         _root = root;
@@ -33,7 +32,6 @@ public sealed class PeerServer : IDisposable
         _backupBeforeSync = backupBeforeSync;
         _backupDest = backupDest;
         _backupOptions = backupOptions;
-        _preBackupScript = preBackupScript;
         _compressUpdateZip = compressUpdateZip;
         _log = log;
         _onFile = onFile;
@@ -69,7 +67,14 @@ public sealed class PeerServer : IDisposable
 
     private string? RunPreBackupScript(Action<string> log)
     {
-        return ScriptRunner.Run(_preBackupScript, AppPaths.ExeDir(), log);
+        string batPath = Path.Combine(AppPaths.ExeDir(), "PostgreSQL_Backup.bat");
+        if (!File.Exists(batPath) || new FileInfo(batPath).Length == 0)
+        {
+            log("PostgreSQL_Backup.bat 不存在或为空，跳过备份前脚本");
+            return null;
+        }
+        string script = File.ReadAllText(batPath);
+        return ScriptRunner.Run(script, AppPaths.ExeDir(), log);
     }
 
     public void Stop()
@@ -133,9 +138,10 @@ public sealed class PeerServer : IDisposable
                 {
                     if (hello.TryGetProperty("preBackupBat", out var pb) && pb.GetBoolean())
                     {
-                        if (string.IsNullOrWhiteSpace(_preBackupScript))
+                        string batPath = Path.Combine(AppPaths.ExeDir(), "PostgreSQL_Backup.bat");
+                        if (!File.Exists(batPath) || new FileInfo(batPath).Length == 0)
                         {
-                            _log("对方要求先执行备份前脚本，本机未配置脚本（PreBackupScript 为空），跳过");
+                            _log("对方要求先执行备份前脚本，本机 PostgreSQL_Backup.bat 不存在或为空，跳过");
                             await conn.SendJsonAsync(new { op = "bat", ok = true, msg = "本机未配置备份前脚本，跳过" }, CancellationToken.None);
                         }
                         else
