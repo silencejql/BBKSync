@@ -312,29 +312,34 @@
                                             <StackPanel HorizontalAlignment="Center" VerticalAlignment="Center" Width="500">
                                                 <TextBlock Text="请输入密码以使用更新功能" FontSize="18"
                                                            Foreground="{StaticResource TextMainBrush}" HorizontalAlignment="Center" Margin="0,10,0,5" />
-                                                <Grid Height="50" HorizontalAlignment="Stretch">
-                                                    <PasswordBox x:Name="pwdUpdate" HorizontalAlignment="Stretch"
-                                                                 FontSize="14" Padding="8,6" BorderThickness="0"
+                                                <Border HorizontalAlignment="Stretch" Background="#FFFFFF"
+                                                            BorderBrush="{StaticResource InputBorderBrush}" BorderThickness="1"
+                                                            CornerRadius="5" SnapsToDevicePixels="True">
+                                                    <Grid Height="50" HorizontalAlignment="Stretch">
+                                                        <PasswordBox x:Name="pwdUpdate" HorizontalAlignment="Stretch"
+                                                                     FontSize="14" Padding="10,6,36,6" BorderThickness="0"
+                                                                     Background="Transparent" VerticalContentAlignment="Center"
+                                                                     KeyDown="PwdUpdate_KeyDown" />
+                                                        <TextBox x:Name="txtUpdatePwd" HorizontalAlignment="Stretch"
+                                                                 FontSize="14" Padding="10,6,36,6" VerticalContentAlignment="Center"
+                                                                 Visibility="Collapsed" BorderThickness="0" Background="Transparent"
                                                                  KeyDown="PwdUpdate_KeyDown" />
-                                                    <TextBox x:Name="txtUpdatePwd" HorizontalAlignment="Stretch"
-                                                             FontSize="14" Padding="36,6,8,6" VerticalContentAlignment="Center"
-                                                             Visibility="Collapsed" BorderThickness="0"
-                                                             KeyDown="PwdUpdate_KeyDown" />
-                                                    <Button x:Name="btnTogglePwd" Width="28" Height="28"
-                                                            HorizontalAlignment="Right" Margin="0,0,6,0"
-                                                            Cursor="Hand" Background="Transparent" BorderThickness="0"
-                                                            Click="BtnTogglePwd_Click"
-                                                            ToolTip="显示 / 隐藏密码">
-                                                        <Viewbox Width="16" Height="16">
-                                                            <Canvas Width="24" Height="24">
-                                                                <Path x:Name="eyeSlash" Data="M12,4.5C7,4.5 2.73,7.61 1,12 C2.73,16.39 7,19.5 12,19.5 C17,19.5 21.27,16.39 23,12 C21.27,7.61 17,4.5 12,4.5Z M12,17C9.24,17 7,14.76 7,12 C7,9.24 9.24,7 12,7 C14.76,7 17,9.24 17,12 C17,14.76 14.76,17 12,17Z M9.86,13.13 L12,10.99 L14.14,13.13 L12.71,14.56 L12,13.85 L11.29,14.56 Z"
+                                                        <Button x:Name="btnTogglePwd" Width="28" Height="28"
+                                                                HorizontalAlignment="Right" Margin="0,0,6,0"
+                                                                Cursor="Hand" Background="Transparent" BorderThickness="0"
+                                                                Click="BtnTogglePwd_Click"
+                                                                ToolTip="显示 / 隐藏密码">
+                                                            <Grid>
+                                                                <Path x:Name="eyeIcon" Stretch="Uniform" Width="18" Height="18"
+                                                                      Data="M12 4.5C7 4.5 2.73 7.61 1 12c1.73 4.39 6 7.5 11 7.5s9.27-3.11 11-7.5c-1.73-4.39-6-7.5-11-7.5zM12 17c-2.76 0-5-2.24-5-5s2.24-5 5-5 5 2.24 5 5-2.24 5-5 5zm0-8c-1.66 0-3 1.34-3 3s1.34 3 3 3 3-1.34 3-3-1.34-3-3-3z"
                                                                       Fill="{StaticResource TextSubBrush}" />
-                                                                <Line x:Name="eyeLine" X1="3" Y1="3" X2="21" Y2="21"
-                                                                      Stroke="{StaticResource TextSubBrush}" StrokeThickness="2" Visibility="Collapsed" />
-                                                            </Canvas>
-                                                        </Viewbox>
-                                                    </Button>
-                                                </Grid>
+                                                                <Line x:Name="eyeLine" X1="2" Y1="2" X2="22" Y2="22"
+                                                                      Stroke="{StaticResource TextSubBrush}" StrokeThickness="2"
+                                                                      Visibility="Collapsed" />
+                                                            </Grid>
+                                                        </Button>
+                                                    </Grid>
+                                                </Border>
                                                 <Button Content="确认" Padding="14,6" HorizontalAlignment="Center"
                                                         Margin="0,5,0,0" Click="BtnUpdateUnlock_Click"
                                                         Style="{StaticResource AccentButton}" />
