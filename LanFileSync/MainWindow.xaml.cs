@@ -383,10 +383,11 @@ public partial class MainWindow : Window
         if (btnSync == null || btnBackup == null || btnUpdateProgram == null || tabs == null) return;
         bool isBackup = tabs.SelectedIndex == 0;
         bool isBbkUpdate = tabs.SelectedIndex == 1;
+        bool isFileTransfer = tabs.SelectedIndex == 2;
         bool isUpdateProgram = tabs.SelectedIndex == 3;
         bool pwdOk = updateOverlay.Visibility != Visibility.Visible;
         btnBackup.IsEnabled = !_coordinator.Busy && isBackup;
-        btnSync.IsEnabled = !_coordinator.Busy && isBbkUpdate && pwdOk;
+        btnSync.IsEnabled = !_coordinator.Busy && ((isBbkUpdate && pwdOk) || isFileTransfer);
         btnUpdateProgram.IsEnabled = !_coordinator.Busy && isUpdateProgram;
     }
     private void SetBusy(bool busy)
