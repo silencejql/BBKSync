@@ -512,7 +512,9 @@ public partial class MainWindow : Window
         Width = Math.Min(1200, screen * 0.85); Height = Math.Min(900, screenH * 0.85);
         Left = (screen - Width) / 2; Top = (screenH - Height) / 2;
         tabs.SelectedIndex = 0; RefreshOpButtons(); StartServer(showErrors: false);
-        if (_settings.Settings.Server.AutoStartAndListen)
+        bool minimizeToTray = _settings.Settings.Server.AutoStartAndListen
+            || Environment.GetCommandLineArgs().Any(a => a.Equals("--minimized", StringComparison.OrdinalIgnoreCase));
+        if (minimizeToTray)
         {
             _tray = new TrayIcon(ShowMainWindow, ExitApp); _tray.Show(); Hide();
             _tray.Notify("BBK 工具已在后台运行，双击托盘图标可打开主界面，右键图标可完全退出。");
