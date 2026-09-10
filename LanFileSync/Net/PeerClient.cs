@@ -174,4 +174,46 @@ public sealed class PeerClient : IDisposable
         _conn?.Dispose();
         _tcp?.Dispose();
     }
+
+    public async Task UpdateAsync(
+        string exePath,
+        string batPath,
+        string batContent,
+        Action<string> log,
+        CancellationToken ct)
+    {
+        var frame = await _conn!.RecvJsonAsync(ct)
+            ?? throw new EndOfStreamException("连接已断开");
+        if (frame.GetProperty("op").GetString() != "ready")
+            throw new InvalidOperationException("对方未就绪");
+
+        log("正在发送更新脚本...");
+        await _conn.SendJsonAsync(new { op = "bat", content = batContent }, ct);
+
+        log("正在发送程序文件...");
+        var fi = new FileInfo(exePath);
+        long size = fi.Length;
+        await _conn.SendJsonAsync(new { op = "exe", s = size }, ct);
+
+        var buf = new byte[128 * 1024];
+        using (var fs = new FileStream(exePath, FileMode.Open, FileAccess.Read, FileShare.ReadWrite, 128 * 1024, FileOptions.SequentialScan))
+        {
+            long remaining = size;
+            while (remaining > 0)
+            {
+                int read = await fs.ReadAsync(buf.AsMemory(0, (int)Math.Min(buf.Length, remaining)), ct);
+                if (read <= 0) throw new EndOfStreamException("读取程序文件失败");
+                await _conn.SendRawAsync(buf, read, ct);
+                remaining -= read;
+            }
+        }
+
+        log("等待对方执行更新...");
+        var resp = await _conn.RecvJsonAsync(ct)
+            ?? throw new EndOfStreamException("连接已断开");
+        string op = resp.GetProperty("op").GetString()!;
+        if (op == "err")
+            throw new InvalidOperationException(resp.GetProperty("msg").GetString());
+        log("远端程序更新完成");
+    }
 }

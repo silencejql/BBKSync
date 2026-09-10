@@ -17,6 +17,7 @@ internal static class Constants
     internal const string RolePull = "pull";
     internal const string RoleProbe = "probe";
     internal const string RoleTransfer = "transfer";
+    internal const string RoleUpdate = "update";
     internal const string DefaultShareName = "c$";
     internal const string DefaultSharePath = "c$\\BBK";
 

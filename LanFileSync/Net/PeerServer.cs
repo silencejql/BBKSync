@@ -247,6 +247,64 @@ public sealed class PeerServer : IDisposable
                     await conn.SendJsonAsync(new { op = "bye", msgs = engine.TransferMessages }, ct);
                     _log("传输应用完成");
                 }
+                else if (role == Constants.RoleUpdate)
+                {
+                    _log("收到更新程序请求，准备接收更新文件...");
+                    await conn.SendJsonAsync(new { op = "ready" }, ct);
+
+                    var batMsg = await conn.RecvJsonAsync(ct)
+                        ?? throw new EndOfStreamException("连接已断开");
+                    if (batMsg.GetProperty("op").GetString() != "bat")
+                        throw new InvalidOperationException("期望 bat 消息");
+                    string batContent = batMsg.GetProperty("content").GetString()!;
+
+                    var exeMsg = await conn.RecvJsonAsync(ct)
+                        ?? throw new EndOfStreamException("连接已断开");
+                    if (exeMsg.GetProperty("op").GetString() != "exe")
+                        throw new InvalidOperationException("期望 exe 消息");
+                    long exeSize = exeMsg.GetProperty("s").GetInt64();
+
+                    string workDir = AppPaths.ExeDir();
+                    string batPath = Path.Combine(workDir, "Update_BBKSync.bat");
+                    string newExePath = Path.Combine(workDir, "BBKSync_New.exe");
+                    string curExePath = Environment.ProcessPath ?? Path.Combine(workDir, "BBKSync.exe");
+
+                    File.WriteAllText(batPath, batContent);
+
+                    using (var fs = new FileStream(newExePath, FileMode.Create, FileAccess.Write, FileShare.None, 128 * 1024))
+                    {
+                        long remaining = exeSize;
+                        var buf = new byte[128 * 1024];
+                        while (remaining > 0)
+                        {
+                            int toRead = (int)Math.Min(buf.Length, remaining);
+                            await conn.ReadRawAsync(buf, toRead, ct);
+                            await fs.WriteAsync(buf.AsMemory(0, toRead), ct);
+                            remaining -= toRead;
+                        }
+                    }
+                    _log("更新文件接收完成，正在执行更新脚本...");
+
+                    await conn.SendJsonAsync(new { op = "ok", msg = "文件已接收，即将执行更新" }, ct);
+                    try { tcp.Close(); } catch { }
+
+                    _ = Task.Run(async () =>
+                    {
+                        await Task.Delay(1000);
+                        try
+                        {
+                            var psi = new System.Diagnostics.ProcessStartInfo
+                            {
+                                FileName = "cmd.exe",
+                                Arguments = $"/c \"{batPath}\"",
+                                UseShellExecute = false,
+                                CreateNoWindow = true,
+                            };
+                            System.Diagnostics.Process.Start(psi);
+                        }
+                        catch { }
+                    });
+                }
                 else
                 {
                     await conn.SendJsonAsync(new { op = "err", msg = "未知角色: " + role }, CancellationToken.None);

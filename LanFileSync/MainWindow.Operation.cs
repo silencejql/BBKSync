@@ -304,4 +304,75 @@ public partial class MainWindow
         if (rowLocalName != null) rowLocalName.Visibility = Visibility.Visible;
         UpdateShareVisibility();
     }
+
+    private async void BtnUpdateProgram_Click(object sender, RoutedEventArgs e)
+    {
+        string host = cboPeerIp.Text.Trim();
+        if (string.IsNullOrWhiteSpace(host)) { MessageBox.Show("请输入远端电脑 IP。", "提示", MessageBoxButton.OK, MessageBoxImage.Information); return; }
+        int port = int.TryParse(txtPeerPort.Text.Trim(), out int p) ? p : Constants.DefaultPort;
+
+        string exePath = Environment.ProcessPath ?? "";
+        if (string.IsNullOrEmpty(exePath) || !File.Exists(exePath))
+        { MessageBox.Show("无法获取当前程序路径。", "错误", MessageBoxButton.OK, MessageBoxImage.Error); return; }
+
+        string batPath = EnsureUpdateBat();
+        string batContent = File.ReadAllText(batPath);
+
+        List<string> hosts = IpHelper.ExpandIps(host);
+        var failed = new List<string>();
+        var okIps = new List<string>();
+
+        StartBusy();
+        txtStatus.Text = $"正在更新远端程序...";
+        LogLine($"========== 开始更新远端程序 ==========");
+        LogLine($"目标: {host}，端口: {port}");
+
+        foreach (string h in hosts)
+        {
+            try
+            {
+                LogLine($"--- 连接 {h}:{port} ---");
+                using var client = new PeerClient();
+                await client.ConnectAsync(h, port, Constants.RoleUpdate, _coordinator.Token);
+                LogLine("已连接，正在发送更新文件...");
+                await client.UpdateAsync(exePath, batPath, batContent, m => LogLine(m), _coordinator.Token);
+                okIps.Add(h);
+                LogLine($"{h} 更新完成");
+            }
+            catch (OperationCanceledException) { LogLine("操作已取消"); break; }
+            catch (Exception ex)
+            {
+                LogLineError($"{h} 更新失败: {ex.Message}");
+                failed.Add(h);
+            }
+        }
+
+        {
+            if (okIps.Count > 0) { foreach (var ip in okIps) _history.Upsert(ip, port); ReloadHistoryCombo(); }
+            EndBusy();
+        }
+        if (okIps.Count > 0) txtStatus.Text = hosts.Count > 1 ? $"更新完成（{okIps.Count}/{hosts.Count} 台）" : "更新完成";
+        if (failed.Count > 0) MessageBox.Show("以下电脑更新失败：\n" + string.Join("\n", failed), "部分失败", MessageBoxButton.OK, MessageBoxImage.Warning);
+    }
+
+    private string EnsureUpdateBat()
+    {
+        string batPath = Path.Combine(AppPaths.ExeDir(), "Update_BBKSync.bat");
+        if (File.Exists(batPath)) return batPath;
+        string exeDir = AppPaths.ExeDir();
+        string exeName = Path.GetFileName(Environment.ProcessPath ?? "BBKSync.exe");
+        string content =
+            "@echo off\r\n" +
+            "chcp 65001 >nul 2>&1\r\n" +
+            "cd /d \"" + exeDir + "\"\r\n" +
+            "echo 等待关闭 " + exeName + " ...\r\n" +
+            "timeout /t 3 /nobreak >nul\r\n" +
+            "taskkill /f /im " + exeName + " >nul 2>&1\r\n" +
+            "timeout /t 2 /nobreak >nul\r\n" +
+            "del /f /q \"" + exeName + "\" >nul 2>&1\r\n" +
+            "ren BBKSync_New.exe " + exeName + "\r\n" +
+            "start \"\" \"" + exeDir + "\\" + exeName + "\"\r\n";
+        File.WriteAllText(batPath, content);
+        return batPath;
+    }
 }

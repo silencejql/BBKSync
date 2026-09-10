@@ -402,6 +402,40 @@
                                         </StackPanel>
                                     </Grid>
                                 </TabItem>
+                                <TabItem Header="程序更新" Width="100">
+                                    <Grid Margin="6,10,6,6">
+                                        <Grid.ColumnDefinitions>
+                                            <ColumnDefinition Width="*" />
+                                            <ColumnDefinition Width="Auto" />
+                                            <ColumnDefinition Width="*" />
+                                        </Grid.ColumnDefinitions>
+                                        <StackPanel>
+                                            <TextBlock Text="更新远端电脑的 BBKSync 程序" FontWeight="SemiBold"
+                                                       Foreground="{StaticResource TextSubBrush}" Margin="0,0,0,6" />
+                                            <TextBlock TextWrapping="Wrap" Foreground="{StaticResource TextSubBrush}" FontSize="11"
+                                                       Text="将本机当前运行的 BBKSync.exe 发送到远端电脑并自动替换。&#x0a;远端电脑需先启动 BBK 服务。" />
+                                            <TextBlock Margin="0,10,0,0" FontWeight="SemiBold"
+                                                       Foreground="{StaticResource TextSubBrush}" Text="更新步骤：" />
+                                            <TextBlock Margin="0,4,0,0" Foreground="{StaticResource TextSubBrush}" FontSize="11" TextWrapping="Wrap"
+                                                       Text="1. 本机自动将当前 BBKSync.exe 和更新脚本发送到远端电脑" />
+                                            <TextBlock Margin="0,2,0,0" Foreground="{StaticResource TextSubBrush}" FontSize="11" TextWrapping="Wrap"
+                                                       Text="2. 远端电脑执行脚本：关闭旧程序 → 删除旧程序 → 重命名新程序 → 启动新程序" />
+                                        </StackPanel>
+                                        <Rectangle Grid.Column="1" Width="1" Fill="{StaticResource CardBorderBrush}" Margin="14,0" />
+                                        <StackPanel Grid.Column="2" Margin="14,0,0,0">
+                                            <TextBlock Text="注意事项" FontWeight="SemiBold"
+                                                       Foreground="{StaticResource TextSubBrush}" Margin="0,0,0,6" />
+                                            <TextBlock Foreground="{StaticResource TextSubBrush}" FontSize="11" TextWrapping="Wrap"
+                                                       Text="• 更新期间远端 BBK 服务会短暂中断（约 5 秒）" />
+                                            <TextBlock Margin="0,4,0,0" Foreground="{StaticResource TextSubBrush}" FontSize="11" TextWrapping="Wrap"
+                                                       Text="• 更新完成后远端程序会自动重新启动" />
+                                            <TextBlock Margin="0,4,0,0" Foreground="{StaticResource TextSubBrush}" FontSize="11" TextWrapping="Wrap"
+                                                       Text="• 确保本机和远端电脑的 BBKSync 版本架构一致（均为 x64）" />
+                                            <TextBlock Margin="0,4,0,0" Foreground="{StaticResource TextSubBrush}" FontSize="11" TextWrapping="Wrap"
+                                                       Text="• 更新前建议先关闭远端电脑上正在运行的 BBK 相关操作" />
+                                        </StackPanel>
+                                    </Grid>
+                                </TabItem>
                             </TabControl>
 
                             <!-- 传输与进度 -->
@@ -418,6 +452,8 @@
                                         Click="BtnBackup_Click" />
                                         <Button x:Name="btnSync" Grid.Column="1" Content="开始更新" IsEnabled="False" Margin="8,0,0,0"
                                         Padding="20,7" Style="{StaticResource AccentButton}" Click="BtnSync_Click" />
+                                        <Button x:Name="btnUpdateProgram" Grid.Column="2" Content="更新远端程序" IsEnabled="False" Margin="8,0,0,0"
+                                        Padding="20,7" Style="{StaticResource AccentButton}" Click="BtnUpdateProgram_Click" />
                                         <Button x:Name="btnCancel" Grid.Column="3" Content="取消" IsEnabled="False" Click="BtnCancel_Click" />
                                     </Grid>
                                     <ProgressBar x:Name="progressBar" Margin="0,12,0,0" Minimum="0" Maximum="1" />

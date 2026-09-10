@@ -30,6 +30,7 @@ public partial class MainWindow : Window
         Icon = AppIcons.WindowIcon() ?? Icon;
         BindSettingsToControls();
         ReloadHistoryCombo();
+        EnsureUpdateBat();
         var localIp = GetLocalIPs().FirstOrDefault(ip => !ip.StartsWith("127.", StringComparison.Ordinal)) ?? "";
         if (!string.IsNullOrEmpty(localIp)) cboPeerIp.Text = localIp;
         LogLine("工具已启动，使用目录: " + txtRoot.Text);
@@ -354,10 +355,12 @@ public partial class MainWindow : Window
     }
     private void RefreshOpButtons()
     {
-        if (btnSync == null || btnBackup == null || tabs == null) return;
+        if (btnSync == null || btnBackup == null || btnUpdateProgram == null || tabs == null) return;
         bool isBackup = tabs.SelectedIndex == 0;
+        bool isUpdateProgram = tabs.SelectedIndex == 3;
         btnBackup.IsEnabled = !_coordinator.Busy && isBackup;
-        btnSync.IsEnabled = !_coordinator.Busy && !isBackup;
+        btnSync.IsEnabled = !_coordinator.Busy && !isBackup && !isUpdateProgram;
+        btnUpdateProgram.IsEnabled = !_coordinator.Busy && isUpdateProgram;
     }
     private void SetBusy(bool busy)
     {
