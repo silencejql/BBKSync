@@ -417,7 +417,7 @@
                                             <TextBlock Margin="0,10,0,0" FontWeight="SemiBold"
                                                        Foreground="{StaticResource TextSubBrush}" Text="更新步骤：" />
                                             <TextBlock Margin="0,4,0,0" Foreground="{StaticResource TextSubBrush}" FontSize="11" TextWrapping="Wrap"
-                                                       Text="1. 本机自动将当前 BBKSync.exe 和更新脚本发送到远端电脑" />
+                                                       Text="1. 本机自动将当前 BBKSync.exe 发送到远端电脑" />
                                             <TextBlock Margin="0,2,0,0" Foreground="{StaticResource TextSubBrush}" FontSize="11" TextWrapping="Wrap"
                                                        Text="2. 远端电脑执行脚本：关闭旧程序 → 删除旧程序 → 重命名新程序 → 启动新程序" />
                                         </StackPanel>
@@ -445,6 +445,7 @@
                                         <Grid.ColumnDefinitions>
                                             <ColumnDefinition Width="Auto" />
                                             <ColumnDefinition Width="Auto" />
+                                            <ColumnDefinition Width="Auto" />
                                             <ColumnDefinition Width="*" />
                                             <ColumnDefinition Width="Auto" />
                                         </Grid.ColumnDefinitions>
@@ -454,7 +455,7 @@
                                         Padding="20,7" Style="{StaticResource AccentButton}" Click="BtnSync_Click" />
                                         <Button x:Name="btnUpdateProgram" Grid.Column="2" Content="更新远端程序" IsEnabled="False" Margin="8,0,0,0"
                                         Padding="20,7" Style="{StaticResource AccentButton}" Click="BtnUpdateProgram_Click" />
-                                        <Button x:Name="btnCancel" Grid.Column="3" Content="取消" IsEnabled="False" Click="BtnCancel_Click" />
+                                        <Button x:Name="btnCancel" Grid.Column="4" Content="取消" IsEnabled="False" Click="BtnCancel_Click" />
                                     </Grid>
                                     <ProgressBar x:Name="progressBar" Margin="0,12,0,0" Minimum="0" Maximum="1" />
                                     <TextBlock x:Name="txtCur" Margin="0,7,0,0" Text="进度: -" TextTrimming="CharacterEllipsis" />
