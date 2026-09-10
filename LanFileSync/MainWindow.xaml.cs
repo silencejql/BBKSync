@@ -336,7 +336,17 @@ public partial class MainWindow : Window
     private void StartBusy() { _coordinator.StartBusy(); _doneCount = 0; _totalCount = 0; SetBusy(true); }
     private void EndBusy() { _coordinator.EndBusy(); SetBusy(false); txtStatus.Text = "就绪"; }
     private void BtnCancel_Click(object sender, RoutedEventArgs e) => _coordinator.Cancel();
-    private void Tabs_SelectionChanged(object sender, SelectionChangedEventArgs e) { if (IsLoaded) RefreshOpButtons(); }
+    private void Tabs_SelectionChanged(object sender, SelectionChangedEventArgs e)
+    {
+        if (!IsLoaded) return;
+        if (tabs.SelectedIndex != 1)
+        {
+            updateOverlay.Visibility = Visibility.Visible;
+            pwdUpdate.Clear();
+            txtUpdateError.Visibility = Visibility.Collapsed;
+        }
+        RefreshOpButtons();
+    }
     private void RefreshOpButtons()
     {
         if (btnSync == null || btnBackup == null || tabs == null) return;
