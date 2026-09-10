@@ -343,7 +343,12 @@ public partial class MainWindow : Window
         {
             updateOverlay.Visibility = Visibility.Visible;
             pwdUpdate.Clear();
+            txtUpdatePwd.Clear();
             txtUpdateError.Visibility = Visibility.Collapsed;
+            _pwdVisible = false;
+            pwdUpdate.Visibility = Visibility.Visible;
+            txtUpdatePwd.Visibility = Visibility.Collapsed;
+            eyeLine.Visibility = Visibility.Collapsed;
         }
         RefreshOpButtons();
     }
@@ -402,6 +407,30 @@ public partial class MainWindow : Window
         if (e.Key == Key.Enter) BtnUpdateUnlock_Click(sender, e);
     }
 
+    private bool _pwdVisible;
+
+    private void BtnTogglePwd_Click(object sender, RoutedEventArgs e)
+    {
+        _pwdVisible = !_pwdVisible;
+        if (_pwdVisible)
+        {
+            txtUpdatePwd.Text = pwdUpdate.Password;
+            txtUpdatePwd.Visibility = Visibility.Visible;
+            pwdUpdate.Visibility = Visibility.Collapsed;
+            eyeLine.Visibility = Visibility.Visible;
+            txtUpdatePwd.Focus();
+            txtUpdatePwd.CaretIndex = txtUpdatePwd.Text.Length;
+        }
+        else
+        {
+            pwdUpdate.Password = txtUpdatePwd.Text;
+            pwdUpdate.Visibility = Visibility.Visible;
+            txtUpdatePwd.Visibility = Visibility.Collapsed;
+            eyeLine.Visibility = Visibility.Collapsed;
+            pwdUpdate.Focus();
+        }
+    }
+
     private void BtnUpdateUnlock_Click(object sender, RoutedEventArgs e)
     {
         string stored = _settings.Settings.UpdatePassword;
@@ -410,7 +439,8 @@ public partial class MainWindow : Window
             updateOverlay.Visibility = Visibility.Collapsed;
             return;
         }
-        if (pwdUpdate.Password == stored)
+        string input = _pwdVisible ? txtUpdatePwd.Text : pwdUpdate.Password;
+        if (input == stored)
         {
             updateOverlay.Visibility = Visibility.Collapsed;
         }
