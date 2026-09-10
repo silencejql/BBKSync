@@ -307,8 +307,12 @@
                                               ToolTip="勾选后，同步更新前的备份（本机或对方电脑）完成后自动打包成同名 zip 并删除备份文件夹。" />
                                         </StackPanel>
                                         <!-- 半透明玻璃遮罩（密码保护） -->
-                                        <Border x:Name="updateOverlay" Grid.ColumnSpan="3" Background="#F0F3F8"
-                                                CornerRadius="8" IsHitTestVisible="True">
+                                        <Border x:Name="updateOverlay" Grid.ColumnSpan="3"
+                                                Background="#B0F3F5F9" CornerRadius="8"
+                                                IsHitTestVisible="True">
+                                            <Border.Effect>
+                                                <BlurEffect Radius="2" KernelType="Gaussian" />
+                                            </Border.Effect>
                                             <StackPanel HorizontalAlignment="Center" VerticalAlignment="Center" Width="500">
                                                 <TextBlock Text="请输入密码以使用更新功能" FontSize="18"
                                                            Foreground="{StaticResource TextMainBrush}" HorizontalAlignment="Center" Margin="0,10,0,5" />
