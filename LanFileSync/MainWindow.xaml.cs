@@ -265,9 +265,9 @@ public partial class MainWindow : Window
             using var cts = new CancellationTokenSource(TimeSpan.FromSeconds(5));
             await client.ConnectAsync(host, port, Constants.RoleProbe, cts.Token);
             var (name, line) = await client.ProbeDeviceAsync(cts.Token);
-            string info = string.IsNullOrWhiteSpace(name) ? "" : $"（设备 {name}{(string.IsNullOrWhiteSpace(line) ? "" : "/" + line)}）";
+            string info = string.IsNullOrWhiteSpace(name) ? "" : $"[设备 {name}{(string.IsNullOrWhiteSpace(line) ? "" : "/Line" + line)}]";
             LogLine($"连接正常：{host}:{port}，对方协议应答正确 {info}");
-            MessageBox.Show($"连接正常：{host}:{port}，对方协议应答正确 {info}\n{host}:{port}", "测试结果", MessageBoxButton.OK, MessageBoxImage.Information);
+            MessageBox.Show($"连接正常：{host}:{port}，对方协议应答正确\n {info}: {host}:{port}", "测试结果", MessageBoxButton.OK, MessageBoxImage.Information);
         }
         catch (OperationCanceledException)
         {

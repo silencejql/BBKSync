@@ -8,7 +8,7 @@
         TextElement.FontSize="13">
     <DockPanel Margin="14">
         <TextBlock DockPanel.Dock="Top" Foreground="{StaticResource TextSubBrush}" TextWrapping="Wrap"
-                   Text="配置 IP 与电脑名称的对应关系，备份时会自动命名「备份目录\BBK_日期_电脑名称」。未配置名称的 IP 用 IP 自身命名。" Margin="0,0,0,10" />
+                   Text="配置 IP 与电脑名称的对应关系，备份时会自动命名「备份目录\BBK_电脑名称_日期」。未配置名称的 IP 自身命名。" Margin="0,0,0,10" />
         <Border DockPanel.Dock="Top" BorderBrush="{StaticResource CardBorderBrush}" BorderThickness="0,0,0,1" Margin="0,0,0,10" Padding="0,0,0,10">
             <StackPanel Orientation="Horizontal">
                 <Button Content="添加一行" Padding="14,6" Click="Add_Click" />
@@ -20,6 +20,11 @@
                   HeadersVisibility="Column" GridLinesVisibility="All" HorizontalGridLinesBrush="{StaticResource CardBorderBrush}"
                   VerticalGridLinesBrush="{StaticResource CardBorderBrush}" BorderBrush="{StaticResource CardBorderBrush}"
                   RowHeight="30">
+            <DataGrid.CellStyle>
+                <Style TargetType="DataGridCell">
+                    <Setter Property="VerticalContentAlignment" Value="Center" />
+                </Style>
+            </DataGrid.CellStyle>
             <DataGrid.Columns>
                 <DataGridTextColumn Header="电脑 IP" Binding="{Binding Path=Ip, UpdateSourceTrigger=PropertyChanged}" Width="*" />
                 <DataGridTextColumn Header="电脑名称" Binding="{Binding Path=Name, UpdateSourceTrigger=PropertyChanged}" Width="*" />
