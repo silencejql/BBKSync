@@ -177,8 +177,6 @@ public sealed class PeerClient : IDisposable
 
     public async Task UpdateAsync(
         string exePath,
-        string batPath,
-        string batContent,
         Action<string> log,
         CancellationToken ct)
     {
@@ -186,9 +184,6 @@ public sealed class PeerClient : IDisposable
             ?? throw new EndOfStreamException("连接已断开");
         if (frame.GetProperty("op").GetString() != "ready")
             throw new InvalidOperationException("对方未就绪");
-
-        log("正在发送更新脚本...");
-        await _conn.SendJsonAsync(new { op = "bat", content = batContent }, ct);
 
         log("正在发送程序文件...");
         var fi = new FileInfo(exePath);

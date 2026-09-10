@@ -30,7 +30,6 @@ public partial class MainWindow : Window
         Icon = AppIcons.WindowIcon() ?? Icon;
         BindSettingsToControls();
         ReloadHistoryCombo();
-        EnsureUpdateBat();
         var localIp = GetLocalIPs().FirstOrDefault(ip => !ip.StartsWith("127.", StringComparison.Ordinal)) ?? "";
         if (!string.IsNullOrEmpty(localIp)) cboPeerIp.Text = localIp;
         LogLine("工具已启动，使用目录: " + txtRoot.Text);

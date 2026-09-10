@@ -252,12 +252,6 @@ public sealed class PeerServer : IDisposable
                     _log("收到更新程序请求，准备接收更新文件...");
                     await conn.SendJsonAsync(new { op = "ready" }, ct);
 
-                    var batMsg = await conn.RecvJsonAsync(ct)
-                        ?? throw new EndOfStreamException("连接已断开");
-                    if (batMsg.GetProperty("op").GetString() != "bat")
-                        throw new InvalidOperationException("期望 bat 消息");
-                    string batContent = batMsg.GetProperty("content").GetString()!;
-
                     var exeMsg = await conn.RecvJsonAsync(ct)
                         ?? throw new EndOfStreamException("连接已断开");
                     if (exeMsg.GetProperty("op").GetString() != "exe")
@@ -267,9 +261,6 @@ public sealed class PeerServer : IDisposable
                     string workDir = AppPaths.ExeDir();
                     string batPath = Path.Combine(workDir, "Update_BBKSync.bat");
                     string newExePath = Path.Combine(workDir, "BBKSync_New.exe");
-                    string curExePath = Environment.ProcessPath ?? Path.Combine(workDir, "BBKSync.exe");
-
-                    File.WriteAllText(batPath, batContent);
 
                     using (var fs = new FileStream(newExePath, FileMode.Create, FileAccess.Write, FileShare.None, 128 * 1024))
                     {
