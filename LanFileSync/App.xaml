@@ -119,9 +119,11 @@
                                 <Trigger.EnterActions>
                                     <BeginStoryboard>
                                         <Storyboard>
-                                            <DoubleAnimation Storyboard.TargetProperty="(UIElement.Effect).(DropShadowEffect.BlurRadius)"
+                                            <DoubleAnimation Storyboard.TargetName="bd"
+                                                             Storyboard.TargetProperty="(UIElement.Effect).(DropShadowEffect.BlurRadius)"
                                                              To="5" Duration="0:0:0.10" />
-                                            <DoubleAnimation Storyboard.TargetProperty="(UIElement.Effect).(DropShadowEffect.Opacity)"
+                                            <DoubleAnimation Storyboard.TargetName="bd"
+                                                             Storyboard.TargetProperty="(UIElement.Effect).(DropShadowEffect.Opacity)"
                                                              To="0.12" Duration="0:0:0.10" />
                                         </Storyboard>
                                     </BeginStoryboard>
@@ -129,9 +131,11 @@
                                 <Trigger.ExitActions>
                                     <BeginStoryboard>
                                         <Storyboard>
-                                            <DoubleAnimation Storyboard.TargetProperty="(UIElement.Effect).(DropShadowEffect.BlurRadius)"
+                                            <DoubleAnimation Storyboard.TargetName="bd"
+                                                             Storyboard.TargetProperty="(UIElement.Effect).(DropShadowEffect.BlurRadius)"
                                                              To="0" Duration="0:0:0.15" />
-                                            <DoubleAnimation Storyboard.TargetProperty="(UIElement.Effect).(DropShadowEffect.Opacity)"
+                                            <DoubleAnimation Storyboard.TargetName="bd"
+                                                             Storyboard.TargetProperty="(UIElement.Effect).(DropShadowEffect.Opacity)"
                                                              To="0" Duration="0:0:0.15" />
                                         </Storyboard>
                                     </BeginStoryboard>
@@ -177,9 +181,11 @@
                                 <Trigger.EnterActions>
                                     <BeginStoryboard>
                                         <Storyboard>
-                                            <DoubleAnimation Storyboard.TargetProperty="(UIElement.Effect).(DropShadowEffect.BlurRadius)"
+                                            <DoubleAnimation Storyboard.TargetName="bd"
+                                                             Storyboard.TargetProperty="(UIElement.Effect).(DropShadowEffect.BlurRadius)"
                                                              To="5" Duration="0:0:0.10" />
-                                            <DoubleAnimation Storyboard.TargetProperty="(UIElement.Effect).(DropShadowEffect.Opacity)"
+                                            <DoubleAnimation Storyboard.TargetName="bd"
+                                                             Storyboard.TargetProperty="(UIElement.Effect).(DropShadowEffect.Opacity)"
                                                              To="0.12" Duration="0:0:0.10" />
                                         </Storyboard>
                                     </BeginStoryboard>
@@ -187,9 +193,11 @@
                                 <Trigger.ExitActions>
                                     <BeginStoryboard>
                                         <Storyboard>
-                                            <DoubleAnimation Storyboard.TargetProperty="(UIElement.Effect).(DropShadowEffect.BlurRadius)"
+                                            <DoubleAnimation Storyboard.TargetName="bd"
+                                                             Storyboard.TargetProperty="(UIElement.Effect).(DropShadowEffect.BlurRadius)"
                                                              To="0" Duration="0:0:0.15" />
-                                            <DoubleAnimation Storyboard.TargetProperty="(UIElement.Effect).(DropShadowEffect.Opacity)"
+                                            <DoubleAnimation Storyboard.TargetName="bd"
+                                                             Storyboard.TargetProperty="(UIElement.Effect).(DropShadowEffect.Opacity)"
                                                              To="0" Duration="0:0:0.15" />
                                         </Storyboard>
                                     </BeginStoryboard>
@@ -273,9 +281,11 @@
                                 <Trigger.EnterActions>
                                     <BeginStoryboard>
                                         <Storyboard>
-                                            <DoubleAnimation Storyboard.TargetProperty="(UIElement.Effect).(DropShadowEffect.BlurRadius)"
+                                            <DoubleAnimation Storyboard.TargetName="bd"
+                                                             Storyboard.TargetProperty="(UIElement.Effect).(DropShadowEffect.BlurRadius)"
                                                              To="5" Duration="0:0:0.10" />
-                                            <DoubleAnimation Storyboard.TargetProperty="(UIElement.Effect).(DropShadowEffect.Opacity)"
+                                            <DoubleAnimation Storyboard.TargetName="bd"
+                                                             Storyboard.TargetProperty="(UIElement.Effect).(DropShadowEffect.Opacity)"
                                                              To="0.12" Duration="0:0:0.10" />
                                         </Storyboard>
                                     </BeginStoryboard>
@@ -283,9 +293,11 @@
                                 <Trigger.ExitActions>
                                     <BeginStoryboard>
                                         <Storyboard>
-                                            <DoubleAnimation Storyboard.TargetProperty="(UIElement.Effect).(DropShadowEffect.BlurRadius)"
+                                            <DoubleAnimation Storyboard.TargetName="bd"
+                                                             Storyboard.TargetProperty="(UIElement.Effect).(DropShadowEffect.BlurRadius)"
                                                              To="0" Duration="0:0:0.15" />
-                                            <DoubleAnimation Storyboard.TargetProperty="(UIElement.Effect).(DropShadowEffect.Opacity)"
+                                            <DoubleAnimation Storyboard.TargetName="bd"
+                                                             Storyboard.TargetProperty="(UIElement.Effect).(DropShadowEffect.Opacity)"
                                                              To="0" Duration="0:0:0.15" />
                                         </Storyboard>
                                     </BeginStoryboard>
