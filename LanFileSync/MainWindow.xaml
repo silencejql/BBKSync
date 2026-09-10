@@ -11,7 +11,8 @@
         Loaded="MainWindow_Loaded"
         StateChanged="Window_StateChanged"
         Closing="Window_Closing">
-    <DockPanel>
+    <Border BorderBrush="#2563EB" BorderThickness="1">
+        <DockPanel>
         <!-- 底部状态栏 -->
         <Border DockPanel.Dock="Bottom" Height="30" Background="#FFFFFF"
                 BorderBrush="{StaticResource CardBorderBrush}" BorderThickness="0,1,0,0">
@@ -344,4 +345,5 @@
             </GroupBox>
         </Grid>
     </DockPanel>
+    </Border>
 </Window>
