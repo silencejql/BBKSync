@@ -5,6 +5,7 @@ using System.Net.NetworkInformation;
 using System.Net.Sockets;
 using System.Windows;
 using System.Windows.Controls;
+using System.Windows.Input;
 using System.Windows.Media;
 using Forms = System.Windows.Forms;
 using Microsoft.Win32;
@@ -385,6 +386,31 @@ public partial class MainWindow : Window
     }
 
     private void TitleClose_Click(object sender, RoutedEventArgs e) { Close(); }
+
+    private void PwdUpdate_KeyDown(object sender, KeyEventArgs e)
+    {
+        if (e.Key == Key.Enter) BtnUpdateUnlock_Click(sender, e);
+    }
+
+    private void BtnUpdateUnlock_Click(object sender, RoutedEventArgs e)
+    {
+        string stored = _settings.Settings.UpdatePassword;
+        if (string.IsNullOrEmpty(stored))
+        {
+            updateOverlay.Visibility = Visibility.Collapsed;
+            return;
+        }
+        if (pwdUpdate.Password == stored)
+        {
+            updateOverlay.Visibility = Visibility.Collapsed;
+        }
+        else
+        {
+            txtUpdateError.Visibility = Visibility.Visible;
+            pwdUpdate.Clear();
+            pwdUpdate.Focus();
+        }
+    }
 
     private void MainWindow_Loaded(object sender, RoutedEventArgs e)
     {

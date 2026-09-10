@@ -59,6 +59,7 @@ public sealed class AppSettings
     public TransferSection Transfer { get; set; } = new();
     public FreeFormSection FreeForm { get; set; } = new();
     public List<ComputerMapping> Computers { get; set; } = new();
+    public string UpdatePassword { get; set; } = "";
 }
 
 public sealed class SettingsStore

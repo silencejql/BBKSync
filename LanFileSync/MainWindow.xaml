@@ -306,6 +306,25 @@
                                               Content="备份完成后自动压缩为 zip（删除备份文件夹）"
                                               ToolTip="勾选后，同步更新前的备份（本机或对方电脑）完成后自动打包成同名 zip 并删除备份文件夹。" />
                                         </StackPanel>
+                                        <!-- 半透明玻璃遮罩（密码保护） -->
+                                        <Border x:Name="updateOverlay" Grid.ColumnSpan="3" Background="#F0F3F8"
+                                                CornerRadius="8" IsHitTestVisible="True">
+                                            <StackPanel HorizontalAlignment="Center" VerticalAlignment="Center" Width="280">
+                                                <TextBlock Text="BBK 更新" FontSize="18" FontWeight="SemiBold"
+                                                           Foreground="{StaticResource TextMainBrush}" HorizontalAlignment="Center" Margin="0,0,0,8" />
+                                                <TextBlock Text="请输入密码以使用更新功能" FontSize="12"
+                                                           Foreground="{StaticResource TextSubBrush}" HorizontalAlignment="Center" Margin="0,0,0,14" />
+                                                <PasswordBox x:Name="pwdUpdate" Height="32" HorizontalAlignment="Stretch"
+                                                             FontSize="14" Padding="8,6"
+                                                             KeyDown="PwdUpdate_KeyDown" />
+                                                <Button Content="确认" Padding="14,6" HorizontalAlignment="Center"
+                                                        Margin="0,12,0,0" Click="BtnUpdateUnlock_Click"
+                                                        Style="{StaticResource AccentButton}" />
+                                                <TextBlock x:Name="txtUpdateError" Text="密码错误" FontSize="11"
+                                                           Foreground="#E81123" HorizontalAlignment="Center" Margin="0,6,0,0"
+                                                           Visibility="Collapsed" />
+                                            </StackPanel>
+                                        </Border>
                                     </Grid>
                                 </TabItem>
                                 <TabItem Header="文件传输" Width="100">
