@@ -30,9 +30,30 @@ public partial class MainWindow : Window
         Icon = AppIcons.WindowIcon() ?? Icon;
         BindSettingsToControls();
         ReloadHistoryCombo();
+        EnsureUpdateBat();
         var localIp = GetLocalIPs().FirstOrDefault(ip => !ip.StartsWith("127.", StringComparison.Ordinal)) ?? "";
         if (!string.IsNullOrEmpty(localIp)) cboPeerIp.Text = localIp;
         LogLine("工具已启动，使用目录: " + txtRoot.Text);
+    }
+
+    private static void EnsureUpdateBat()
+    {
+        string batPath = Path.Combine(AppPaths.ExeDir(), "Update_BBKSync.bat");
+        if (File.Exists(batPath) && new FileInfo(batPath).Length > 0) return;
+        string exeDir = AppPaths.ExeDir();
+        string exeName = Path.GetFileName(Environment.ProcessPath ?? "BBKSync.exe");
+        string content =
+            "@echo off\r\n" +
+            "chcp 65001 >nul 2>&1\r\n" +
+            "cd /d \"" + exeDir + "\"\r\n" +
+            "echo 等待关闭 " + exeName + " ...\r\n" +
+            "timeout /t 3 /nobreak >nul\r\n" +
+            "taskkill /f /im " + exeName + " >nul 2>&1\r\n" +
+            "timeout /t 2 /nobreak >nul\r\n" +
+            "del /f /q \"" + exeName + "\" >nul 2>&1\r\n" +
+            "ren BBKSync_New.exe " + exeName + "\r\n" +
+            "start \"\" \"" + exeDir + "\\" + exeName + "\"\r\n";
+        File.WriteAllText(batPath, content);
     }
 
     private void BindSettingsToControls()
