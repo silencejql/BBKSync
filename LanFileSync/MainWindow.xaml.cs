@@ -348,7 +348,7 @@ public partial class MainWindow : Window
             _pwdVisible = false;
             pwdUpdate.Visibility = Visibility.Visible;
             txtUpdatePwd.Visibility = Visibility.Collapsed;
-            eyeLine.Visibility = Visibility.Collapsed;
+            eyeLine.Visibility = Visibility.Visible;
         }
         RefreshOpButtons();
     }
@@ -417,7 +417,7 @@ public partial class MainWindow : Window
             txtUpdatePwd.Text = pwdUpdate.Password;
             txtUpdatePwd.Visibility = Visibility.Visible;
             pwdUpdate.Visibility = Visibility.Collapsed;
-            eyeLine.Visibility = Visibility.Visible;
+            eyeLine.Visibility = Visibility.Collapsed;
             txtUpdatePwd.Focus();
             txtUpdatePwd.CaretIndex = txtUpdatePwd.Text.Length;
         }
@@ -426,7 +426,7 @@ public partial class MainWindow : Window
             pwdUpdate.Password = txtUpdatePwd.Text;
             pwdUpdate.Visibility = Visibility.Visible;
             txtUpdatePwd.Visibility = Visibility.Collapsed;
-            eyeLine.Visibility = Visibility.Collapsed;
+            eyeLine.Visibility = Visibility.Visible;
             pwdUpdate.Focus();
         }
     }

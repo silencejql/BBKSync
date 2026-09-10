@@ -328,7 +328,7 @@
                                                                  FontSize="14" Padding="10,6,5,6" VerticalContentAlignment="Center"
                                                                  Visibility="Collapsed" BorderThickness="0" Background="Transparent"
                                                                  KeyDown="PwdUpdate_KeyDown" />
-                                                        <Button x:Name="btnTogglePwd" Grid.Column="1" Width="32"
+                                                        <Button x:Name="btnTogglePwd" Grid.Column="1" Width="50"
                                                                 Margin="0,0,4,0" Cursor="Hand"
                                                                 Background="Transparent" BorderThickness="0"
                                                                 Click="BtnTogglePwd_Click"
@@ -339,7 +339,7 @@
                                                                       Fill="{StaticResource TextSubBrush}" />
                                                                 <Line x:Name="eyeLine" X1="2" Y1="2" X2="22" Y2="22"
                                                                       Stroke="{StaticResource TextSubBrush}" StrokeThickness="2"
-                                                                      Visibility="Collapsed" />
+                                                                      Visibility="Visible" />
                                                             </Grid>
                                                         </Button>
                                                     </Grid>
