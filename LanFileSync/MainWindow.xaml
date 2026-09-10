@@ -312,20 +312,16 @@
                                             <StackPanel HorizontalAlignment="Center" VerticalAlignment="Center" Width="500">
                                                 <TextBlock Text="请输入密码以使用更新功能" FontSize="18"
                                                            Foreground="{StaticResource TextMainBrush}" HorizontalAlignment="Center" Margin="0,10,0,5" />
-                                                <PasswordBox x:Name="pwdUpdate" Height="50" HorizontalAlignment="Stretch"
-                                                             FontSize="14" Padding="8,6" BorderThickness="0"
-                                                             KeyDown="PwdUpdate_KeyDown" />
-                                                <Grid>
-                                                    <Grid.ColumnDefinitions>
-                                                        <ColumnDefinition Width="*" />
-                                                        <ColumnDefinition Width="Auto" />
-                                                    </Grid.ColumnDefinitions>
-                                                    <TextBox x:Name="txtUpdatePwd" Grid.Column="0" Height="50"
-                                                             FontSize="14" Padding="8,6" VerticalContentAlignment="Center"
+                                                <Grid Height="50" HorizontalAlignment="Stretch">
+                                                    <PasswordBox x:Name="pwdUpdate" HorizontalAlignment="Stretch"
+                                                                 FontSize="14" Padding="8,6" BorderThickness="0"
+                                                                 KeyDown="PwdUpdate_KeyDown" />
+                                                    <TextBox x:Name="txtUpdatePwd" HorizontalAlignment="Stretch"
+                                                             FontSize="14" Padding="36,6,8,6" VerticalContentAlignment="Center"
                                                              Visibility="Collapsed" BorderThickness="0"
                                                              KeyDown="PwdUpdate_KeyDown" />
-                                                    <Button x:Name="btnTogglePwd" Grid.Column="1" Width="32" Height="32"
-                                                            Margin="0,0,8,0" VerticalAlignment="Center"
+                                                    <Button x:Name="btnTogglePwd" Width="28" Height="28"
+                                                            HorizontalAlignment="Right" Margin="0,0,6,0"
                                                             Cursor="Hand" Background="Transparent" BorderThickness="0"
                                                             Click="BtnTogglePwd_Click"
                                                             ToolTip="显示 / 隐藏密码">
