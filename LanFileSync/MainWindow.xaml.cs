@@ -46,6 +46,7 @@ public partial class MainWindow : Window
             "@echo off\r\n" +
             "chcp 65001 >nul 2>&1\r\n" +
             "cd /d \"" + exeDir + "\"\r\n" +
+            "if not exist BBKSync_New.exe exit\r\n" +
             "echo 等待关闭 " + exeName + " ...\r\n" +
             "timeout /t 3 /nobreak >nul\r\n" +
             "taskkill /f /im " + exeName + " >nul 2>&1\r\n" +
