@@ -358,6 +358,7 @@ public partial class MainWindow : Window
         "cbIgnoreEnabled","txtBackupIgnore","txtBackupLogDays","rbBackupLocal","rbBackupRemote",
         "rbBackupShare","txtShareIp","txtSharePath","txtShareUser","pwdSharePass","btnShareTest",
         "rbSyncShare","chkAutoStart","txtTransferPath","cbTransferSameSkip","cbTransferKillFreeForm",
+        "cbRunPreBackupBat","cbBinReplace","cbKillFreeForm","cbUpdateCompressZip",
     };
 
     private void BtnClearLog_Click(object sender, RoutedEventArgs e) { if (txtLog != null) txtLog.Clear(); }
