@@ -4,7 +4,7 @@
         Title="IP 与电脑名称配置" Width="480" Height="440" MinWidth="420" MinHeight="360"
         WindowStartupLocation="CenterOwner" ShowInTaskbar="False" ResizeMode="CanResizeWithGrip"
         Background="{StaticResource WindowBgBrush}"
-        TextElement.FontFamily="Microsoft YaHei UI, Segoe UI"
+        TextElement.FontFamily="Microsoft YaHei UI, Segoe UI Variable, Segoe UI"
         TextElement.FontSize="13">
     <DockPanel Margin="14">
         <TextBlock DockPanel.Dock="Top" Foreground="{StaticResource TextSubBrush}" TextWrapping="Wrap"

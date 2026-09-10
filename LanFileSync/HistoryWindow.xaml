@@ -4,7 +4,7 @@
         Title="连接历史" Height="440" Width="620"
         WindowStartupLocation="CenterOwner" ResizeMode="CanResize"
         Background="{StaticResource WindowBgBrush}"
-        TextElement.FontFamily="Microsoft YaHei UI, Segoe UI"
+        TextElement.FontFamily="Microsoft YaHei UI, Segoe UI Variable, Segoe UI"
         TextElement.FontSize="13">
     <Grid Margin="10">
         <Grid.RowDefinitions>

@@ -8,7 +8,7 @@
         WindowStartupLocation="CenterScreen"
         WindowStyle="None"
         Background="{StaticResource WindowBgBrush}"
-        TextElement.FontFamily="Microsoft YaHei UI, Segoe UI"
+        TextElement.FontFamily="Microsoft YaHei UI, Segoe UI Variable, Segoe UI"
         TextElement.FontSize="13"
         Loaded="MainWindow_Loaded"
         StateChanged="Window_StateChanged"
