@@ -5,6 +5,7 @@ using System.Net.NetworkInformation;
 using System.Net.Sockets;
 using System.Windows;
 using System.Windows.Controls;
+using System.Windows.Documents;
 using System.Windows.Input;
 using System.Windows.Media;
 using Forms = System.Windows.Forms;
@@ -181,16 +182,14 @@ public partial class MainWindow : Window
 
     private void LogLine(string msg, Brush brush)
     {
-        string line = $"[{DateTime.Now:HH:mm:ss}] {msg}\n";
+        string line = $"[{DateTime.Now:HH:mm:ss}] {msg}";
         Dispatcher.Invoke(() =>
         {
             if (txtLog == null) return;
-            txtLog.AppendText(line);
-            if (txtLog.LineCount > Constants.MaxLogEntries)
-            {
-                int firstNewline = txtLog.Text.IndexOf('\n');
-                if (firstNewline >= 0) txtLog.Text = txtLog.Text.Substring(firstNewline + 1);
-            }
+            var para = new Paragraph(new Run(line) { Foreground = brush }) { Margin = new Thickness(0) };
+            txtLog.Document.Blocks.Add(para);
+            if (txtLog.Document.Blocks.Count > Constants.MaxLogEntries)
+                txtLog.Document.Blocks.Remove(txtLog.Document.Blocks.FirstBlock);
             txtLog.ScrollToEnd();
         });
     }
@@ -429,10 +428,12 @@ public partial class MainWindow : Window
         "cbRunPreBackupBat","cbBinReplace","cbKillFreeForm","cbUpdateCompressZip",
     };
 
-    private void BtnClearLog_Click(object sender, RoutedEventArgs e) { if (txtLog != null) txtLog.Clear(); }
+    private void BtnClearLog_Click(object sender, RoutedEventArgs e) { txtLog?.Document.Blocks.Clear(); }
     private void BtnCopyLog_Click(object sender, RoutedEventArgs e)
     {
-        if (txtLog != null && !string.IsNullOrEmpty(txtLog.Text)) { txtLog.SelectAll(); txtLog.Copy(); txtLog.SelectionLength = 0; }
+        if (txtLog == null) return;
+        var textRange = new TextRange(txtLog.Document.ContentStart, txtLog.Document.ContentEnd);
+        if (!string.IsNullOrEmpty(textRange.Text)) { Clipboard.SetText(textRange.Text); }
     }
     private void Window_StateChanged(object sender, EventArgs e) { if (WindowState == WindowState.Minimized && _tray != null) Hide(); }
 

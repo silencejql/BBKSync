@@ -519,10 +519,10 @@
                                 <Button Content="清空日志" Padding="12,5" Click="BtnClearLog_Click" />
                             </StackPanel>
                             <ScrollViewer VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Auto">
-                                <TextBox x:Name="txtLog" FontFamily="Consolas" FontSize="12"
+                                <RichTextBox x:Name="txtLog" FontFamily="Consolas" FontSize="12"
                                  Background="#FBFCFE" BorderBrush="{StaticResource CardBorderBrush}" BorderThickness="1"
-                                 IsReadOnly="True" IsReadOnlyCaretVisible="True"
-                                 TextWrapping="NoWrap" VerticalScrollBarVisibility="Auto"
+                                 IsReadOnly="True"
+                                 VerticalScrollBarVisibility="Auto"
                                  HorizontalScrollBarVisibility="Auto"
                                  ContextMenu="{x:Null}" />
                             </ScrollViewer>
