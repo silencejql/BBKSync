@@ -61,7 +61,7 @@ public partial class MainWindow : Window
             "timeout /t 2 /nobreak >nul\r\n" +
             "del /f /q \"" + exeName + "\" >nul 2>&1\r\n" +
             "ren BBKSync_New.exe " + exeName + "\r\n" +
-            "start /min \" \" \"" + exeDir + "\\" + exeName + "\"\r\n";
+            "start \" \" \"" + exeDir + "\\" + exeName + "\" --minimized\r\n";
         File.WriteAllText(batPath, content);
     }
 
