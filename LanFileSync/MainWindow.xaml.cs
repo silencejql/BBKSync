@@ -27,8 +27,8 @@ public partial class MainWindow : Window
     public MainWindow()
     {
         _startMinimized = Environment.GetCommandLineArgs().Any(a => a.Equals("--minimized", StringComparison.OrdinalIgnoreCase));
-        if (_startMinimized) { WindowState = WindowState.Minimized; ShowInTaskbar = false; Visibility = Visibility.Hidden; }
         InitializeComponent();
+        if (_startMinimized) { ShowInTaskbar = false; WindowState = WindowState.Minimized; }
         Icon = AppIcons.WindowIcon() ?? Icon;
         BindSettingsToControls();
         ReloadHistoryCombo();
