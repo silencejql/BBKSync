@@ -36,6 +36,8 @@ public sealed class PeerClient : IDisposable
 
         if (engine.NeedList.Count == 0)
             log("所有文件与对方相同，无需更新。");
+        else if (engine.NeedList.Count < 10)
+            foreach (var p in engine.NeedList) log("  ← " + p);
 
         await _conn!.SendJsonAsync(new { op = "req", paths = engine.NeedList }, ct);
         await engine.ReceiveAndApplyAsync(_conn, onFile, onError, ct);
@@ -62,6 +64,8 @@ public sealed class PeerClient : IDisposable
         var paths = frame.GetProperty("paths").EnumerateArray().Select(x => x.GetString()!).ToList();
         onTotal(paths.Count);
         log(paths.Count == 0 ? "对方所有文件完全相同，无需更新。" : $"对方需要 {paths.Count} 个文件，开始发送...");
+        if (paths.Count > 0 && paths.Count < 10)
+            foreach (var p in paths) log("  → " + p);
 
         await SourceSide.SendRequestedFilesAsync(_conn, root, paths, onFile, ct);
 
@@ -114,6 +118,8 @@ public sealed class PeerClient : IDisposable
 
         if (engine.NeedList.Count == 0)
             log("所有文件与备份目标相同，无需备份。");
+        else if (engine.NeedList.Count < 10)
+            foreach (var p in engine.NeedList) log("  ← " + p);
 
         await _conn!.SendJsonAsync(new { op = "req", paths = engine.NeedList }, ct);
         await engine.ReceiveAndApplyAsync(_conn, onFile, onError, ct);

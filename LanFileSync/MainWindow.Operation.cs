@@ -241,6 +241,8 @@ public partial class MainWindow
             OnTotal(engine.NeedList.Count);
             LogDivider(); LogLine($"共享 {unc} 现共有 {remote.Count} 个文件，需要更新 {engine.NeedList.Count} 个...");
             if (engine.NeedList.Count == 0) { LogLine("所有文件与共享相同，无需更新。"); txtStatus.Text = "共享同步完成"; return; }
+            if (engine.NeedList.Count > 0 && engine.NeedList.Count < 10)
+                foreach (var p in engine.NeedList) LogLine("  ← " + p);
             await engine.CopyNeededFromAsync(unc, OnFileProgress, m => LogLineError("跳过: " + m), ct);
             LogLine("共享同步完成"); txtStatus.Text = "共享同步完成";
         }

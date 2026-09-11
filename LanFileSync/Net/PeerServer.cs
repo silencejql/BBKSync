@@ -169,6 +169,8 @@ public sealed class PeerServer : IDisposable
 
                     int sent = 0;
                     _log(paths.Count == 0 ? "对方无需更新/备份（所有文件相同）。" : $"对方需要 {paths.Count} 个文件，开始发送...");
+                    if (paths.Count > 0 && paths.Count < 10)
+                        foreach (var p in paths) _log("  → " + p);
                     await SourceSide.SendRequestedFilesAsync(conn, _root, paths,
                         (_, _) => { if (++sent % 25 == 0 || sent == paths.Count) _log($"已发送 {sent}/{paths.Count} 个文件..."); }, ct);
                     _log("文件发送完成");
@@ -206,6 +208,9 @@ public sealed class PeerServer : IDisposable
                     }
 
                     _onTotal(engine.NeedList.Count);
+
+                    if (engine.NeedList.Count > 0 && engine.NeedList.Count < 10)
+                        foreach (var p in engine.NeedList) _log("  ← " + p);
 
                     var applyMsgs = new List<string>();
                     await conn.SendJsonAsync(new { op = "need", paths = engine.NeedList }, ct);
