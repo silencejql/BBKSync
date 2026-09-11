@@ -26,6 +26,8 @@ public partial class MainWindow : Window
 
     public MainWindow()
     {
+        _startMinimized = Environment.GetCommandLineArgs().Any(a => a.Equals("--minimized", StringComparison.OrdinalIgnoreCase));
+        if (_startMinimized) { WindowState = WindowState.Minimized; ShowInTaskbar = false; Visibility = Visibility.Hidden; }
         InitializeComponent();
         Icon = AppIcons.WindowIcon() ?? Icon;
         BindSettingsToControls();
@@ -36,6 +38,7 @@ public partial class MainWindow : Window
         if (!string.IsNullOrEmpty(localIp)) cboPeerIp.Text = localIp;
         LogLine("工具已启动，使用目录: " + txtRoot.Text);
     }
+    private readonly bool _startMinimized;
 
     private static void EnsureUpdateBat()
     {
@@ -512,8 +515,7 @@ public partial class MainWindow : Window
         Width = Math.Min(1200, screen * 0.85); Height = Math.Min(900, screenH * 0.85);
         Left = (screen - Width) / 2; Top = (screenH - Height) / 2;
         tabs.SelectedIndex = 0; RefreshOpButtons(); StartServer(showErrors: false);
-        bool minimizeToTray = _settings.Settings.Server.AutoStartAndListen
-            || Environment.GetCommandLineArgs().Any(a => a.Equals("--minimized", StringComparison.OrdinalIgnoreCase));
+        bool minimizeToTray = _startMinimized || _settings.Settings.Server.AutoStartAndListen;
         if (minimizeToTray)
         {
             _tray = new TrayIcon(ShowMainWindow, ExitApp); _tray.Show(); Hide();
