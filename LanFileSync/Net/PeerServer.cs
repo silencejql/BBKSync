@@ -273,16 +273,6 @@ public sealed class PeerServer : IDisposable
                     string batPath = Path.Combine(workDir, "Update_BBKSync.bat");
                     string newExePath = Path.Combine(workDir, "BBKSync_New.exe");
                     string curExePath = Environment.ProcessPath ?? Path.Combine(workDir, "BBKSync.exe");
-                    string bakDir = Path.Combine(workDir, "UpdateBackup");
-                    Directory.CreateDirectory(bakDir);
-                    string timestamp = DateTime.Now.ToString("yyyyMMdd_HHmmss");
-                    try
-                    {
-                        string bakPath = Path.Combine(bakDir, $"BBKSync_{timestamp}.exe");
-                        File.Copy(curExePath, bakPath, true);
-                        _log($"已备份当前程序到 {bakPath}");
-                    }
-                    catch (Exception ex) { _log($"备份当前程序失败: {ex.Message}，继续更新"); }
 
                     using (var fs = new FileStream(newExePath, FileMode.Create, FileAccess.Write, FileShare.None, 128 * 1024))
                     {
