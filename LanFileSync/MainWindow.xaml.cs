@@ -23,6 +23,7 @@ public partial class MainWindow : Window
     private int _doneCount;
     private int _totalCount;
     private string _opLabel = "更新";
+    private readonly bool _startMinimized;
 
     public MainWindow()
     {
@@ -40,7 +41,6 @@ public partial class MainWindow : Window
         if (!string.IsNullOrEmpty(localIp)) cboPeerIp.Text = localIp;
         LogLine("工具已启动，使用目录: " + txtRoot.Text);
     }
-    private readonly bool _startMinimized;
 
     private static void EnsureUpdateBat()
     {
@@ -346,11 +346,6 @@ public partial class MainWindow : Window
         return new BackupOptions { ApplyLogRule = cbBackupLogRule.IsChecked ?? true, LogRetentionDays = days, IgnoreRegexes = ignoreEnabled ? ignores : Array.Empty<string>() };
     }
     private SyncOptions ReadOptions() => new() { FullReplaceBin = cbBinReplace.IsChecked == true, KillFreeFormFirst = cbKillFreeForm.IsChecked ?? true };
-    private static bool IsBackupDestBad(string dest, string src)
-    {
-        try { string d = Path.TrimEndingDirectorySeparator(Path.GetFullPath(dest)); string s = Path.TrimEndingDirectorySeparator(Path.GetFullPath(src)); return string.Equals(d, s, StringComparison.OrdinalIgnoreCase) || d.StartsWith(s + Path.DirectorySeparatorChar, StringComparison.OrdinalIgnoreCase); }
-        catch { return true; }
-    }
     private bool ShouldCompress => cbCompressZip.IsChecked == true;
 
     private async Task CompressAndRemoveFolderAsync(string folderPath, bool compress)

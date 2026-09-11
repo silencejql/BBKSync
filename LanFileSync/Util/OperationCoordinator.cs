@@ -23,15 +23,6 @@ public sealed class OperationCoordinator : IDisposable
 
     public void Cancel() => _cts?.Cancel();
 
-    public static string FormatSize(long bytes)
-    {
-        const long K = 1024, M = 1024 * K, G = 1024 * M;
-        return bytes >= G ? $"{bytes / (double)G:F2} GB"
-            : bytes >= M ? $"{bytes / (double)M:F2} MB"
-            : bytes >= K ? $"{bytes / (double)K:F1} KB"
-            : $"{bytes} B";
-    }
-
     public void Dispose()
     {
         _cts?.Dispose();

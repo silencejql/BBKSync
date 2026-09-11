@@ -323,27 +323,30 @@ public partial class MainWindow
         txtStatus.Text = $"正在更新远端程序...";
         LogLine($"========== 开始更新远端程序 ==========");
         LogLine($"目标: {host}，端口: {port}");
-
-        foreach (string h in hosts)
+        try
         {
-            try
+            foreach (string h in hosts)
             {
-                LogLine($"--- 连接 {h}:{port} ---");
-                using var client = new PeerClient();
-                await client.ConnectAsync(h, port, Constants.RoleUpdate, _coordinator.Token);
-                LogLine("已连接，正在发送更新文件...");
-                await client.UpdateAsync(exePath, m => LogLine(m), _coordinator.Token);
-                okIps.Add(h);
-                LogLine($"{h} 更新完成");
-            }
-            catch (OperationCanceledException) { LogLine("操作已取消"); break; }
-            catch (Exception ex)
-            {
-                LogLineError($"{h} 更新失败: {ex.Message}");
-                failed.Add(h);
+                try
+                {
+                    LogLine($"--- 连接 {h}:{port} ---");
+                    using var client = new PeerClient();
+                    await client.ConnectAsync(h, port, Constants.RoleUpdate, _coordinator.Token);
+                    LogLine("已连接，正在发送更新文件...");
+                    await client.UpdateAsync(exePath, m => LogLine(m), _coordinator.Token);
+                    okIps.Add(h);
+                    LogLine($"{h} 更新完成");
+                }
+                catch (OperationCanceledException) { throw; }
+                catch (Exception ex)
+                {
+                    LogLineError($"{h} 更新失败: {ex.Message}");
+                    failed.Add(h);
+                }
             }
         }
-
+        catch (OperationCanceledException) { LogLine("操作已取消"); }
+        finally
         {
             if (okIps.Count > 0) { foreach (var ip in okIps) _history.Upsert(ip, port); ReloadHistoryCombo(); }
             EndBusy();
