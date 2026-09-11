@@ -166,7 +166,29 @@ public sealed class PeerServer : IDisposable
                     var req = await conn.RecvJsonAsync(ct)
                         ?? throw new EndOfStreamException("连接已断开");
                     var paths = req.GetProperty("paths").EnumerateArray().Select(x => x.GetString()!).ToList();
-                    _log($"对方需要 {paths.Count} 个文件，开始发送...");
+
+                    if (paths.Count > 0 && _backupBeforeSync && !string.IsNullOrWhiteSpace(_backupDest))
+                    {
+                        string dest = Path.Combine(_backupDest, $"BBK_接收更新备份_{DateTime.Now:yyyyMMdd}");
+                        _log($"对方需要 {paths.Count} 个文件，先备份本机 BBK 到 {dest}");
+                        try
+                        {
+                            var be = new BackupEngine(_root, dest, _backupOptions);
+                            var files = be.Plan();
+                            await be.RunAsync(null, m => _onError("同步前备份跳过: " + m), ct);
+                            _log($"同步前备份完成（{files.Count} 项）");
+                            await CompressAndRemoveFolderAsync(dest, _compressUpdateZip);
+                        }
+                        catch (ArgumentException)
+                        {
+                            _log(_backupDest + " 为空或与同步目录相同/位于其内部，跳过同步前备份。");
+                        }
+                        catch (Exception ex) { _onError("同步前备份失败: " + ex.Message); }
+                    }
+                    else if (paths.Count > 0)
+                    {
+                        _log($"对方需要 {paths.Count} 个文件，开始发送...");
+                    }
 
                     int sent = 0;
                     _log(paths.Count == 0 ? "对方无需更新/备份（所有文件相同）。" : $"对方需要 {paths.Count} 个文件，开始发送...");
@@ -180,10 +202,13 @@ public sealed class PeerServer : IDisposable
                     await TargetSide.ReceiveManifestAsync(conn, ct, list);
                     _log($"已收到对方文件清单（{list.Count} 项），按本机规则计算需要更新的文件...");
 
-                    if (_backupBeforeSync && !string.IsNullOrWhiteSpace(_backupDest))
+                    var engine = new SyncEngine(_root, _options);
+                    engine.Plan(list);
+
+                    if (engine.NeedList.Count > 0 && _backupBeforeSync && !string.IsNullOrWhiteSpace(_backupDest))
                     {
                         string dest = Path.Combine(_backupDest, $"BBK_推送更新备份_{DateTime.Now:yyyyMMdd}");
-                        _log($"同步前先备份本机 BBK 到{dest}");
+                        _log($"对方需要 {engine.NeedList.Count} 个文件，先备份本机 BBK 到 {dest}");
                         try
                         {
                             var be = new BackupEngine(_root, dest, _backupOptions);
@@ -203,8 +228,6 @@ public sealed class PeerServer : IDisposable
                         }
                     }
 
-                    var engine = new SyncEngine(_root, _options);
-                    engine.Plan(list);
                     _onTotal(engine.NeedList.Count);
 
                     var applyMsgs = new List<string>();
