@@ -521,7 +521,7 @@ public partial class MainWindow : Window
         }
     }
 
-    private void ShowMainWindow() { Dispatcher.Invoke(() => { Show(); if (WindowState == WindowState.Minimized) WindowState = WindowState.Normal; Activate(); }); }
+    private void ShowMainWindow() { Dispatcher.Invoke(() => { ShowInTaskbar = true; Show(); if (WindowState == WindowState.Minimized) WindowState = WindowState.Normal; Activate(); }); }
     private void ExitApp() { Dispatcher.Invoke(() => { _allowExit = true; Close(); }); }
 
     private void ChkAutoStart_Changed(object sender, RoutedEventArgs e)
