@@ -97,7 +97,7 @@ public sealed class PeerServer : IDisposable
             await Task.Run(() =>
             {
                 try { if (File.Exists(zipPath)) File.Delete(zipPath); } catch { }
-                ZipFile.CreateFromDirectory(folderPath, zipPath, CompressionLevel.Optimal, false);
+                ZipHelper.CompressFolder(folderPath, zipPath);
                 Directory.Delete(folderPath, recursive: true);
             });
             _log("已压缩为 " + Path.GetFileName(zipPath));

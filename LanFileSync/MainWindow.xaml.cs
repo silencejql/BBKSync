@@ -354,7 +354,7 @@ public partial class MainWindow : Window
         {
             string zipPath = folderPath + ".zip";
             LogLine("正在压缩备份文件夹 ...");
-            await Task.Run(() => { try { if (File.Exists(zipPath)) File.Delete(zipPath); } catch { } ZipFile.CreateFromDirectory(folderPath, zipPath, CompressionLevel.Optimal, false); Directory.Delete(folderPath, recursive: true); });
+            await Task.Run(() => { try { if (File.Exists(zipPath)) File.Delete(zipPath); } catch { } ZipHelper.CompressFolder(folderPath, zipPath); Directory.Delete(folderPath, recursive: true); });
             LogLine("已压缩为 " + Path.GetFileName(zipPath));
         }
         catch (Exception ex) { LogLineError("压缩失败: " + ex.Message); }
