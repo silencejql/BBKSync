@@ -21,11 +21,11 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <FrameworkReference Include="Microsoft.WindowsDesktop.App.WindowsForms" />
+    <Resource Include="app.ico" />
   </ItemGroup>
 
   <ItemGroup>
-    <Resource Include="app.ico" />
+    <PackageReference Include="Hardcodet.NotifyIcon.Wpf" Version="2.0.1" />
   </ItemGroup>
 
 </Project>

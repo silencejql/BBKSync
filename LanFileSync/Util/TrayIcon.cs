@@ -1,42 +1,49 @@
-using System.Windows.Forms;
+using System.Windows;
+using System.Windows.Controls;
+using Hardcodet.Wpf.TaskbarNotification;
 
 namespace LanFileSync;
 
 public sealed class TrayIcon : IDisposable
 {
-    private readonly NotifyIcon _icon;
-    private readonly Action _show;
-    private readonly Action _exit;
+    private readonly TaskbarIcon _icon;
 
     public TrayIcon(Action show, Action exit)
     {
-        _show = show;
-        _exit = exit;
-
-        _icon = new NotifyIcon
+        _icon = new TaskbarIcon
         {
             Icon = AppIcons.TrayIcon(),
-            Text = "BBK 同步与备份工具",
-            Visible = false,
+            ToolTipText = "BBK 同步与备份工具",
+            Visibility = Visibility.Visible,
         };
 
-        var menu = new ContextMenuStrip();
-        menu.Items.Add("打开主界面", null, (_, _) => _show());
-        menu.Items.Add("退出", null, (_, _) => _exit());
-        _icon.ContextMenuStrip = menu;
-        _icon.DoubleClick += (_, _) => _show();
+        var menu = new ContextMenu();
+        var openItem = new MenuItem { Header = "打开主界面" };
+        openItem.Click += (_, _) => show();
+        var exitItem = new MenuItem { Header = "退出" };
+        exitItem.Click += (_, _) => exit();
+        menu.Items.Add(openItem);
+        menu.Items.Add(exitItem);
+        _icon.ContextMenu = menu;
+        _icon.DoubleClickCommand = new RelayCommand(() => show());
     }
 
-    public void Show()
-        => _icon.Visible = true;
+    public void Show() { }
 
     public void Notify(string text)
-        => _icon.ShowBalloonTip(3000, "BBK 同步与备份工具", text, ToolTipIcon.Info);
+        => _icon.ShowBalloonTip("BBK 同步与备份工具", text, BalloonIcon.Info);
 
     public void Dispose()
     {
-        _icon.Visible = false;
-        _icon.ContextMenuStrip?.Dispose();
         _icon.Dispose();
     }
+}
+
+internal sealed class RelayCommand : System.Windows.Input.ICommand
+{
+    private readonly Action _execute;
+    public RelayCommand(Action execute) => _execute = execute;
+    public event EventHandler? CanExecuteChanged;
+    public bool CanExecute(object? parameter) => true;
+    public void Execute(object? parameter) => _execute();
 }

@@ -8,7 +8,6 @@ using System.Windows.Controls;
 using System.Windows.Documents;
 using System.Windows.Input;
 using System.Windows.Media;
-using Forms = System.Windows.Forms;
 using Microsoft.Win32;
 
 namespace LanFileSync;
@@ -214,13 +213,13 @@ public partial class MainWindow : Window
 
     private void BtnBrowse_Click(object sender, RoutedEventArgs e)
     {
-        using var dlg = new Forms.FolderBrowserDialog { Description = "选择文件夹", UseDescriptionForTitle = true };
-        if (dlg.ShowDialog() == Forms.DialogResult.OK) txtRoot.Text = dlg.SelectedPath;
+        var dlg = new OpenFolderDialog { Title = "选择文件夹" };
+        if (dlg.ShowDialog() == true) txtRoot.Text = dlg.FolderName;
     }
     private void BtnBackupBrowse_Click(object sender, RoutedEventArgs e)
     {
-        using var dlg = new Forms.FolderBrowserDialog { Description = "选择备份目标文件夹", UseDescriptionForTitle = true };
-        if (dlg.ShowDialog() == Forms.DialogResult.OK) txtBackupDest.Text = dlg.SelectedPath;
+        var dlg = new OpenFolderDialog { Title = "选择备份目标文件夹" };
+        if (dlg.ShowDialog() == true) txtBackupDest.Text = dlg.FolderName;
     }
     private void BtnTransferFile_Click(object sender, RoutedEventArgs e)
     {
@@ -229,8 +228,8 @@ public partial class MainWindow : Window
     }
     private void BtnTransferDir_Click(object sender, RoutedEventArgs e)
     {
-        using var dlg = new Forms.FolderBrowserDialog { Description = "选择要传输的文件夹", UseDescriptionForTitle = true };
-        if (dlg.ShowDialog() == Forms.DialogResult.OK) txtTransferPath.Text = dlg.SelectedPath;
+        var dlg = new OpenFolderDialog { Title = "选择要传输的文件夹" };
+        if (dlg.ShowDialog() == true) txtTransferPath.Text = dlg.FolderName;
     }
     private void BtnHistory_Click(object sender, RoutedEventArgs e)
     {
