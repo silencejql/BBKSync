@@ -193,6 +193,21 @@ public partial class MainWindow
                     else
                     {
                         LogDivider(); LogLine($"以对方为源连接对方 {host}:{port} 成功，更新到本机 {root} ...");
+                        if (cbBackupBeforeSync.IsChecked == true && !string.IsNullOrWhiteSpace(txtBackupDest.Text.Trim()))
+                        {
+                            string dest = Path.Combine(txtBackupDest.Text.Trim(), $"BBK_接收更新备份_{DateTime.Now:yyyyMMdd}");
+                            LogLine($"先备份本机 BBK 到 {dest}");
+                            try
+                            {
+                                var be = new BackupEngine(root, dest, ReadBackupOptions());
+                                var bakFiles = be.Plan();
+                                await be.RunAsync(OnFileProgress, m => LogLineError("同步前备份跳过: " + m), ct);
+                                LogLine($"同步前备份完成（{bakFiles.Count} 项）");
+                                await CompressAndRemoveFolderAsync(dest, ShouldCompress);
+                            }
+                            catch (ArgumentException) { LogLine($"{txtBackupDest.Text.Trim()} 为空或与同步目录相同，跳过同步前备份。"); }
+                            catch (Exception ex) { LogLineError("同步前备份失败: " + ex.Message); }
+                        }
                         await client.PullAsync(root, options, LogLine, OnFileProgress, OnTotal, m => LogLineError("传输失败，跳过: " + m), ct);
                     }
                     okIps.Add(host); LogLine($"同步完成: {host}");
