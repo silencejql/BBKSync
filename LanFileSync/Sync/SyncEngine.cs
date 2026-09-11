@@ -145,22 +145,29 @@ public sealed class SyncEngine
         Directory.CreateDirectory(dir);
         string tmp = target + "." + Guid.NewGuid().ToString("N") + ".tmp";
 
-        await using (var fs = new FileStream(tmp, FileMode.Create, FileAccess.Write, FileShare.None, Constants.StreamBufferSize, FileOptions.SequentialScan))
+        try
         {
-            long remaining = size;
-            var buf = new byte[Constants.StreamBufferSize];
-            while (remaining > 0)
+            await using (var fs = new FileStream(tmp, FileMode.Create, FileAccess.Write, FileShare.None, Constants.StreamBufferSize, FileOptions.SequentialScan))
             {
-                int n = (int)Math.Min(buf.LongLength, remaining);
-                await peer.ReadRawAsync(buf, n, ct);
-                await fs.WriteAsync(buf.AsMemory(0, n), ct);
-                remaining -= n;
+                long remaining = size;
+                var buf = new byte[Constants.StreamBufferSize];
+                while (remaining > 0)
+                {
+                    int n = (int)Math.Min(buf.LongLength, remaining);
+                    await peer.ReadRawAsync(buf, n, ct);
+                    await fs.WriteAsync(buf.AsMemory(0, n), ct);
+                    remaining -= n;
+                }
             }
-        }
 
-        MoveIntoPlace(tmp, target);
-        try { File.SetLastWriteTimeUtc(target, new DateTime(mtimeTicks, DateTimeKind.Utc)); } catch { }
-        try { if (File.Exists(tmp)) File.Delete(tmp); } catch { }
+            MoveIntoPlace(tmp, target);
+            try { File.SetLastWriteTimeUtc(target, new DateTime(mtimeTicks, DateTimeKind.Utc)); } catch { }
+        }
+        catch
+        {
+            try { if (File.Exists(tmp)) File.Delete(tmp); } catch { }
+            throw;
+        }
     }
 
     private void MoveIntoPlace(string tmp, string target)
