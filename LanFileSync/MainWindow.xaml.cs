@@ -26,7 +26,9 @@ public partial class MainWindow : Window
 
     public MainWindow()
     {
-        _startMinimized = Environment.GetCommandLineArgs().Any(a => a.Equals("--minimized", StringComparison.OrdinalIgnoreCase));
+        _startMinimized = Environment.GetCommandLineArgs().Any(a =>
+            a.Equals("--minimized", StringComparison.OrdinalIgnoreCase) ||
+            a.Equals("--autostart", StringComparison.OrdinalIgnoreCase));
         InitializeComponent();
         if (_startMinimized) { ShowInTaskbar = false; WindowState = WindowState.Minimized; }
         Icon = AppIcons.WindowIcon() ?? Icon;
