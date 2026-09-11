@@ -518,14 +518,12 @@
                                 <Button Content="复制日志" Padding="12,5" Click="BtnCopyLog_Click" Margin="0,0,8,0" />
                                 <Button Content="清空日志" Padding="12,5" Click="BtnClearLog_Click" />
                             </StackPanel>
-                            <ScrollViewer VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Auto">
-                                <RichTextBox x:Name="txtLog" FontFamily="Consolas" FontSize="12"
+                            <RichTextBox x:Name="txtLog" FontFamily="Consolas" FontSize="12"
                                  Background="#FBFCFE" BorderBrush="{StaticResource CardBorderBrush}" BorderThickness="1"
                                  IsReadOnly="True"
                                  VerticalScrollBarVisibility="Auto"
                                  HorizontalScrollBarVisibility="Auto"
                                  ContextMenu="{x:Null}" />
-                            </ScrollViewer>
                         </DockPanel>
                     </GroupBox>
                 </Grid>
