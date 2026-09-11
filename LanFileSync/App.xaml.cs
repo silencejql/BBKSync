@@ -1,12 +1,23 @@
 using System.IO;
+using System.Threading;
 using System.Windows;
 
 namespace LanFileSync;
 
 public partial class App : Application
 {
-    public App()
+    private Mutex? _mutex;
+
+    protected override void OnStartup(StartupEventArgs e)
     {
+        _mutex = new Mutex(true, "BBKSync_SingleInstance", out bool createdNew);
+        if (!createdNew)
+        {
+            MessageBox.Show("BBKSync 已在运行中，不能重复启动。", "提示", MessageBoxButton.OK, MessageBoxImage.Information);
+            Shutdown();
+            return;
+        }
+
         DispatcherUnhandledException += (_, e) =>
         {
             LogCrash(e.Exception);
@@ -22,6 +33,13 @@ public partial class App : Application
             LogCrash(e.Exception);
             e.SetObserved();
         };
+    }
+
+    protected override void OnExit(ExitEventArgs e)
+    {
+        _mutex?.ReleaseMutex();
+        _mutex?.Dispose();
+        base.OnExit(e);
     }
 
     private static void LogCrash(Exception ex)
