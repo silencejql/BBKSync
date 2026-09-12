@@ -581,6 +581,9 @@ public partial class MainWindow : Window
         try { hosts = IpHelper.ExpandIps(cboPeerIp.Text ?? ""); }
         catch (FormatException ex) { MessageBox.Show(ex.Message, "错误", MessageBoxButton.OK, MessageBoxImage.Warning); return; }
         if (hosts.Count == 0) { MessageBox.Show("请输入对方 IP 或范围。", "提示", MessageBoxButton.OK, MessageBoxImage.Information); return; }
+        string[] killNames = txtAlwaysKillNames.Text
+            .Split(new[] { ',', '，', ';', '；' }, StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries)
+            .Where(s => s.Length > 0).ToArray();
         StartBusy();
         var ct = _coordinator.Token; _opLabel = "关闭FreeForm";
         var okIps = new List<string>(); var failed = new List<string>();
@@ -592,10 +595,11 @@ public partial class MainWindow : Window
                 {
                     using var client = new PeerClient();
                     await client.ConnectAsync(host, port, Constants.RoleAlwaysClose, ct);
-                    LogDivider(); LogLine($"连接 {host}:{port}，关闭远端 FreeForm...");
-                    int remaining = await client.AlwaysCloseAsync(ct);
-                    okIps.Add(host); LogLine($"完成: {host}，剩余 {remaining} 个进程运行中");
-                    txtAlwaysStatus.Text = $"{host}: 剩余 {remaining} 个 FreeForm 进程运行中";
+                    LogDivider(); LogLine($"连接 {host}:{port}，关闭远端进程...");
+                    int remaining = await client.AlwaysCloseAsync(killNames, ct);
+                    string display = killNames.Length > 0 ? string.Join(", ", killNames) : FreeFormKiller.ProcessPrefixAsterisk;
+                    okIps.Add(host); LogLine($"完成: {host}（{display}），剩余 {remaining} 个进程运行中");
+                    txtAlwaysStatus.Text = $"{host}: 已结束 {display}，剩余 {remaining} 个进程运行中";
                 }
                 catch (OperationCanceledException) { throw; }
                 catch (Exception ex) { failed.Add($"{host} - {ex.Message}"); LogLineError($"失败 {host}: {ex.Message}"); }

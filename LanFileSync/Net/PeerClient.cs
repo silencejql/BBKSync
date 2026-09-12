@@ -180,8 +180,9 @@ public sealed class PeerClient : IDisposable
         _tcp?.Dispose();
     }
 
-    public async Task<int> AlwaysCloseAsync(CancellationToken ct)
+    public async Task<int> AlwaysCloseAsync(string[] killNames, CancellationToken ct)
     {
+        await _conn!.SendJsonAsync(new { op = "aclose", names = killNames }, ct);
         var frame = await _conn!.RecvJsonAsync(ct)
             ?? throw new EndOfStreamException("连接已断开");
         string op = frame.GetProperty("op").GetString()!;

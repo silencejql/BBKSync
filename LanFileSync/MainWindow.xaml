@@ -457,6 +457,15 @@
                                                          ToolTip="要启动的程序完整路径（如 D:\FreeForm\bin\FreeFormAlways.exe）" />
                                                 <Button Grid.Column="2" Content="浏览..." Padding="12,6" Margin="8,0,0,0" Click="BtnAlwaysBrowse_Click" />
                                             </Grid>
+                                            <Grid Margin="0,8,0,0">
+                                                <Grid.ColumnDefinitions>
+                                                    <ColumnDefinition Width="Auto" />
+                                                    <ColumnDefinition Width="*" />
+                                                </Grid.ColumnDefinitions>
+                                                <TextBlock Text="关闭进程名:" VerticalAlignment="Center" ToolTip="要结束的远端进程名前缀，多个用逗号或分号分隔" />
+                                                <TextBox x:Name="txtAlwaysKillNames" Grid.Column="1" Margin="8,0,0,0" Height="30"
+                                                         ToolTip="要结束的远端进程名前缀，多个用逗号或分号分隔。留空则使用 FreeFormAlways。&#x0a;例：FreeFormAlways,MyApp;AnotherApp" />
+                                            </Grid>
                                         </StackPanel>
                                         <Rectangle Grid.Column="1" Width="1" Fill="{StaticResource CardBorderBrush}" Margin="14,0" />
                                         <StackPanel Grid.Column="2" Margin="14,0,0,0">

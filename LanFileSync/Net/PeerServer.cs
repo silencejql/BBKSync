@@ -311,10 +311,17 @@ public sealed class PeerServer : IDisposable
                 }
                 else if (role == Constants.RoleAlwaysClose)
                 {
-                    _log("收到关闭 FreeForm 请求...");
-                    int killed = FreeFormKiller.KillAll();
-                    int remaining = FreeFormKiller.FindFreeFormProcesses().Count();
-                    _log($"已结束 {killed} 个 {FreeFormKiller.ProcessPrefixAsterisk} 进程，剩余 {remaining} 个");
+                    var init = await conn.RecvJsonAsync(ct)
+                        ?? throw new EndOfStreamException("连接已断开");
+                    string op0 = init.GetProperty("op").GetString()!;
+                    if (op0 != "aclose")
+                        throw new InvalidOperationException("未知消息: " + op0);
+                    var namesArr = init.GetProperty("names").EnumerateArray().Select(x => x.GetString()!).ToArray();
+                    string namesDisplay = namesArr.Length > 0 ? string.Join(", ", namesArr) : FreeFormKiller.ProcessPrefixAsterisk;
+                    _log($"收到关闭 FreeForm 请求（进程名: {namesDisplay}）...");
+                    int killed = FreeFormKiller.KillByNames(namesArr);
+                    int remaining = FreeFormKiller.FindProcessesByNames(namesArr).Count();
+                    _log($"已结束 {killed} 个进程，剩余 {remaining} 个");
                     await conn.SendJsonAsync(new { op = "ok", killed, remaining }, CancellationToken.None);
                 }
                 else if (role == Constants.RoleAlwaysOpen)

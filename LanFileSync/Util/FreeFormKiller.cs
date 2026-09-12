@@ -26,10 +26,53 @@ public static class FreeFormKiller
         });
     }
 
+    public static IEnumerable<Process> FindProcessesByNames(string[] prefixes)
+    {
+        if (prefixes.Length == 0)
+            return FindFreeFormProcesses();
+        return Process.GetProcesses().Where(p =>
+        {
+            try
+            {
+                foreach (var prefix in prefixes)
+                    if (p.ProcessName.StartsWith(prefix, StringComparison.OrdinalIgnoreCase))
+                        return true;
+                return false;
+            }
+            catch
+            {
+                return false;
+            }
+        });
+    }
+
     public static int KillAll()
     {
         int killed = 0;
         var procs = FindFreeFormProcesses().ToList();
+        foreach (var p in procs)
+        {
+            try
+            {
+                p.Kill(entireProcessTree: true);
+                if (!p.WaitForExit(5000))
+                    killed += KillByTaskKill(p.Id);
+                else
+                    killed++;
+                p.Dispose();
+            }
+            catch
+            {
+                try { p.Dispose(); } catch { }
+            }
+        }
+        return killed;
+    }
+
+    public static int KillByNames(string[] prefixes)
+    {
+        int killed = 0;
+        var procs = FindProcessesByNames(prefixes).ToList();
         foreach (var p in procs)
         {
             try
