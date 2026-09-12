@@ -471,12 +471,19 @@
                                         <StackPanel Grid.Column="2" Margin="14,0,0,0">
                                             <TextBlock Text="操作" FontWeight="SemiBold"
                                                        Foreground="{StaticResource TextSubBrush}" Margin="0,0,0,6" />
-                                            <Button x:Name="btnAlwaysClose" Content="关闭远端 FreeForm" Padding="14,6" Margin="0,3,0,0"
-                                                    Click="BtnAlwaysClose_Click" />
-                                            <Button x:Name="btnAlwaysOpen" Content="启动远端 FreeForm" Padding="14,6" Margin="0,8,0,0"
-                                                    Click="BtnAlwaysOpen_Click" />
+                                            <Grid>
+                                                <Grid.ColumnDefinitions>
+                                                    <ColumnDefinition Width="*" />
+                                                    <ColumnDefinition Width="Auto" />
+                                                    <ColumnDefinition Width="Auto" />
+                                                </Grid.ColumnDefinitions>
+                                                <Button x:Name="btnAlwaysOpen" Grid.Column="1" Content="启动远端应用程序" Padding="14,6"
+                                                        Click="BtnAlwaysOpen_Click" />
+                                                <Button x:Name="btnAlwaysClose" Grid.Column="2" Content="关闭远端应用程序" Padding="14,6" Margin="8,0,0,0"
+                                                        Click="BtnAlwaysClose_Click" />
+                                            </Grid>
                                             <TextBlock x:Name="txtAlwaysHint" Margin="0,8,0,0" Foreground="{StaticResource TextSubBrush}" TextWrapping="Wrap" FontSize="10"
-                                                       Text="关闭：结束远端 FreeFormAlways* 进程。&#x0a;启动：在远端执行指定路径的程序。" />
+                                                       Text="启动：在远端执行指定路径的程序。&#x0a;关闭：结束远端指定进程名前缀的进程。" />
                                             <TextBlock x:Name="txtAlwaysStatus" Margin="0,6,0,0" Foreground="{StaticResource TextMainBrush}" TextWrapping="Wrap" FontSize="11"
                                                        FontWeight="SemiBold" />
                                         </StackPanel>

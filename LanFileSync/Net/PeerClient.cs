@@ -180,7 +180,7 @@ public sealed class PeerClient : IDisposable
         _tcp?.Dispose();
     }
 
-    public async Task<int> AlwaysCloseAsync(string[] killNames, CancellationToken ct)
+    public async Task<(string Msg, int Remaining)> AlwaysCloseAsync(string[] killNames, CancellationToken ct)
     {
         await _conn!.SendJsonAsync(new { op = "aclose", names = killNames }, ct);
         var frame = await _conn!.RecvJsonAsync(ct)
@@ -190,10 +190,10 @@ public sealed class PeerClient : IDisposable
             throw new InvalidOperationException(frame.GetProperty("msg").GetString());
         if (op != "ok")
             throw new InvalidOperationException("未知消息: " + op);
-        return frame.GetProperty("remaining").GetInt32();
+        return (frame.GetProperty("msg").GetString() ?? "", frame.GetProperty("remaining").GetInt32());
     }
 
-    public async Task<int> AlwaysOpenAsync(string exePath, CancellationToken ct)
+    public async Task<(string Msg, int Running)> AlwaysOpenAsync(string exePath, CancellationToken ct)
     {
         await _conn!.SendJsonAsync(new { op = "aopen", path = exePath }, ct);
         var frame = await _conn!.RecvJsonAsync(ct)
@@ -203,7 +203,7 @@ public sealed class PeerClient : IDisposable
             throw new InvalidOperationException(frame.GetProperty("msg").GetString());
         if (op != "ok")
             throw new InvalidOperationException("未知消息: " + op);
-        return frame.GetProperty("running").GetInt32();
+        return (frame.GetProperty("msg").GetString() ?? "", frame.GetProperty("running").GetInt32());
     }
 
     public async Task UpdateAsync(

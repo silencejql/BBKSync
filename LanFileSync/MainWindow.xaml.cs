@@ -103,6 +103,8 @@ public partial class MainWindow : Window
         txtTransferPath.Text = _settings.Settings.Transfer.Path;
         cbTransferSameSkip.IsChecked = _settings.Settings.Transfer.SameSkip;
         FreeFormKiller.ProcessPrefix = _settings.Settings.FreeForm.ProcessPrefix;
+        txtAlwaysPath.Text = _settings.Settings.FreeForm.AlwaysPath;
+        txtAlwaysKillNames.Text = _settings.Settings.FreeForm.AlwaysKillNames;
         chkAutoStart.IsChecked = _settings.Settings.Server.AutoStartAndListen;
         rbReceive.IsChecked = true;
         RbBackupSource_Changed(null, null!);
@@ -546,6 +548,8 @@ public partial class MainWindow : Window
         _settings.Settings.Backup.AutoFetchComputerName = cbAutoFetchName.IsChecked == true;
         _settings.Settings.Transfer.Path = txtTransferPath.Text.Trim();
         _settings.Settings.Transfer.SameSkip = cbTransferSameSkip.IsChecked ?? true;
+        _settings.Settings.FreeForm.AlwaysPath = txtAlwaysPath.Text.Trim();
+        _settings.Settings.FreeForm.AlwaysKillNames = txtAlwaysKillNames.Text.Trim();
         _settings.Save();
     }
 
@@ -596,10 +600,10 @@ public partial class MainWindow : Window
                     using var client = new PeerClient();
                     await client.ConnectAsync(host, port, Constants.RoleAlwaysClose, ct);
                     LogDivider(); LogLine($"连接 {host}:{port}，关闭远端进程...");
-                    int remaining = await client.AlwaysCloseAsync(killNames, ct);
+                    var (msg, remaining) = await client.AlwaysCloseAsync(killNames, ct);
                     string display = killNames.Length > 0 ? string.Join(", ", killNames) : FreeFormKiller.ProcessPrefixAsterisk;
-                    okIps.Add(host); LogLine($"完成: {host}（{display}），剩余 {remaining} 个进程运行中");
-                    txtAlwaysStatus.Text = $"[完成] {host}: 已结束 {display}，剩余 {remaining} 个进程运行中";
+                    okIps.Add(host); LogLine($"完成: {host}（{display}），{msg}");
+                    txtAlwaysStatus.Text = $"[完成] {host}: {display} - {msg}";
                 }
                 catch (OperationCanceledException) { throw; }
                 catch (Exception ex) { failed.Add($"{host} - {ex.Message}"); LogLineError($"失败 {host}: {ex.Message}"); }
@@ -642,10 +646,10 @@ public partial class MainWindow : Window
                 {
                     using var client = new PeerClient();
                     await client.ConnectAsync(host, port, Constants.RoleAlwaysOpen, ct);
-                    LogDivider(); LogLine($"连接 {host}:{port}，启动远端 FreeForm...");
-                    int running = await client.AlwaysOpenAsync(exePath, ct);
-                    okIps.Add(host); LogLine($"完成: {host}，当前 {running} 个进程运行中");
-                    txtAlwaysStatus.Text = $"[完成] {host}: 已启动，当前 {running} 个进程运行中";
+                    LogDivider(); LogLine($"连接 {host}:{port}，启动远端应用程序...");
+                    var (msg, running) = await client.AlwaysOpenAsync(exePath, ct);
+                    okIps.Add(host); LogLine($"完成: {host}，{msg}");
+                    txtAlwaysStatus.Text = $"[完成] {host}: {msg}";
                 }
                 catch (OperationCanceledException) { throw; }
                 catch (Exception ex) { failed.Add($"{host} - {ex.Message}"); LogLineError($"失败 {host}: {ex.Message}"); }

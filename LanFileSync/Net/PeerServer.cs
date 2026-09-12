@@ -321,8 +321,9 @@ public sealed class PeerServer : IDisposable
                     _log($"收到关闭 FreeForm 请求（进程名: {namesDisplay}）...");
                     int killed = FreeFormKiller.KillByNames(namesArr);
                     int remaining = FreeFormKiller.FindProcessesByNames(namesArr).Count();
-                    _log($"已结束 {killed} 个进程，剩余 {remaining} 个");
-                    await conn.SendJsonAsync(new { op = "ok", killed, remaining }, CancellationToken.None);
+                    string msg = $"已结束 {killed} 个进程，剩余 {remaining} 个运行中";
+                    _log(msg);
+                    await conn.SendJsonAsync(new { op = "ok", msg, killed, remaining }, CancellationToken.None);
                 }
                 else if (role == Constants.RoleAlwaysOpen)
                 {
@@ -343,8 +344,9 @@ public sealed class PeerServer : IDisposable
                         };
                         Process.Start(psi);
                         int running = FreeFormKiller.FindFreeFormProcesses().Count();
-                        _log($"已启动: {exePath}，当前 {running} 个进程运行中");
-                        await conn.SendJsonAsync(new { op = "ok", msg = "已启动", running }, CancellationToken.None);
+                        string msg = $"已启动，当前 {running} 个进程运行中";
+                        _log(msg);
+                        await conn.SendJsonAsync(new { op = "ok", msg, running }, CancellationToken.None);
                     }
                     catch (Exception ex)
                     {
