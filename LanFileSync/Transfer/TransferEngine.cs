@@ -7,15 +7,13 @@ public sealed class TransferEngine
     private readonly string _itemPath;
     private readonly bool _itemIsDir;
     private readonly bool _sameSkip;
-    private readonly bool _killFreeForm;
     private readonly List<string> _needed = new();
 
-    public TransferEngine(string itemPath, bool isDir, bool sameSkip, bool killFreeForm)
+    public TransferEngine(string itemPath, bool isDir, bool sameSkip)
     {
         _itemPath = itemPath.Replace('/', Path.DirectorySeparatorChar);
         _itemIsDir = isDir;
         _sameSkip = sameSkip;
-        _killFreeForm = killFreeForm;
     }
 
     public IReadOnlyList<string> NeedList => _needed;
@@ -203,7 +201,7 @@ public sealed class TransferEngine
             return;
         }
 
-        if (!MoveIntoPlace(tmp, target, _killFreeForm, log, onError))
+        if (!MoveIntoPlace(tmp, target, log, onError))
         {
             try { if (File.Exists(tmp)) File.Delete(tmp); } catch { }
             return;
@@ -212,7 +210,7 @@ public sealed class TransferEngine
         try { File.SetLastWriteTimeUtc(target, new DateTime(mtimeTicks, DateTimeKind.Utc)); } catch { }
     }
 
-    private bool MoveIntoPlace(string tmp, string target, bool killFreeForm, Action<string> log, Action<string> onError)
+    private bool MoveIntoPlace(string tmp, string target, Action<string> log, Action<string> onError)
     {
         int attempt = 0;
         while (true)
@@ -225,10 +223,9 @@ public sealed class TransferEngine
             catch (IOException)
             {
                 attempt++;
-                if (killFreeForm && attempt <= Constants.MaxRetryCount)
+                if (attempt <= Constants.MaxRetryCount)
                 {
-                    int killed = FreeFormKiller.KillAll();
-                    ReceiveMessage($"更新出错: {target}，已结束远端电脑 {killed} 个 {FreeFormKiller.ProcessPrefixAsterisk} 进程，重试第 {attempt} 次...", onError);
+                    ReceiveMessage($"更新出错: {target}，重试第 {attempt} 次...", onError);
                     Thread.Sleep(Constants.RetryDelayMs * attempt);
                     continue;
                 }

@@ -297,8 +297,7 @@
                                                Foreground="{StaticResource TextSubBrush}" Margin="0,0,0,6" />
                                             <CheckBox x:Name="cbBinReplace" Content="Bin 整体替换（不勾则按日期增量）" Margin="0,3,0,0"
                                               ToolTip="勾选：先删除本地 Bin 再整体拷贝。不勾选：按修改日期/大小只传输不同的文件。" />
-                                            <CheckBox x:Name="cbKillFreeForm" Content="替换出错时自动结束 BBK软件 后重试" Margin="0,6,0,0" IsChecked="True"
-                                              ToolTip="相当于自动打开任务管理器结束进程，最多重试3次。" />
+
                                             <CheckBox x:Name="cbBackupBeforeSync" Margin="0,10,0,0" IsChecked="True"
                                               Content="同步更新前先备份被更新电脑的 BBK（规则同备份）"
                                               ToolTip="TCP 接收更新、从共享更新本机、或对方推送更新时，都会先把被更新那台电脑的 BBK 备份到&#x201c;备份目录&#x201d;再开始同步。" />
@@ -395,8 +394,7 @@
                                                Foreground="{StaticResource TextSubBrush}" Margin="0,0,0,6" />
                                             <CheckBox x:Name="cbTransferSameSkip" Content="修改时间与大小都相同则跳过传输" IsChecked="True" Margin="0,3,0,0"
                                               ToolTip="勾选后，目标电脑上已存在且大小、修改时间相同的文件不再重复传输。" />
-                                            <CheckBox x:Name="cbTransferKillFreeForm" Content="出错时结束 FreeFormAlways* 后重试一次" IsChecked="True" Margin="0,8,0,0"
-                                              ToolTip="更新报错时输出日志，并关闭目标电脑 FreeFormAlways 开头的进程后重试一次；仍失败则输出日志跳过。" />
+
                                             <TextBlock Margin="0,8,0,0" Foreground="{StaticResource TextSubBrush}" TextWrapping="Wrap" FontSize="10" FontWeight="Normal"
                                                Text="说明：传输的目标路径与本机完全相同（如本机 D:\X\bin\app.exe 将传到对方 D:\X\bin\app.exe）。" />
                                         </StackPanel>
@@ -434,6 +432,98 @@
                                             <TextBlock Margin="0,4,0,0" Foreground="{StaticResource TextSubBrush}" FontSize="11" TextWrapping="Wrap"
                                                        Text="• 更新前建议先关闭远端电脑上正在运行的 BBK 相关操作" />
                                         </StackPanel>
+                                    </Grid>
+                                </TabItem>
+                                <TabItem Header="Always管理" Width="100">
+                                    <Grid Margin="6,10,6,6">
+                                        <Grid.ColumnDefinitions>
+                                            <ColumnDefinition Width="*" />
+                                            <ColumnDefinition Width="Auto" />
+                                            <ColumnDefinition Width="*" />
+                                        </Grid.ColumnDefinitions>
+                                        <StackPanel>
+                                            <TextBlock Text="远程管理 FreeFormAlways 进程" FontWeight="SemiBold"
+                                                       Foreground="{StaticResource TextSubBrush}" Margin="0,0,0,6" />
+                                            <TextBlock TextWrapping="Wrap" Foreground="{StaticResource TextSubBrush}" FontSize="11"
+                                                       Text="关闭或启动远端电脑的 FreeFormAlways 进程。&#x0a;远端电脑需先启动 BBK 服务。" />
+                                            <Grid Margin="0,10,0,0">
+                                                <Grid.ColumnDefinitions>
+                                                    <ColumnDefinition Width="Auto" />
+                                                    <ColumnDefinition Width="*" />
+                                                    <ColumnDefinition Width="Auto" />
+                                                </Grid.ColumnDefinitions>
+                                                <TextBlock Text="程序路径:" VerticalAlignment="Center" />
+                                                <TextBox x:Name="txtAlwaysPath" Grid.Column="1" Margin="8,0,0,0" Height="30"
+                                                         ToolTip="要启动的程序完整路径（如 D:\FreeForm\bin\FreeFormAlways.exe）" />
+                                                <Button Grid.Column="2" Content="浏览..." Padding="12,6" Margin="8,0,0,0" Click="BtnAlwaysBrowse_Click" />
+                                            </Grid>
+                                        </StackPanel>
+                                        <Rectangle Grid.Column="1" Width="1" Fill="{StaticResource CardBorderBrush}" Margin="14,0" />
+                                        <StackPanel Grid.Column="2" Margin="14,0,0,0">
+                                            <TextBlock Text="操作" FontWeight="SemiBold"
+                                                       Foreground="{StaticResource TextSubBrush}" Margin="0,0,0,6" />
+                                            <Button x:Name="btnAlwaysClose" Content="关闭远端 FreeForm" Padding="14,6" Margin="0,3,0,0"
+                                                    Click="BtnAlwaysClose_Click" />
+                                            <Button x:Name="btnAlwaysOpen" Content="启动远端 FreeForm" Padding="14,6" Margin="0,8,0,0"
+                                                    Click="BtnAlwaysOpen_Click" />
+                                            <TextBlock x:Name="txtAlwaysHint" Margin="0,8,0,0" Foreground="{StaticResource TextSubBrush}" TextWrapping="Wrap" FontSize="10"
+                                                       Text="关闭：结束远端 FreeFormAlways* 进程。&#x0a;启动：在远端执行指定路径的程序。" />
+                                            <TextBlock x:Name="txtAlwaysStatus" Margin="0,6,0,0" Foreground="{StaticResource TextMainBrush}" TextWrapping="Wrap" FontSize="11"
+                                                       FontWeight="SemiBold" />
+                                        </StackPanel>
+                                        <!-- 半透明玻璃遮罩（密码保护） -->
+                                        <Border x:Name="alwaysOverlay" Grid.ColumnSpan="3"
+                                                CornerRadius="8" IsHitTestVisible="True" ClipToBounds="True">
+                                            <Grid>
+                                                <Border Background="#B0F3F5F9" CornerRadius="8">
+                                                    <Border.Effect>
+                                                        <BlurEffect Radius="6" KernelType="Gaussian" />
+                                                    </Border.Effect>
+                                                </Border>
+                                                <StackPanel HorizontalAlignment="Center" VerticalAlignment="Center" Width="500">
+                                                    <TextBlock Text="请输入密码以使用 Always 管理功能" FontSize="18"
+                                                               Foreground="{StaticResource TextMainBrush}" HorizontalAlignment="Center" Margin="0,10,0,5" />
+                                                    <Border HorizontalAlignment="Stretch" Background="#FFFFFF"
+                                                            BorderBrush="{StaticResource InputBorderBrush}" BorderThickness="1"
+                                                            CornerRadius="5" SnapsToDevicePixels="True">
+                                                        <Grid Height="40" HorizontalAlignment="Stretch">
+                                                            <Grid.ColumnDefinitions>
+                                                                <ColumnDefinition Width="*" />
+                                                                <ColumnDefinition Width="Auto" />
+                                                            </Grid.ColumnDefinitions>
+                                                            <PasswordBox x:Name="pwdAlways" Grid.Column="0"
+                                                                         FontSize="14" Padding="10,6,5,6" BorderThickness="0"
+                                                                         Background="Transparent" VerticalContentAlignment="Center"
+                                                                         KeyDown="PwdAlways_KeyDown" />
+                                                            <TextBox x:Name="txtAlwaysPwd" Grid.Column="0"
+                                                                     FontSize="14" Padding="10,6,5,6" VerticalContentAlignment="Center"
+                                                                     Visibility="Collapsed" BorderThickness="0" Background="Transparent"
+                                                                     KeyDown="PwdAlways_KeyDown" />
+                                                            <Button x:Name="btnToggleAlwaysPwd" Grid.Column="1" Width="50"
+                                                                    Margin="0,0,4,0" Cursor="Hand"
+                                                                    Background="Transparent" BorderThickness="0"
+                                                                    Click="BtnToggleAlwaysPwd_Click"
+                                                                    ToolTip="显示 / 隐藏密码">
+                                                                <Grid Width="18" Height="18">
+                                                                    <Path x:Name="eyeIconAlways" Stretch="Uniform"
+                                                                          Data="M12 4.5C7 4.5 2.73 7.61 1 12c1.73 4.39 6 7.5 11 7.5s9.27-3.11 11-7.5c-1.73-4.39-6-7.5-11-7.5zM12 17c-2.76 0-5-2.24-5-5s2.24-5 5-5 5 2.24 5 5-2.24 5-5 5zm0-8c-1.66 0-3 1.34-3 3s1.34 3 3 3 3-1.34 3-3-1.34-3-3-3z"
+                                                                          Fill="{StaticResource TextSubBrush}" />
+                                                                    <Line x:Name="eyeLineAlways" X1="2" Y1="2" X2="22" Y2="22"
+                                                                          Stroke="{StaticResource TextSubBrush}" StrokeThickness="2"
+                                                                          Visibility="Visible" />
+                                                                </Grid>
+                                                            </Button>
+                                                        </Grid>
+                                                    </Border>
+                                                    <Button Content="确认" Padding="14,6" HorizontalAlignment="Center"
+                                                            Margin="0,5,0,0" Click="BtnAlwaysUnlock_Click"
+                                                            Style="{StaticResource AccentButton}" />
+                                                    <TextBlock x:Name="txtAlwaysError" Text="密码错误" FontSize="11"
+                                                               Foreground="#E81123" HorizontalAlignment="Center" Margin="0,6,0,0"
+                                                               Visibility="Collapsed" />
+                                                </StackPanel>
+                                            </Grid>
+                                        </Border>
                                     </Grid>
                                 </TabItem>
                             </TabControl>

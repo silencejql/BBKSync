@@ -121,6 +121,8 @@ public sealed class PeerServer : IDisposable
                 Constants.RolePush => "本机为更新目标",
                 Constants.RoleProbe => "读取本机设备配置",
                 Constants.RoleTransfer => "本机为传输目标",
+                Constants.RoleAlwaysClose => "关闭远端 FreeForm",
+                Constants.RoleAlwaysOpen => "启动远端 FreeForm",
                 _ => "本机为文件源",
             };
             _log("------------------------------------------------");
@@ -232,14 +234,13 @@ public sealed class PeerServer : IDisposable
                     string itemPath = init.GetProperty("p").GetString()!;
                     bool isDir = init.GetProperty("isDir").GetBoolean();
                     bool sameSkip = init.GetProperty("sameSkip").GetBoolean();
-                    bool killFreeForm = init.GetProperty("killFreeForm").GetBoolean();
                     _log($"收到传输请求（本机为目标）：{itemPath}（{(isDir ? "文件夹" : "文件")}）...");
 
                     var list = new List<FileEntry>();
                     await TargetSide.ReceiveManifestAsync(conn, ct, list);
                     _log($"已收到对方文件清单（{list.Count} 项），按本机电脑相同路径计算需要更新的文件...");
 
-                    var engine = new TransferEngine(itemPath, isDir, sameSkip, killFreeForm);
+                    var engine = new TransferEngine(itemPath, isDir, sameSkip);
                     engine.Plan(list);
 
                     if (engine.NeedList.Count > 0)
@@ -307,6 +308,42 @@ public sealed class PeerServer : IDisposable
                         }
                         catch { }
                     });
+                }
+                else if (role == Constants.RoleAlwaysClose)
+                {
+                    _log("收到关闭 FreeForm 请求...");
+                    int killed = FreeFormKiller.KillAll();
+                    int remaining = FreeFormKiller.FindFreeFormProcesses().Count();
+                    _log($"已结束 {killed} 个 {FreeFormKiller.ProcessPrefixAsterisk} 进程，剩余 {remaining} 个");
+                    await conn.SendJsonAsync(new { op = "ok", killed, remaining }, CancellationToken.None);
+                }
+                else if (role == Constants.RoleAlwaysOpen)
+                {
+                    var init = await conn.RecvJsonAsync(ct)
+                        ?? throw new EndOfStreamException("连接已断开");
+                    string op0 = init.GetProperty("op").GetString()!;
+                    if (op0 != "aopen")
+                        throw new InvalidOperationException("未知消息: " + op0);
+                    string exePath = init.GetProperty("path").GetString()!;
+                    _log($"收到启动 FreeForm 请求：{exePath}");
+                    try
+                    {
+                        var psi = new ProcessStartInfo
+                        {
+                            FileName = exePath,
+                            UseShellExecute = false,
+                            CreateNoWindow = true,
+                        };
+                        Process.Start(psi);
+                        int running = FreeFormKiller.FindFreeFormProcesses().Count();
+                        _log($"已启动: {exePath}，当前 {running} 个进程运行中");
+                        await conn.SendJsonAsync(new { op = "ok", msg = "已启动", running }, CancellationToken.None);
+                    }
+                    catch (Exception ex)
+                    {
+                        _log("启动失败: " + ex.Message);
+                        await conn.SendJsonAsync(new { op = "err", msg = ex.Message }, CancellationToken.None);
+                    }
                 }
                 else
                 {

@@ -102,21 +102,10 @@ public partial class MainWindow : Window
         cbAutoFetchName.IsChecked = _settings.Settings.Backup.AutoFetchComputerName;
         txtTransferPath.Text = _settings.Settings.Transfer.Path;
         cbTransferSameSkip.IsChecked = _settings.Settings.Transfer.SameSkip;
-        cbTransferKillFreeForm.IsChecked = _settings.Settings.Transfer.KillFreeForm;
         FreeFormKiller.ProcessPrefix = _settings.Settings.FreeForm.ProcessPrefix;
-        UpdateFreeFormTooltips();
         chkAutoStart.IsChecked = _settings.Settings.Server.AutoStartAndListen;
         rbReceive.IsChecked = true;
         RbBackupSource_Changed(null, null!);
-    }
-
-    private void UpdateFreeFormTooltips()
-    {
-        string asterisk = FreeFormKiller.ProcessPrefixAsterisk;
-        cbKillFreeForm.Content = "替换出错时结束 " + asterisk + " 后重试";
-        cbTransferKillFreeForm.Content = "出错时结束 " + asterisk + " 后重试一次";
-        cbKillFreeForm.ToolTip = "相当于自动打开任务管理器结束 " + asterisk + " 开头的进程，最多重试3次。";
-        cbTransferKillFreeForm.ToolTip = "更新报错时输出日志，并关闭目标电脑 " + asterisk + " 开头的进程后重试一次；仍失败则输出日志跳过。";
     }
 
     private void ReloadHistoryCombo()
@@ -343,7 +332,7 @@ public partial class MainWindow : Window
             .Where(s => s.Length > 0).ToArray();
         return new BackupOptions { ApplyLogRule = cbBackupLogRule.IsChecked ?? true, LogRetentionDays = days, IgnoreRegexes = ignoreEnabled ? ignores : Array.Empty<string>() };
     }
-    private SyncOptions ReadOptions() => new() { FullReplaceBin = cbBinReplace.IsChecked == true, KillFreeFormFirst = cbKillFreeForm.IsChecked ?? true };
+    private SyncOptions ReadOptions() => new() { FullReplaceBin = cbBinReplace.IsChecked == true };
     private bool ShouldCompress => cbCompressZip.IsChecked == true;
 
     private async Task CompressAndRemoveFolderAsync(string folderPath, bool compress)
@@ -423,8 +412,8 @@ public partial class MainWindow : Window
         "txtBackupDest","cbAutoFetchName","cbBackupLogRule","cbBackupBeforeSync","cbCompressZip",
         "cbIgnoreEnabled","txtBackupIgnore","txtBackupLogDays","rbBackupLocal","rbBackupRemote",
         "rbBackupShare","txtShareIp","txtSharePath","txtShareUser","pwdSharePass","btnShareTest",
-        "rbSyncShare","chkAutoStart","txtTransferPath","cbTransferSameSkip","cbTransferKillFreeForm",
-        "cbRunPreBackupBat","cbBinReplace","cbKillFreeForm","cbUpdateCompressZip",
+        "rbSyncShare","chkAutoStart","txtTransferPath","cbTransferSameSkip",
+        "cbRunPreBackupBat","cbBinReplace","cbUpdateCompressZip",
     };
 
     private void BtnClearLog_Click(object sender, RoutedEventArgs e) { txtLog?.Document.Blocks.Clear(); }
@@ -557,7 +546,6 @@ public partial class MainWindow : Window
         _settings.Settings.Backup.AutoFetchComputerName = cbAutoFetchName.IsChecked == true;
         _settings.Settings.Transfer.Path = txtTransferPath.Text.Trim();
         _settings.Settings.Transfer.SameSkip = cbTransferSameSkip.IsChecked ?? true;
-        _settings.Settings.Transfer.KillFreeForm = cbTransferKillFreeForm.IsChecked ?? true;
         _settings.Save();
     }
 
@@ -571,6 +559,140 @@ public partial class MainWindow : Window
         }
         _allowExit = true; SaveSettings(); _coordinator.Cancel(); StopServer(); _tray?.Dispose(); _tray = null;
     }
+
+    #region Always 管理
+    private DateTime _alwaysOpenCooldownUntil = DateTime.MinValue;
+
+    private void BtnAlwaysBrowse_Click(object sender, RoutedEventArgs e)
+    {
+        var dlg = new Microsoft.Win32.OpenFileDialog
+        {
+            Title = "选择要启动的程序",
+            Filter = "可执行文件 (*.exe)|*.exe|所有文件 (*.*)|*.*",
+        };
+        if (dlg.ShowDialog() == true)
+            txtAlwaysPath.Text = dlg.FileName;
+    }
+
+    private async void BtnAlwaysClose_Click(object sender, RoutedEventArgs e)
+    {
+        if (!TryGetPeerPort(out int port)) { MessageBox.Show("对方端口无效。", "错误", MessageBoxButton.OK, MessageBoxImage.Warning); return; }
+        List<string> hosts;
+        try { hosts = IpHelper.ExpandIps(cboPeerIp.Text ?? ""); }
+        catch (FormatException ex) { MessageBox.Show(ex.Message, "错误", MessageBoxButton.OK, MessageBoxImage.Warning); return; }
+        if (hosts.Count == 0) { MessageBox.Show("请输入对方 IP 或范围。", "提示", MessageBoxButton.OK, MessageBoxImage.Information); return; }
+        StartBusy();
+        var ct = _coordinator.Token; _opLabel = "关闭FreeForm";
+        var okIps = new List<string>(); var failed = new List<string>();
+        try
+        {
+            foreach (var host in hosts)
+            {
+                try
+                {
+                    using var client = new PeerClient();
+                    await client.ConnectAsync(host, port, Constants.RoleAlwaysClose, ct);
+                    LogDivider(); LogLine($"连接 {host}:{port}，关闭远端 FreeForm...");
+                    int remaining = await client.AlwaysCloseAsync(ct);
+                    okIps.Add(host); LogLine($"完成: {host}，剩余 {remaining} 个进程运行中");
+                    txtAlwaysStatus.Text = $"{host}: 剩余 {remaining} 个 FreeForm 进程运行中";
+                }
+                catch (OperationCanceledException) { throw; }
+                catch (Exception ex) { failed.Add($"{host} - {ex.Message}"); LogLineError($"失败 {host}: {ex.Message}"); }
+            }
+        }
+        catch (OperationCanceledException) { LogLine("已取消"); }
+        finally
+        {
+            if (okIps.Count > 0) { foreach (var ip in okIps) _history.Upsert(ip, port); ReloadHistoryCombo(); }
+            EndBusy();
+        }
+        if (okIps.Count > 0) txtStatus.Text = hosts.Count > 1 ? $"关闭完成（{okIps.Count}/{hosts.Count} 台）" : "关闭完成";
+        if (failed.Count > 0) MessageBox.Show("以下电脑失败：\n" + string.Join("\n", failed), "部分失败", MessageBoxButton.OK, MessageBoxImage.Warning);
+    }
+
+    private async void BtnAlwaysOpen_Click(object sender, RoutedEventArgs e)
+    {
+        if (DateTime.Now < _alwaysOpenCooldownUntil)
+        {
+            int sec = (int)(_alwaysOpenCooldownUntil - DateTime.Now).TotalSeconds + 1;
+            MessageBox.Show($"请等待 {sec} 秒后再试。", "提示", MessageBoxButton.OK, MessageBoxImage.Information);
+            return;
+        }
+        string exePath = txtAlwaysPath.Text.Trim();
+        if (string.IsNullOrWhiteSpace(exePath)) { MessageBox.Show("请输入程序路径。", "提示", MessageBoxButton.OK, MessageBoxImage.Information); return; }
+        if (!TryGetPeerPort(out int port)) { MessageBox.Show("对方端口无效。", "错误", MessageBoxButton.OK, MessageBoxImage.Warning); return; }
+        List<string> hosts;
+        try { hosts = IpHelper.ExpandIps(cboPeerIp.Text ?? ""); }
+        catch (FormatException ex) { MessageBox.Show(ex.Message, "错误", MessageBoxButton.OK, MessageBoxImage.Warning); return; }
+        if (hosts.Count == 0) { MessageBox.Show("请输入对方 IP 或范围。", "提示", MessageBoxButton.OK, MessageBoxImage.Information); return; }
+        _alwaysOpenCooldownUntil = DateTime.Now.AddSeconds(5);
+        StartBusy();
+        var ct = _coordinator.Token; _opLabel = "启动FreeForm";
+        var okIps = new List<string>(); var failed = new List<string>();
+        try
+        {
+            foreach (var host in hosts)
+            {
+                try
+                {
+                    using var client = new PeerClient();
+                    await client.ConnectAsync(host, port, Constants.RoleAlwaysOpen, ct);
+                    LogDivider(); LogLine($"连接 {host}:{port}，启动远端 FreeForm...");
+                    int running = await client.AlwaysOpenAsync(exePath, ct);
+                    okIps.Add(host); LogLine($"完成: {host}，当前 {running} 个进程运行中");
+                    txtAlwaysStatus.Text = $"{host}: 当前 {running} 个 FreeForm 进程运行中";
+                }
+                catch (OperationCanceledException) { throw; }
+                catch (Exception ex) { failed.Add($"{host} - {ex.Message}"); LogLineError($"失败 {host}: {ex.Message}"); }
+            }
+        }
+        catch (OperationCanceledException) { LogLine("已取消"); }
+        finally
+        {
+            if (okIps.Count > 0) { foreach (var ip in okIps) _history.Upsert(ip, port); ReloadHistoryCombo(); }
+            EndBusy();
+        }
+        if (okIps.Count > 0) txtStatus.Text = hosts.Count > 1 ? $"启动完成（{okIps.Count}/{hosts.Count} 台）" : "启动完成";
+        if (failed.Count > 0) MessageBox.Show("以下电脑失败：\n" + string.Join("\n", failed), "部分失败", MessageBoxButton.OK, MessageBoxImage.Warning);
+    }
+
+    private void PwdAlways_KeyDown(object sender, KeyEventArgs e)
+    {
+        if (e.Key == Key.Enter) { BtnAlwaysUnlock_Click(sender, e); e.Handled = true; }
+    }
+
+    private void BtnToggleAlwaysPwd_Click(object sender, RoutedEventArgs e)
+    {
+        if (pwdAlways.Visibility == Visibility.Visible)
+        {
+            txtAlwaysPwd.Text = pwdAlways.Password;
+            pwdAlways.Visibility = Visibility.Collapsed;
+            txtAlwaysPwd.Visibility = Visibility.Visible;
+            eyeLineAlways.Visibility = Visibility.Collapsed;
+        }
+        else
+        {
+            pwdAlways.Password = txtAlwaysPwd.Text;
+            txtAlwaysPwd.Visibility = Visibility.Collapsed;
+            pwdAlways.Visibility = Visibility.Visible;
+            eyeLineAlways.Visibility = Visibility.Visible;
+        }
+    }
+
+    private void BtnAlwaysUnlock_Click(object sender, RoutedEventArgs e)
+    {
+        string pwd = pwdAlways.Visibility == Visibility.Visible ? pwdAlways.Password : txtAlwaysPwd.Text;
+        if (pwd == _settings.Settings.UpdatePassword)
+        {
+            alwaysOverlay.Visibility = Visibility.Collapsed;
+        }
+        else
+        {
+            txtAlwaysError.Visibility = Visibility.Visible;
+        }
+    }
+    #endregion
 
     private static List<string> GetLocalIPs()
     {

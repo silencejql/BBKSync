@@ -275,7 +275,7 @@ public partial class MainWindow
                     using var client = new PeerClient();
                     await client.ConnectAsync(host, port, Constants.RoleTransfer, ct);
                     LogDivider(); LogLine($"传输到 {host}:{port}（目标路径不变，同名同大小同时跳过）...");
-                    await client.TransferAsync(itemPath, isDir, cbTransferSameSkip.IsChecked == true, cbTransferKillFreeForm.IsChecked == true, LogLine, OnFileProgress, OnTotal, m => LogLineError("远端电脑: " + m), ct);
+                    await client.TransferAsync(itemPath, isDir, cbTransferSameSkip.IsChecked == true, LogLine, OnFileProgress, OnTotal, m => LogLineError("远端电脑: " + m), ct);
                     okIps.Add(host); LogLine($"传输完成: {host}");
                 }
                 catch (OperationCanceledException) { throw; }

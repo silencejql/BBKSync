@@ -180,10 +180,9 @@ public sealed class SyncEngine
                 File.Move(tmp, target, overwrite: true);
                 return;
             }
-            catch (IOException) when (Options.KillFreeFormFirst && attempt < Constants.MaxRetryCount)
+            catch (IOException) when (attempt < Constants.MaxRetryCount)
             {
                 attempt++;
-                FreeFormKiller.KillAll();
                 Thread.Sleep(Constants.RetryDelayMs * attempt);
             }
         }
@@ -199,10 +198,9 @@ public sealed class SyncEngine
                 Directory.Delete(path, recursive: true);
                 return;
             }
-            catch (IOException) when (Options.KillFreeFormFirst && attempt < Constants.MaxRetryCount)
+            catch (IOException) when (attempt < Constants.MaxRetryCount)
             {
                 attempt++;
-                FreeFormKiller.KillAll();
                 Thread.Sleep(Constants.RetryDelayMs * attempt);
             }
         }

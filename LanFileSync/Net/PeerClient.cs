@@ -141,14 +141,13 @@ public sealed class PeerClient : IDisposable
         string itemPath,
         bool isDir,
         bool sameSkip,
-        bool killFreeForm,
         Action<string> log,
         Action<string, long> onFile,
         Action<int> onTotal,
         Action<string> onError,
         CancellationToken ct)
     {
-        await TransferSide.SendTransferManifestAsync(_conn!, itemPath, isDir, sameSkip, killFreeForm, ct);
+        await TransferSide.SendTransferManifestAsync(_conn!, itemPath, isDir, sameSkip, ct);
         log("传输文件清单已发送，等待对方按相同路径计算...");
 
         var frame = await _conn!.RecvJsonAsync(ct)
@@ -179,6 +178,31 @@ public sealed class PeerClient : IDisposable
     {
         _conn?.Dispose();
         _tcp?.Dispose();
+    }
+
+    public async Task<int> AlwaysCloseAsync(CancellationToken ct)
+    {
+        var frame = await _conn!.RecvJsonAsync(ct)
+            ?? throw new EndOfStreamException("连接已断开");
+        string op = frame.GetProperty("op").GetString()!;
+        if (op == "err")
+            throw new InvalidOperationException(frame.GetProperty("msg").GetString());
+        if (op != "ok")
+            throw new InvalidOperationException("未知消息: " + op);
+        return frame.GetProperty("remaining").GetInt32();
+    }
+
+    public async Task<int> AlwaysOpenAsync(string exePath, CancellationToken ct)
+    {
+        await _conn!.SendJsonAsync(new { op = "aopen", path = exePath }, ct);
+        var frame = await _conn!.RecvJsonAsync(ct)
+            ?? throw new EndOfStreamException("连接已断开");
+        string op = frame.GetProperty("op").GetString()!;
+        if (op == "err")
+            throw new InvalidOperationException(frame.GetProperty("msg").GetString());
+        if (op != "ok")
+            throw new InvalidOperationException("未知消息: " + op);
+        return frame.GetProperty("running").GetInt32();
     }
 
     public async Task UpdateAsync(

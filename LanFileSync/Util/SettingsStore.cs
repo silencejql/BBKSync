@@ -37,7 +37,6 @@ public sealed class TransferSection
 {
     public string Path { get; set; } = "";
     public bool SameSkip { get; set; } = true;
-    public bool KillFreeForm { get; set; } = true;
 }
 
 public sealed class FreeFormSection
@@ -117,7 +116,6 @@ public sealed class SettingsStore
             {
                 Path = legacy.TransferPath,
                 SameSkip = legacy.TransferSameSkip,
-                KillFreeForm = legacy.TransferKillFreeForm,
             },
             FreeForm =
             {
