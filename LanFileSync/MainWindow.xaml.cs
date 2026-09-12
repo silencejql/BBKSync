@@ -599,7 +599,7 @@ public partial class MainWindow : Window
                     int remaining = await client.AlwaysCloseAsync(killNames, ct);
                     string display = killNames.Length > 0 ? string.Join(", ", killNames) : FreeFormKiller.ProcessPrefixAsterisk;
                     okIps.Add(host); LogLine($"完成: {host}（{display}），剩余 {remaining} 个进程运行中");
-                    txtAlwaysStatus.Text = $"{host}: 已结束 {display}，剩余 {remaining} 个进程运行中";
+                    txtAlwaysStatus.Text = $"[完成] {host}: 已结束 {display}，剩余 {remaining} 个进程运行中";
                 }
                 catch (OperationCanceledException) { throw; }
                 catch (Exception ex) { failed.Add($"{host} - {ex.Message}"); LogLineError($"失败 {host}: {ex.Message}"); }
@@ -645,7 +645,7 @@ public partial class MainWindow : Window
                     LogDivider(); LogLine($"连接 {host}:{port}，启动远端 FreeForm...");
                     int running = await client.AlwaysOpenAsync(exePath, ct);
                     okIps.Add(host); LogLine($"完成: {host}，当前 {running} 个进程运行中");
-                    txtAlwaysStatus.Text = $"{host}: 当前 {running} 个 FreeForm 进程运行中";
+                    txtAlwaysStatus.Text = $"[完成] {host}: 已启动，当前 {running} 个进程运行中";
                 }
                 catch (OperationCanceledException) { throw; }
                 catch (Exception ex) { failed.Add($"{host} - {ex.Message}"); LogLineError($"失败 {host}: {ex.Message}"); }
@@ -690,6 +690,7 @@ public partial class MainWindow : Window
         if (pwd == _settings.Settings.UpdatePassword)
         {
             alwaysOverlay.Visibility = Visibility.Collapsed;
+            alwaysContent.IsEnabled = true;
         }
         else
         {

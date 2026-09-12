@@ -441,7 +441,7 @@
                                             <ColumnDefinition Width="Auto" />
                                             <ColumnDefinition Width="*" />
                                         </Grid.ColumnDefinitions>
-                                        <StackPanel>
+                                        <StackPanel x:Name="alwaysContent" IsEnabled="False">
                                             <TextBlock Text="远程管理 FreeFormAlways 进程" FontWeight="SemiBold"
                                                        Foreground="{StaticResource TextSubBrush}" Margin="0,0,0,6" />
                                             <TextBlock TextWrapping="Wrap" Foreground="{StaticResource TextSubBrush}" FontSize="11"
