@@ -601,9 +601,8 @@ public partial class MainWindow : Window
                     await client.ConnectAsync(host, port, Constants.RoleAlwaysClose, ct);
                     LogDivider(); LogLine($"连接 {host}:{port}，关闭远端进程...");
                     var (msg, remaining) = await client.AlwaysCloseAsync(killNames, ct);
-                    string display = killNames.Length > 0 ? string.Join(", ", killNames) : FreeFormKiller.ProcessPrefixAsterisk;
-                    okIps.Add(host); LogLine($"完成: {host}（{display}），{msg}");
-                    txtAlwaysStatus.Text = $"[完成] {host}: {display} - {msg}";
+                    okIps.Add(host); LogLine($"{host}: {msg}");
+                    txtAlwaysStatus.Text = $"[完成] {host}: {msg}";
                 }
                 catch (OperationCanceledException) { throw; }
                 catch (Exception ex) { failed.Add($"{host} - {ex.Message}"); LogLineError($"失败 {host}: {ex.Message}"); }
@@ -648,7 +647,7 @@ public partial class MainWindow : Window
                     await client.ConnectAsync(host, port, Constants.RoleAlwaysOpen, ct);
                     LogDivider(); LogLine($"连接 {host}:{port}，启动远端应用程序...");
                     var (msg, running) = await client.AlwaysOpenAsync(exePath, ct);
-                    okIps.Add(host); LogLine($"完成: {host}，{msg}");
+                    okIps.Add(host); LogLine($"{host}: {msg}");
                     txtAlwaysStatus.Text = $"[完成] {host}: {msg}";
                 }
                 catch (OperationCanceledException) { throw; }

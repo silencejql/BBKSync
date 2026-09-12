@@ -318,10 +318,10 @@ public sealed class PeerServer : IDisposable
                         throw new InvalidOperationException("未知消息: " + op0);
                     var namesArr = init.GetProperty("names").EnumerateArray().Select(x => x.GetString()!).ToArray();
                     string namesDisplay = namesArr.Length > 0 ? string.Join(", ", namesArr) : FreeFormKiller.ProcessPrefixAsterisk;
-                    _log($"收到关闭 FreeForm 请求（进程名: {namesDisplay}）...");
+                    _log($"收到关闭请求（进程名: {namesDisplay}）...");
                     int killed = FreeFormKiller.KillByNames(namesArr);
                     int remaining = FreeFormKiller.FindProcessesByNames(namesArr).Count();
-                    string msg = $"已结束 {killed} 个进程，剩余 {remaining} 个运行中";
+                    string msg = killed > 0 ? $"{namesDisplay}程序已关闭，剩余{remaining}个进程运行中" : $"{namesDisplay}程序未找到或已关闭";
                     _log(msg);
                     await conn.SendJsonAsync(new { op = "ok", msg, killed, remaining }, CancellationToken.None);
                 }
@@ -333,7 +333,8 @@ public sealed class PeerServer : IDisposable
                     if (op0 != "aopen")
                         throw new InvalidOperationException("未知消息: " + op0);
                     string exePath = init.GetProperty("path").GetString()!;
-                    _log($"收到启动 FreeForm 请求：{exePath}");
+                    string fileName = Path.GetFileNameWithoutExtension(exePath);
+                    _log($"收到启动请求：{exePath}");
                     try
                     {
                         var psi = new ProcessStartInfo
@@ -344,7 +345,7 @@ public sealed class PeerServer : IDisposable
                         };
                         Process.Start(psi);
                         int running = FreeFormKiller.FindFreeFormProcesses().Count();
-                        string msg = $"已启动，当前 {running} 个进程运行中";
+                        string msg = $"{fileName}程序已启动，当前{running}个进程运行中";
                         _log(msg);
                         await conn.SendJsonAsync(new { op = "ok", msg, running }, CancellationToken.None);
                     }
