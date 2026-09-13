@@ -85,6 +85,9 @@
                     BorderBrush="{DynamicResource TitleBarBorderBrush}" BorderThickness="0,0,0,1">
                 <DockPanel>
                     <StackPanel DockPanel.Dock="Right" Orientation="Horizontal">
+                        <Button x:Name="btnThemeToggle" Style="{StaticResource ThemeToggleButton}"
+                                Click="BtnThemeToggle_Click" Margin="0,0,4,0"
+                                shell:WindowChrome.IsHitTestVisibleInChrome="True" />
                         <Button Style="{StaticResource TitleBarButton}" Click="TitleMin_Click" ToolTip="最小化"
                                 shell:WindowChrome.IsHitTestVisibleInChrome="True">
                             <Path Width="12" Height="12" Stretch="Uniform" Data="M0,6 H10"
@@ -101,9 +104,6 @@
                                   Stroke="{Binding Foreground, RelativeSource={RelativeSource AncestorType=Button}}" StrokeThickness="1.5" />
                         </Button>
                     </StackPanel>
-                    <Button x:Name="btnThemeToggle" Style="{StaticResource ThemeToggleButton}"
-                            Click="BtnThemeToggle_Click" Margin="4,0,0,0"
-                            shell:WindowChrome.IsHitTestVisibleInChrome="True" />
                     <Image Source="/app.ico" Width="18" Height="18" Margin="10,0,10,0" VerticalAlignment="Center" />
                     <TextBlock x:Name="txtTitle" Text="BBKFileSync" VerticalAlignment="Center" FontWeight="SemiBold"
                                Foreground="{DynamicResource TitleFgBrush}" TextTrimming="CharacterEllipsis" />

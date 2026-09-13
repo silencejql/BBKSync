@@ -8,7 +8,7 @@ public static class ThemeManager
     private static readonly ResourceDictionary DarkDict = new() { Source = new Uri("Themes/Dark.xaml", UriKind.Relative) };
     private static readonly ResourceDictionary LightDict = new() { Source = new Uri("Themes/Light.xaml", UriKind.Relative) };
 
-    public static bool IsDark { get; private set; } = true;
+    public static bool IsDark { get; private set; } = false;
 
     public static void Apply(bool dark)
     {

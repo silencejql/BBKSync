@@ -5,16 +5,16 @@
     <Application.Resources>
         <ResourceDictionary>
             <ResourceDictionary.MergedDictionaries>
-                <ResourceDictionary Source="Themes/Dark.xaml" />
+                <ResourceDictionary Source="Themes/Light.xaml" />
             </ResourceDictionary.MergedDictionaries>
 
             <!-- 基础画刷（主题切换时动态更新） -->
-            <SolidColorBrush x:Key="WindowBgBrush" Color="#0D1117" />
-            <SolidColorBrush x:Key="CardBorderBrush" Color="#1E2433" />
-            <SolidColorBrush x:Key="AccentBrush" Color="#00D4FF" />
-            <SolidColorBrush x:Key="InputBorderBrush" Color="#2A3040" />
-            <SolidColorBrush x:Key="TextMainBrush" Color="#E6EDF3" />
-            <SolidColorBrush x:Key="TextSubBrush" Color="#7D8590" />
+            <SolidColorBrush x:Key="WindowBgBrush" Color="#F3F5F9" />
+            <SolidColorBrush x:Key="CardBorderBrush" Color="#E1E6EE" />
+            <SolidColorBrush x:Key="AccentBrush" Color="#2563EB" />
+            <SolidColorBrush x:Key="InputBorderBrush" Color="#C9D2E0" />
+            <SolidColorBrush x:Key="TextMainBrush" Color="#20242E" />
+            <SolidColorBrush x:Key="TextSubBrush" Color="#6B7280" />
         </ResourceDictionary>
     </Application.Resources>
 </Application>
