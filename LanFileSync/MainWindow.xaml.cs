@@ -103,8 +103,8 @@ public partial class MainWindow : Window
         txtTransferPath.Text = _settings.Settings.Transfer.Path;
         cbTransferSameSkip.IsChecked = _settings.Settings.Transfer.SameSkip;
         FreeFormKiller.ProcessPrefix = _settings.Settings.FreeForm.ProcessPrefix;
-        txtAlwaysPath.Text = _settings.Settings.FreeForm.AlwaysPath;
-        txtAlwaysKillNames.Text = _settings.Settings.FreeForm.AlwaysKillNames;
+        txtProcessPath.Text = _settings.Settings.FreeForm.ProcessPath;
+        txtProcessKillNames.Text = _settings.Settings.FreeForm.ProcessKillNames;
         chkAutoStart.IsChecked = _settings.Settings.Server.AutoStartAndListen;
         rbReceive.IsChecked = true;
         RbBackupSource_Changed(null, null!);
@@ -386,16 +386,16 @@ public partial class MainWindow : Window
             txtUpdatePwd.Visibility = Visibility.Collapsed;
             eyeLine.Visibility = Visibility.Visible;
         }
-        if (tabs.SelectedIndex != 4)
+        if (tabs.SelectedIndex != 3)
         {
-            alwaysOverlay.Visibility = Visibility.Visible;
-            alwaysContent.IsEnabled = false;
-            pwdAlways.Clear();
-            txtAlwaysPwd.Clear();
-            txtAlwaysError.Visibility = Visibility.Collapsed;
-            pwdAlways.Visibility = Visibility.Visible;
-            txtAlwaysPwd.Visibility = Visibility.Collapsed;
-            eyeLineAlways.Visibility = Visibility.Visible;
+            processOverlay.Visibility = Visibility.Visible;
+            processContent.IsEnabled = false;
+            pwdProcess.Clear();
+            txtProcessPwd.Clear();
+            txtProcessError.Visibility = Visibility.Collapsed;
+            pwdProcess.Visibility = Visibility.Visible;
+            txtProcessPwd.Visibility = Visibility.Collapsed;
+            eyeLineProcess.Visibility = Visibility.Visible;
         }
         RefreshOpButtons();
     }
@@ -405,7 +405,8 @@ public partial class MainWindow : Window
         bool isBackup = tabs.SelectedIndex == 0;
         bool isBbkUpdate = tabs.SelectedIndex == 1;
         bool isFileTransfer = tabs.SelectedIndex == 2;
-        bool isUpdateProgram = tabs.SelectedIndex == 3;
+        bool isProcessMgmt = tabs.SelectedIndex == 3;
+        bool isUpdateProgram = tabs.SelectedIndex == 4;
         bool pwdOk = updateOverlay.Visibility != Visibility.Visible;
         btnBackup.IsEnabled = !_coordinator.Busy && isBackup;
         btnSync.IsEnabled = !_coordinator.Busy && ((isBbkUpdate && pwdOk) || isFileTransfer);
@@ -559,8 +560,8 @@ public partial class MainWindow : Window
         _settings.Settings.Backup.AutoFetchComputerName = cbAutoFetchName.IsChecked == true;
         _settings.Settings.Transfer.Path = txtTransferPath.Text.Trim();
         _settings.Settings.Transfer.SameSkip = cbTransferSameSkip.IsChecked ?? true;
-        _settings.Settings.FreeForm.AlwaysPath = txtAlwaysPath.Text.Trim();
-        _settings.Settings.FreeForm.AlwaysKillNames = txtAlwaysKillNames.Text.Trim();
+        _settings.Settings.FreeForm.ProcessPath = txtProcessPath.Text.Trim();
+        _settings.Settings.FreeForm.ProcessKillNames = txtProcessKillNames.Text.Trim();
         _settings.Save();
     }
 
@@ -575,10 +576,10 @@ public partial class MainWindow : Window
         _allowExit = true; SaveSettings(); _coordinator.Cancel(); StopServer(); _tray?.Dispose(); _tray = null;
     }
 
-    #region Always 管理
-    private DateTime _alwaysOpenCooldownUntil = DateTime.MinValue;
+    #region 进程管理
+    private DateTime _processOpenCooldownUntil = DateTime.MinValue;
 
-    private void BtnAlwaysBrowse_Click(object sender, RoutedEventArgs e)
+    private void BtnProcessBrowse_Click(object sender, RoutedEventArgs e)
     {
         var dlg = new Microsoft.Win32.OpenFileDialog
         {
@@ -586,17 +587,17 @@ public partial class MainWindow : Window
             Filter = "可执行文件 (*.exe)|*.exe|所有文件 (*.*)|*.*",
         };
         if (dlg.ShowDialog() == true)
-            txtAlwaysPath.Text = dlg.FileName;
+            txtProcessPath.Text = dlg.FileName;
     }
 
-    private async void BtnAlwaysClose_Click(object sender, RoutedEventArgs e)
+    private async void BtnProcessClose_Click(object sender, RoutedEventArgs e)
     {
         if (!TryGetPeerPort(out int port)) { MessageBox.Show("对方端口无效。", "错误", MessageBoxButton.OK, MessageBoxImage.Warning); return; }
         List<string> hosts;
         try { hosts = IpHelper.ExpandIps(cboPeerIp.Text ?? ""); }
         catch (FormatException ex) { MessageBox.Show(ex.Message, "错误", MessageBoxButton.OK, MessageBoxImage.Warning); return; }
         if (hosts.Count == 0) { MessageBox.Show("请输入对方 IP 或范围。", "提示", MessageBoxButton.OK, MessageBoxImage.Information); return; }
-        string[] killNames = txtAlwaysKillNames.Text
+        string[] killNames = txtProcessKillNames.Text
             .Split(new[] { ',', '，', ';', '；' }, StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries)
             .Where(s => s.Length > 0).ToArray();
         StartBusy();
@@ -609,11 +610,11 @@ public partial class MainWindow : Window
                 try
                 {
                     using var client = new PeerClient();
-                    await client.ConnectAsync(host, port, Constants.RoleAlwaysClose, ct);
+                    await client.ConnectAsync(host, port, Constants.RoleProcessClose, ct);
                     LogDivider(); LogLine($"连接 {host}:{port}，关闭远端进程...");
-                    var (msg, remaining) = await client.AlwaysCloseAsync(killNames, ct);
+                    var (msg, remaining) = await client.ProcessCloseAsync(killNames, ct);
                     okIps.Add(host); LogLine($"{host}: {msg}");
-                    txtAlwaysStatus.Text = $"[完成] {host}: {msg}";
+                    txtProcessStatus.Text = $"[完成] {host}: {msg}";
                 }
                 catch (OperationCanceledException) { throw; }
                 catch (Exception ex) { failed.Add($"{host} - {ex.Message}"); LogLineError($"失败 {host}: {ex.Message}"); }
@@ -629,22 +630,22 @@ public partial class MainWindow : Window
         if (failed.Count > 0) MessageBox.Show("以下电脑失败：\n" + string.Join("\n", failed), "部分失败", MessageBoxButton.OK, MessageBoxImage.Warning);
     }
 
-    private async void BtnAlwaysOpen_Click(object sender, RoutedEventArgs e)
+    private async void BtnProcessOpen_Click(object sender, RoutedEventArgs e)
     {
-        if (DateTime.Now < _alwaysOpenCooldownUntil)
+        if (DateTime.Now < _processOpenCooldownUntil)
         {
-            int sec = (int)(_alwaysOpenCooldownUntil - DateTime.Now).TotalSeconds + 1;
+            int sec = (int)(_processOpenCooldownUntil - DateTime.Now).TotalSeconds + 1;
             MessageBox.Show($"请等待 {sec} 秒后再试。", "提示", MessageBoxButton.OK, MessageBoxImage.Information);
             return;
         }
-        string exePath = txtAlwaysPath.Text.Trim();
+        string exePath = txtProcessPath.Text.Trim();
         if (string.IsNullOrWhiteSpace(exePath)) { MessageBox.Show("请输入程序路径。", "提示", MessageBoxButton.OK, MessageBoxImage.Information); return; }
         if (!TryGetPeerPort(out int port)) { MessageBox.Show("对方端口无效。", "错误", MessageBoxButton.OK, MessageBoxImage.Warning); return; }
         List<string> hosts;
         try { hosts = IpHelper.ExpandIps(cboPeerIp.Text ?? ""); }
         catch (FormatException ex) { MessageBox.Show(ex.Message, "错误", MessageBoxButton.OK, MessageBoxImage.Warning); return; }
         if (hosts.Count == 0) { MessageBox.Show("请输入对方 IP 或范围。", "提示", MessageBoxButton.OK, MessageBoxImage.Information); return; }
-        _alwaysOpenCooldownUntil = DateTime.Now.AddSeconds(5);
+        _processOpenCooldownUntil = DateTime.Now.AddSeconds(5);
         StartBusy();
         var ct = _coordinator.Token; _opLabel = "启动FreeForm";
         var okIps = new List<string>(); var failed = new List<string>();
@@ -655,11 +656,11 @@ public partial class MainWindow : Window
                 try
                 {
                     using var client = new PeerClient();
-                    await client.ConnectAsync(host, port, Constants.RoleAlwaysOpen, ct);
+                    await client.ConnectAsync(host, port, Constants.RoleProcessOpen, ct);
                     LogDivider(); LogLine($"连接 {host}:{port}，启动远端应用程序...");
-                    var (msg, running) = await client.AlwaysOpenAsync(exePath, ct);
+                    var (msg, running) = await client.ProcessOpenAsync(exePath, ct);
                     okIps.Add(host); LogLine($"{host}: {msg}");
-                    txtAlwaysStatus.Text = $"[完成] {host}: {msg}";
+                    txtProcessStatus.Text = $"[完成] {host}: {msg}";
                 }
                 catch (OperationCanceledException) { throw; }
                 catch (Exception ex) { failed.Add($"{host} - {ex.Message}"); LogLineError($"失败 {host}: {ex.Message}"); }
@@ -675,40 +676,40 @@ public partial class MainWindow : Window
         if (failed.Count > 0) MessageBox.Show("以下电脑失败：\n" + string.Join("\n", failed), "部分失败", MessageBoxButton.OK, MessageBoxImage.Warning);
     }
 
-    private void PwdAlways_KeyDown(object sender, KeyEventArgs e)
+    private void PwdProcess_KeyDown(object sender, KeyEventArgs e)
     {
-        if (e.Key == Key.Enter) { BtnAlwaysUnlock_Click(sender, e); e.Handled = true; }
+        if (e.Key == Key.Enter) { BtnProcessUnlock_Click(sender, e); e.Handled = true; }
     }
 
-    private void BtnToggleAlwaysPwd_Click(object sender, RoutedEventArgs e)
+    private void BtnToggleProcessPwd_Click(object sender, RoutedEventArgs e)
     {
-        if (pwdAlways.Visibility == Visibility.Visible)
+        if (pwdProcess.Visibility == Visibility.Visible)
         {
-            txtAlwaysPwd.Text = pwdAlways.Password;
-            pwdAlways.Visibility = Visibility.Collapsed;
-            txtAlwaysPwd.Visibility = Visibility.Visible;
-            eyeLineAlways.Visibility = Visibility.Collapsed;
+            txtProcessPwd.Text = pwdProcess.Password;
+            pwdProcess.Visibility = Visibility.Collapsed;
+            txtProcessPwd.Visibility = Visibility.Visible;
+            eyeLineProcess.Visibility = Visibility.Collapsed;
         }
         else
         {
-            pwdAlways.Password = txtAlwaysPwd.Text;
-            txtAlwaysPwd.Visibility = Visibility.Collapsed;
-            pwdAlways.Visibility = Visibility.Visible;
-            eyeLineAlways.Visibility = Visibility.Visible;
+            pwdProcess.Password = txtProcessPwd.Text;
+            txtProcessPwd.Visibility = Visibility.Collapsed;
+            pwdProcess.Visibility = Visibility.Visible;
+            eyeLineProcess.Visibility = Visibility.Visible;
         }
     }
 
-    private void BtnAlwaysUnlock_Click(object sender, RoutedEventArgs e)
+    private void BtnProcessUnlock_Click(object sender, RoutedEventArgs e)
     {
-        string pwd = pwdAlways.Visibility == Visibility.Visible ? pwdAlways.Password : txtAlwaysPwd.Text;
+        string pwd = pwdProcess.Visibility == Visibility.Visible ? pwdProcess.Password : txtProcessPwd.Text;
         if (pwd == _settings.Settings.UpdatePassword)
         {
-            alwaysOverlay.Visibility = Visibility.Collapsed;
-            alwaysContent.IsEnabled = true;
+            processOverlay.Visibility = Visibility.Collapsed;
+            processContent.IsEnabled = true;
         }
         else
         {
-            txtAlwaysError.Visibility = Visibility.Visible;
+            txtProcessError.Visibility = Visibility.Visible;
         }
     }
     #endregion

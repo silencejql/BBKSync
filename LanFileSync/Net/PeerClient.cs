@@ -180,7 +180,7 @@ public sealed class PeerClient : IDisposable
         _tcp?.Dispose();
     }
 
-    public async Task<(string Msg, int Remaining)> AlwaysCloseAsync(string[] killNames, CancellationToken ct)
+    public async Task<(string Msg, int Remaining)> ProcessCloseAsync(string[] killNames, CancellationToken ct)
     {
         await _conn!.SendJsonAsync(new { op = "aclose", names = killNames }, ct);
         var frame = await _conn!.RecvJsonAsync(ct)
@@ -193,7 +193,7 @@ public sealed class PeerClient : IDisposable
         return (frame.GetProperty("msg").GetString() ?? "", frame.GetProperty("remaining").GetInt32());
     }
 
-    public async Task<(string Msg, int Running)> AlwaysOpenAsync(string exePath, CancellationToken ct)
+    public async Task<(string Msg, int Running)> ProcessOpenAsync(string exePath, CancellationToken ct)
     {
         await _conn!.SendJsonAsync(new { op = "aopen", path = exePath }, ct);
         var frame = await _conn!.RecvJsonAsync(ct)

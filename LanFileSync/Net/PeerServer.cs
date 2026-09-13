@@ -121,8 +121,8 @@ public sealed class PeerServer : IDisposable
                 Constants.RolePush => "本机为更新目标",
                 Constants.RoleProbe => "读取本机设备配置",
                 Constants.RoleTransfer => "本机为传输目标",
-                Constants.RoleAlwaysClose => "关闭远端 FreeForm",
-                Constants.RoleAlwaysOpen => "启动远端 FreeForm",
+                Constants.RoleProcessClose => "关闭远端进程",
+                Constants.RoleProcessOpen => "启动远端进程",
                 _ => "本机为文件源",
             };
             _log("------------------------------------------------");
@@ -309,7 +309,7 @@ public sealed class PeerServer : IDisposable
                         catch { }
                     });
                 }
-                else if (role == Constants.RoleAlwaysClose)
+                else if (role == Constants.RoleProcessClose)
                 {
                     var init = await conn.RecvJsonAsync(ct)
                         ?? throw new EndOfStreamException("连接已断开");
@@ -325,7 +325,7 @@ public sealed class PeerServer : IDisposable
                     _log(msg);
                     await conn.SendJsonAsync(new { op = "ok", msg, killed, remaining }, CancellationToken.None);
                 }
-                else if (role == Constants.RoleAlwaysOpen)
+                else if (role == Constants.RoleProcessOpen)
                 {
                     var init = await conn.RecvJsonAsync(ct)
                         ?? throw new EndOfStreamException("连接已断开");

@@ -42,8 +42,8 @@ public sealed class TransferSection
 public sealed class FreeFormSection
 {
     public string ProcessPrefix { get; set; } = "FreeFormAlways";
-    public string AlwaysPath { get; set; } = "";
-    public string AlwaysKillNames { get; set; } = "";
+    public string ProcessPath { get; set; } = "";
+    public string ProcessKillNames { get; set; } = "";
 }
 
 public sealed class AppSettings

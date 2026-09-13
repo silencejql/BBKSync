@@ -18,8 +18,8 @@ internal static class Constants
     internal const string RoleProbe = "probe";
     internal const string RoleTransfer = "transfer";
     internal const string RoleUpdate = "update";
-    internal const string RoleAlwaysClose = "always-close";
-    internal const string RoleAlwaysOpen = "always-open";
+    internal const string RoleProcessClose = "process-close";
+    internal const string RoleProcessOpen = "process-open";
     internal const string DefaultShareName = "c$";
     internal const string DefaultSharePath = "c$\\BBK";
 
