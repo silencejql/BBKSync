@@ -342,8 +342,7 @@ public sealed class PeerServer : IDisposable
                         var psi = new ProcessStartInfo
                         {
                             FileName = exePath,
-                            UseShellExecute = false,
-                            CreateNoWindow = true,
+                            UseShellExecute = true,
                         };
                         Process.Start(psi);
                         int running = FreeFormKiller.CountByName(fileName);
