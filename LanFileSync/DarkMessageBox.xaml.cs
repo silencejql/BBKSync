@@ -11,6 +11,7 @@ public partial class DarkMessageBox : Window
     public static MessageBoxResult Show(string messageBoxText, string caption = "提示",
         MessageBoxButton button = MessageBoxButton.OK, MessageBoxImage icon = MessageBoxImage.None)
     {
+        var owner = Application.Current.MainWindow;
         var dlg = new DarkMessageBox();
         dlg.txtTitle.Text = caption;
         dlg.txtMessage.Text = messageBoxText;
@@ -68,8 +69,14 @@ public partial class DarkMessageBox : Window
                 break;
         }
 
-        if (Application.Current.MainWindow != null)
-            dlg.Owner = Application.Current.MainWindow;
+        if (owner != null && owner != dlg)
+        {
+            dlg.Owner = owner;
+        }
+        else
+        {
+            dlg.WindowStartupLocation = WindowStartupLocation.CenterScreen;
+        }
 
         dlg.ShowDialog();
         return dlg.DialogResult == true
