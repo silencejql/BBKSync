@@ -344,7 +344,7 @@ public sealed class PeerServer : IDisposable
                             CreateNoWindow = true,
                         };
                         Process.Start(psi);
-                        int running = FreeFormKiller.FindFreeFormProcesses().Count();
+                        int running = FreeFormKiller.CountByName(fileName);
                         string msg = $"{fileName}程序已启动，当前{running}个进程运行中";
                         _log(msg);
                         await conn.SendJsonAsync(new { op = "ok", msg, running }, CancellationToken.None);

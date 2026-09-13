@@ -46,6 +46,23 @@ public static class FreeFormKiller
         });
     }
 
+    public static int CountByName(string name)
+    {
+        if (string.IsNullOrWhiteSpace(name))
+            return 0;
+        return Process.GetProcesses().Count(p =>
+        {
+            try
+            {
+                return p.ProcessName.Equals(name, StringComparison.OrdinalIgnoreCase);
+            }
+            catch
+            {
+                return false;
+            }
+        });
+    }
+
     public static int KillAll()
     {
         int killed = 0;
