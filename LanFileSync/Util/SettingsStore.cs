@@ -27,10 +27,8 @@ public sealed class BackupSection
     public string IgnoreRegexes { get; set; } = "副本|copy|-";
     public bool CompressZip { get; set; } = true;
     public bool CompressUpdateZip { get; set; } = true;
-    public string LocalBackupName { get; set; } = "";
     public bool AutoFetchComputerName { get; set; } = true;
     public bool RunPreBackupBat { get; set; } = false;
-    public string PreBackupScript { get; set; } = "";
 }
 
 public sealed class TransferSection
@@ -109,10 +107,8 @@ public sealed class SettingsStore
                 IgnoreRegexes = legacy.BackupIgnoreRegexes,
                 CompressZip = legacy.CompressZip,
                 CompressUpdateZip = legacy.CompressUpdateZip,
-                LocalBackupName = legacy.LocalBackupName,
                 AutoFetchComputerName = legacy.AutoFetchComputerName,
                 RunPreBackupBat = legacy.RunPreBackupBat,
-                PreBackupScript = legacy.PreBackupScript,
             },
             Transfer =
             {
@@ -154,12 +150,10 @@ public sealed class SettingsStore
         public bool BackupLogRule { get; set; } = true;
         public int BackupLogDays { get; set; } = 2;
         public bool RunPreBackupBat { get; set; } = false;
-        public string PreBackupScript { get; set; } = "";
         public string BackupIgnoreRegexes { get; set; } = "";
         public bool IgnoreRegexEnabled { get; set; } = true;
         public bool CompressZip { get; set; } = true;
         public bool CompressUpdateZip { get; set; } = true;
-        public string LocalBackupName { get; set; } = "";
         public bool AutoFetchComputerName { get; set; } = true;
         public string TransferPath { get; set; } = "";
         public bool TransferSameSkip { get; set; } = true;
