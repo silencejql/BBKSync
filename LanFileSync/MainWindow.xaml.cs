@@ -531,6 +531,7 @@ public partial class MainWindow : Window
         Width = Math.Min(1200, screen * 0.85); Height = Math.Min(900, screenH * 0.85);
         Left = (screen - Width) / 2; Top = (screenH - Height) / 2;
         tabs.SelectedIndex = 0; RefreshOpButtons(); StartServer(showErrors: false);
+        UpdateTheme(ThemeManager.IsDark);
         bool minimizeToTray = _startMinimized || _settings.Settings.Server.AutoStartAndListen;
         if (minimizeToTray)
         {
