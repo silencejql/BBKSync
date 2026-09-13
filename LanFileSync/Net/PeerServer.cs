@@ -321,7 +321,9 @@ public sealed class PeerServer : IDisposable
                     _log($"收到关闭请求（进程名: {namesDisplay}）...");
                     int killed = FreeFormKiller.KillByNames(namesArr);
                     int remaining = FreeFormKiller.FindProcessesByNames(namesArr).Count();
-                    string msg = killed > 0 ? $"{namesDisplay}程序已关闭，剩余{remaining}个进程运行中" : $"{namesDisplay}程序未找到或已关闭";
+                    string msg = killed > 0
+                        ? (remaining > 0 ? $"{namesDisplay}已关闭，剩余{remaining}个同类进程运行中" : $"{namesDisplay}已关闭")
+                        : $"{namesDisplay}未找到或已关闭";
                     _log(msg);
                     await conn.SendJsonAsync(new { op = "ok", msg, killed, remaining }, CancellationToken.None);
                 }
