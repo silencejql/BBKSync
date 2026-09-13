@@ -27,9 +27,7 @@ public partial class DarkMessageBox : Window
         {
             MessageBoxImage.Error => new SolidColorBrush(Color.FromRgb(0xFF, 0x6B, 0x6B)),
             MessageBoxImage.Warning => new SolidColorBrush(Color.FromRgb(0xFF, 0xD4, 0x3B)),
-            MessageBoxImage.Information => new SolidColorBrush(Color.FromRgb(0x00, 0xD4, 0xFF)),
-            MessageBoxImage.Question => new SolidColorBrush(Color.FromRgb(0x00, 0xD4, 0xFF)),
-            _ => Brushes.Transparent
+            _ => (Brush)Application.Current.FindResource("AccentBrush")
         };
 
         void AddBtn(string content, MessageBoxResult result, bool isAccent)
@@ -45,18 +43,7 @@ public partial class DarkMessageBox : Window
             };
             btn.Style = isAccent
                 ? (Style)Application.Current.FindResource("AccentButton")
-                : new Style(typeof(Button))
-                {
-                    Setters =
-                    {
-                        new Setter(Button.ForegroundProperty, Application.Current.FindResource("TextMainBrush")),
-                        new Setter(Button.BackgroundProperty, new SolidColorBrush(Color.FromRgb(0x16, 0x1B, 0x22))),
-                        new Setter(Button.BorderBrushProperty, new SolidColorBrush(Color.FromRgb(0x2A, 0x30, 0x40))),
-                        new Setter(Button.BorderThicknessProperty, new Thickness(1)),
-                        new Setter(Button.MinHeightProperty, 30.0),
-                        new Setter(Button.CursorProperty, System.Windows.Input.Cursors.Hand)
-                    }
-                };
+                : (Style)Application.Current.FindResource("Button");
             btn.Click += (_, _) => { dlg.DialogResult = result == MessageBoxResult.OK || result == MessageBoxResult.Yes; dlg.Close(); };
             dlg.panelButtons.Children.Add(btn);
         }
