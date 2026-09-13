@@ -44,4 +44,6 @@ public partial class ComputerNameWindow : Window
         DialogResult = true;
         Close();
     }
+
+    private void TitleClose_Click(object sender, RoutedEventArgs e) => Close();
 }

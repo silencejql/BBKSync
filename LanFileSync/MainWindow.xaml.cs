@@ -166,7 +166,7 @@ public partial class MainWindow : Window
         return new string(chars);
     }
 
-    private static Brush s_logBrush = Brushes.Black;
+    private static Brush s_logBrush = Brushes.White;
     private static Brush s_logErrorBrush = Brushes.Red;
 
     private void LogLine(string msg) => LogLine(msg, s_logBrush);

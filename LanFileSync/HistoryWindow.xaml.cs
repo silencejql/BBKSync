@@ -44,4 +44,6 @@ public partial class HistoryWindow : Window
         lvHistory.Items.Refresh();
         LoadSelected();
     }
+
+    private void TitleClose_Click(object sender, RoutedEventArgs e) => Close();
 }
