@@ -4,7 +4,7 @@ namespace LanFileSync;
 
 public static class FreeFormKiller
 {
-    public static string ProcessPrefix { get; set; } = "FreeFormAlways";
+    public static string ProcessPrefix { get; set; } = "FreeFormsAlways";
 
     public static string ProcessPrefixAsterisk => ProcessPrefix + "*";
 

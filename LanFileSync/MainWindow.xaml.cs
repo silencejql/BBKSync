@@ -102,9 +102,9 @@ public partial class MainWindow : Window
         cbAutoFetchName.IsChecked = _settings.Settings.Backup.AutoFetchComputerName;
         txtTransferPath.Text = _settings.Settings.Transfer.Path;
         cbTransferSameSkip.IsChecked = _settings.Settings.Transfer.SameSkip;
-        FreeFormKiller.ProcessPrefix = _settings.Settings.FreeForm.ProcessPrefix;
-        txtProcessPath.Text = _settings.Settings.FreeForm.ProcessPath;
-        txtProcessKillNames.Text = _settings.Settings.FreeForm.ProcessKillNames;
+        FreeFormKiller.ProcessPrefix = _settings.Settings.Process.ProcessPrefix;
+        txtProcessPath.Text = _settings.Settings.Process.ProcessPath;
+        txtProcessKillNames.Text = _settings.Settings.Process.ProcessKillNames;
         chkAutoStart.IsChecked = _settings.Settings.Server.AutoStartAndListen;
         rbReceive.IsChecked = true;
         RbBackupSource_Changed(null, null!);
@@ -560,8 +560,8 @@ public partial class MainWindow : Window
         _settings.Settings.Backup.AutoFetchComputerName = cbAutoFetchName.IsChecked == true;
         _settings.Settings.Transfer.Path = txtTransferPath.Text.Trim();
         _settings.Settings.Transfer.SameSkip = cbTransferSameSkip.IsChecked ?? true;
-        _settings.Settings.FreeForm.ProcessPath = txtProcessPath.Text.Trim();
-        _settings.Settings.FreeForm.ProcessKillNames = txtProcessKillNames.Text.Trim();
+        _settings.Settings.Process.ProcessPath = txtProcessPath.Text.Trim();
+        _settings.Settings.Process.ProcessKillNames = txtProcessKillNames.Text.Trim();
         _settings.Save();
     }
 

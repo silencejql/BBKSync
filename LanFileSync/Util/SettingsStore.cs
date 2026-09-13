@@ -39,11 +39,11 @@ public sealed class TransferSection
     public bool SameSkip { get; set; } = true;
 }
 
-public sealed class FreeFormSection
+public sealed class ProcessSection
 {
-    public string ProcessPrefix { get; set; } = "FreeFormAlways";
-    public string ProcessPath { get; set; } = "";
-    public string ProcessKillNames { get; set; } = "";
+    public string ProcessPrefix { get; set; } = "FreeFormsAlways";
+    public string ProcessPath { get; set; } = @"D:\BBK\FAS\Always.xmlFreeForm";
+    public string ProcessKillNames { get; set; } = "FreeFormsAlways";
 }
 
 public sealed class AppSettings
@@ -52,7 +52,7 @@ public sealed class AppSettings
     public ServerSection Server { get; set; } = new();
     public BackupSection Backup { get; set; } = new();
     public TransferSection Transfer { get; set; } = new();
-    public FreeFormSection FreeForm { get; set; } = new();
+    public ProcessSection Process { get; set; } = new();
     public List<ComputerMapping> Computers { get; set; } = new();
     public string UpdatePassword { get; set; } = "BBK123";
 }
@@ -119,7 +119,7 @@ public sealed class SettingsStore
                 Path = legacy.TransferPath,
                 SameSkip = legacy.TransferSameSkip,
             },
-            FreeForm =
+            Process =
             {
                 ProcessPrefix = legacy.FreeFormProcessPrefix,
             },
