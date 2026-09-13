@@ -1,4 +1,4 @@
-﻿using System.Diagnostics;
+using System.Diagnostics;
 using System.IO;
 using System.IO.Compression;
 using System.Net.NetworkInformation;
@@ -237,7 +237,7 @@ public partial class MainWindow : Window
         if (_server != null) return;
         if (!int.TryParse(txtPort.Text, out int port) || port < 1 || port > 65535)
         {
-            if (showErrors) MessageBox.Show("端口无效，请输入 1~65535 之间的数字。", "错误", MessageBoxButton.OK, MessageBoxImage.Warning);
+            if (showErrors) DarkMessageBox.Show("端口无效，请输入 1~65535 之间的数字。", "错误", MessageBoxButton.OK, MessageBoxImage.Warning);
             return;
         }
         string root = txtRoot.Text.Trim();
@@ -254,7 +254,7 @@ public partial class MainWindow : Window
         }
         catch (Exception ex)
         {
-            if (showErrors) MessageBox.Show("启动服务失败: " + ex.Message, "错误", MessageBoxButton.OK, MessageBoxImage.Error);
+            if (showErrors) DarkMessageBox.Show("启动服务失败: " + ex.Message, "错误", MessageBoxButton.OK, MessageBoxImage.Error);
             else LogLineError("启动服务失败: " + ex.Message);
             _server?.Dispose(); _server = null;
         }
@@ -275,8 +275,8 @@ public partial class MainWindow : Window
     private async void BtnTestConnect_Click(object sender, RoutedEventArgs e)
     {
         string host = cboPeerIp.Text.Trim();
-        if (string.IsNullOrEmpty(host)) { MessageBox.Show("请输入对方 IP 地址。", "提示", MessageBoxButton.OK, MessageBoxImage.Information); return; }
-        if (!TryGetPeerPort(out int port)) { MessageBox.Show("端口无效，请输入 1~65535 之间的数字。", "错误", MessageBoxButton.OK, MessageBoxImage.Warning); return; }
+        if (string.IsNullOrEmpty(host)) { DarkMessageBox.Show("请输入对方 IP 地址。", "提示", MessageBoxButton.OK, MessageBoxImage.Information); return; }
+        if (!TryGetPeerPort(out int port)) { DarkMessageBox.Show("端口无效，请输入 1~65535 之间的数字。", "错误", MessageBoxButton.OK, MessageBoxImage.Warning); return; }
         using var tcp = new TcpClient();
         try
         {
@@ -287,7 +287,7 @@ public partial class MainWindow : Window
         catch (OperationCanceledException)
         {
             var msg = $"连接超时：{host}:{port}\n4 秒内未建立连接（10060 超时：对方不可达，或防火墙静默丢弃）。";
-            LogLineError(msg); MessageBox.Show(msg, "测试结果", MessageBoxButton.OK, MessageBoxImage.Warning); return;
+            LogLineError(msg); DarkMessageBox.Show(msg, "测试结果", MessageBoxButton.OK, MessageBoxImage.Warning); return;
         }
         catch (SocketException ex)
         {
@@ -299,7 +299,7 @@ public partial class MainWindow : Window
                 _ => $"（错误码 {(int)ex.SocketErrorCode}）",
             };
             var msg = $"连接失败：{host}:{port}\n{ex.Message} {hint}";
-            LogLineError(msg); MessageBox.Show(msg, "测试结果", MessageBoxButton.OK, MessageBoxImage.Warning); return;
+            LogLineError(msg); DarkMessageBox.Show(msg, "测试结果", MessageBoxButton.OK, MessageBoxImage.Warning); return;
         }
         try
         {
@@ -309,22 +309,22 @@ public partial class MainWindow : Window
             var (name, line) = await client.ProbeDeviceAsync(cts.Token);
             string info = string.IsNullOrWhiteSpace(name) ? "" : $"[设备 {name}{(string.IsNullOrWhiteSpace(line) ? "" : "/Line" + line)}]";
             LogLine($"连接正常：{host}:{port}，对方协议应答正确 {info}");
-            MessageBox.Show($"连接正常：{host}:{port}，对方协议应答正确\n {info}: {host}:{port}", "测试结果", MessageBoxButton.OK, MessageBoxImage.Information);
+            DarkMessageBox.Show($"连接正常：{host}:{port}，对方协议应答正确\n {info}: {host}:{port}", "测试结果", MessageBoxButton.OK, MessageBoxImage.Information);
         }
         catch (OperationCanceledException)
         {
             var msg = $"已连上 {host}:{port}，但对方 5 秒内无协议应答：多为对方 BBKSync 进程僵死、重复实例占用端口，或对方跑的不是本程序。\n\n建议到对方机器：tasklist | findstr /i BBKSync 核对实例数，必要时 taskkill /f /im BBKSync 后重启。";
-            LogLineError(msg); MessageBox.Show(msg, "测试结果", MessageBoxButton.OK, MessageBoxImage.Warning);
+            LogLineError(msg); DarkMessageBox.Show(msg, "测试结果", MessageBoxButton.OK, MessageBoxImage.Warning);
         }
         catch (IOException ex)
         {
             var msg = $"已连上 {host}:{port}，但连接被对端立刻关闭：{ex.Message}\n\n多为对方服务未就绪或端口被其他程序占用。";
-            LogLineError($"已连上 {host}:{port}，但连接被对端立刻关闭：{ex.Message}"); MessageBox.Show(msg, "测试结果", MessageBoxButton.OK, MessageBoxImage.Warning);
+            LogLineError($"已连上 {host}:{port}，但连接被对端立刻关闭：{ex.Message}"); DarkMessageBox.Show(msg, "测试结果", MessageBoxButton.OK, MessageBoxImage.Warning);
         }
         catch (Exception ex)
         {
             var msg = $"连接失败：{host}:{port} - {ex.Message}";
-            LogLineError(msg); MessageBox.Show(msg, "测试结果", MessageBoxButton.OK, MessageBoxImage.Warning);
+            LogLineError(msg); DarkMessageBox.Show(msg, "测试结果", MessageBoxButton.OK, MessageBoxImage.Warning);
         }
     }
 
@@ -608,11 +608,11 @@ public partial class MainWindow : Window
 
     private async void BtnProcessClose_Click(object sender, RoutedEventArgs e)
     {
-        if (!TryGetPeerPort(out int port)) { MessageBox.Show("对方端口无效。", "错误", MessageBoxButton.OK, MessageBoxImage.Warning); return; }
+        if (!TryGetPeerPort(out int port)) { DarkMessageBox.Show("对方端口无效。", "错误", MessageBoxButton.OK, MessageBoxImage.Warning); return; }
         List<string> hosts;
         try { hosts = IpHelper.ExpandIps(cboPeerIp.Text ?? ""); }
-        catch (FormatException ex) { MessageBox.Show(ex.Message, "错误", MessageBoxButton.OK, MessageBoxImage.Warning); return; }
-        if (hosts.Count == 0) { MessageBox.Show("请输入对方 IP 或范围。", "提示", MessageBoxButton.OK, MessageBoxImage.Information); return; }
+        catch (FormatException ex) { DarkMessageBox.Show(ex.Message, "错误", MessageBoxButton.OK, MessageBoxImage.Warning); return; }
+        if (hosts.Count == 0) { DarkMessageBox.Show("请输入对方 IP 或范围。", "提示", MessageBoxButton.OK, MessageBoxImage.Information); return; }
         string[] killNames = txtProcessKillNames.Text
             .Split(new[] { ',', '，', ';', '；' }, StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries)
             .Where(s => s.Length > 0).ToArray();
@@ -643,7 +643,7 @@ public partial class MainWindow : Window
             EndBusy();
         }
         if (okIps.Count > 0) txtStatus.Text = hosts.Count > 1 ? $"关闭完成（{okIps.Count}/{hosts.Count} 台）" : "关闭完成";
-        if (failed.Count > 0) MessageBox.Show("以下电脑失败：\n" + string.Join("\n", failed), "部分失败", MessageBoxButton.OK, MessageBoxImage.Warning);
+        if (failed.Count > 0) DarkMessageBox.Show("以下电脑失败：\n" + string.Join("\n", failed), "部分失败", MessageBoxButton.OK, MessageBoxImage.Warning);
     }
 
     private async void BtnProcessOpen_Click(object sender, RoutedEventArgs e)
@@ -651,16 +651,16 @@ public partial class MainWindow : Window
         if (DateTime.Now < _processOpenCooldownUntil)
         {
             int sec = (int)(_processOpenCooldownUntil - DateTime.Now).TotalSeconds + 1;
-            MessageBox.Show($"请等待 {sec} 秒后再试。", "提示", MessageBoxButton.OK, MessageBoxImage.Information);
+            DarkMessageBox.Show($"请等待 {sec} 秒后再试。", "提示", MessageBoxButton.OK, MessageBoxImage.Information);
             return;
         }
         string exePath = txtProcessPath.Text.Trim();
-        if (string.IsNullOrWhiteSpace(exePath)) { MessageBox.Show("请输入程序路径。", "提示", MessageBoxButton.OK, MessageBoxImage.Information); return; }
-        if (!TryGetPeerPort(out int port)) { MessageBox.Show("对方端口无效。", "错误", MessageBoxButton.OK, MessageBoxImage.Warning); return; }
+        if (string.IsNullOrWhiteSpace(exePath)) { DarkMessageBox.Show("请输入程序路径。", "提示", MessageBoxButton.OK, MessageBoxImage.Information); return; }
+        if (!TryGetPeerPort(out int port)) { DarkMessageBox.Show("对方端口无效。", "错误", MessageBoxButton.OK, MessageBoxImage.Warning); return; }
         List<string> hosts;
         try { hosts = IpHelper.ExpandIps(cboPeerIp.Text ?? ""); }
-        catch (FormatException ex) { MessageBox.Show(ex.Message, "错误", MessageBoxButton.OK, MessageBoxImage.Warning); return; }
-        if (hosts.Count == 0) { MessageBox.Show("请输入对方 IP 或范围。", "提示", MessageBoxButton.OK, MessageBoxImage.Information); return; }
+        catch (FormatException ex) { DarkMessageBox.Show(ex.Message, "错误", MessageBoxButton.OK, MessageBoxImage.Warning); return; }
+        if (hosts.Count == 0) { DarkMessageBox.Show("请输入对方 IP 或范围。", "提示", MessageBoxButton.OK, MessageBoxImage.Information); return; }
         _processOpenCooldownUntil = DateTime.Now.AddSeconds(5);
         StartBusy();
         var ct = _coordinator.Token; _opLabel = "启动FreeForm";
@@ -689,7 +689,7 @@ public partial class MainWindow : Window
             EndBusy();
         }
         if (okIps.Count > 0) txtStatus.Text = hosts.Count > 1 ? $"启动完成（{okIps.Count}/{hosts.Count} 台）" : "启动完成";
-        if (failed.Count > 0) MessageBox.Show("以下电脑失败：\n" + string.Join("\n", failed), "部分失败", MessageBoxButton.OK, MessageBoxImage.Warning);
+        if (failed.Count > 0) DarkMessageBox.Show("以下电脑失败：\n" + string.Join("\n", failed), "部分失败", MessageBoxButton.OK, MessageBoxImage.Warning);
     }
 
     private void PwdProcess_KeyDown(object sender, KeyEventArgs e)

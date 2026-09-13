@@ -3,13 +3,13 @@
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         Title="IP 与电脑名称配置" Width="480" Height="440" MinWidth="420" MinHeight="360"
         WindowStartupLocation="CenterOwner" ShowInTaskbar="False" ResizeMode="CanResizeWithGrip"
-        Background="{StaticResource WindowBgBrush}"
+        Background="{DynamicResource WindowBgBrush}"
         TextElement.FontFamily="Microsoft YaHei UI, Segoe UI Variable, Segoe UI"
         TextElement.FontSize="13">
     <DockPanel Margin="14">
-        <TextBlock DockPanel.Dock="Top" Foreground="{StaticResource TextSubBrush}" TextWrapping="Wrap"
+        <TextBlock DockPanel.Dock="Top" Foreground="{DynamicResource TextSubBrush}" TextWrapping="Wrap"
                    Text="配置 IP 与电脑名称的对应关系，备份时会自动命名「备份目录\BBK_电脑名称_日期」。未配置名称的 IP 自身命名。" Margin="0,0,0,10" />
-        <Border DockPanel.Dock="Top" BorderBrush="{StaticResource CardBorderBrush}" BorderThickness="0,0,0,1" Margin="0,0,0,10" Padding="0,0,0,10">
+        <Border DockPanel.Dock="Top" BorderBrush="{DynamicResource CardBorderBrush}" BorderThickness="0,0,0,1" Margin="0,0,0,10" Padding="0,0,0,10">
             <StackPanel Orientation="Horizontal">
                 <Button Content="添加一行" Padding="14,6" Click="Add_Click" />
                 <Button Content="删除所选" Margin="8,0,0,0" Padding="14,6" Click="Remove_Click" />
@@ -17,8 +17,8 @@
             </StackPanel>
         </Border>
         <DataGrid x:Name="grid" AutoGenerateColumns="False" CanUserAddRows="False" CanUserDeleteRows="False"
-                  HeadersVisibility="Column" GridLinesVisibility="All" HorizontalGridLinesBrush="{StaticResource CardBorderBrush}"
-                  VerticalGridLinesBrush="{StaticResource CardBorderBrush}" BorderBrush="{StaticResource CardBorderBrush}"
+                  HeadersVisibility="Column" GridLinesVisibility="All" HorizontalGridLinesBrush="{DynamicResource CardBorderBrush}"
+                  VerticalGridLinesBrush="{DynamicResource CardBorderBrush}" BorderBrush="{DynamicResource CardBorderBrush}"
                   RowHeight="30">
             <DataGrid.CellStyle>
                 <Style TargetType="DataGridCell">

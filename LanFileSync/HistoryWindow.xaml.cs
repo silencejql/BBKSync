@@ -37,7 +37,7 @@ public partial class HistoryWindow : Window
         if (Selected == null)
             return;
         string host = Selected.Host;
-        if (MessageBox.Show($"删除记录 {host}？\n只删除历史记录，不影响电脑文件。", "确认",
+        if (DarkMessageBox.Show($"删除记录 {host}？\n只删除历史记录，不影响电脑文件。", "确认",
                 MessageBoxButton.OKCancel, MessageBoxImage.Question) != MessageBoxResult.OK)
             return;
         _store.Remove(host);

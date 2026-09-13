@@ -1,4 +1,4 @@
-﻿using System.Collections.Generic;
+using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Net.Sockets;
@@ -11,7 +11,7 @@ public partial class MainWindow
     private async void BtnBackup_Click(object sender, RoutedEventArgs e)
     {
         string dest = txtBackupDest.Text.Trim();
-        if (string.IsNullOrWhiteSpace(dest)) { MessageBox.Show("请输入备份目标文件夹。", "提示", MessageBoxButton.OK, MessageBoxImage.Information); return; }
+        if (string.IsNullOrWhiteSpace(dest)) { DarkMessageBox.Show("请输入备份目标文件夹。", "提示", MessageBoxButton.OK, MessageBoxImage.Information); return; }
         if (rbBackupRemote.IsChecked == true) { await BackupFromRemoteAsync(dest); }
         else
         {
@@ -26,13 +26,13 @@ public partial class MainWindow
     {
         string src = txtRoot.Text.Trim();
         if (string.IsNullOrWhiteSpace(src) || !Directory.Exists(src))
-        { MessageBox.Show("源文件夹无效或不存在：" + src, "错误", MessageBoxButton.OK, MessageBoxImage.Warning); return; }
+        { DarkMessageBox.Show("源文件夹无效或不存在：" + src, "错误", MessageBoxButton.OK, MessageBoxImage.Warning); return; }
         string fallback = Environment.MachineName;
         string name = BackupNameFor(fallback);
         string target = BackupTargetPath(dest, name);
         BackupEngine engine;
         try { engine = new BackupEngine(src, target, ReadBackupOptions()); }
-        catch (Exception ex) { MessageBox.Show(ex.Message, "错误", MessageBoxButton.OK, MessageBoxImage.Warning); return; }
+        catch (Exception ex) { DarkMessageBox.Show(ex.Message, "错误", MessageBoxButton.OK, MessageBoxImage.Warning); return; }
         StartBusy();
         try
         {
@@ -44,7 +44,7 @@ public partial class MainWindow
             await CompressAndRemoveFolderAsync(target, ShouldCompress);
         }
         catch (OperationCanceledException) { LogLine("备份已取消"); }
-        catch (Exception ex) { LogLineError("备份失败: " + ex.Message); MessageBox.Show("备份失败: " + ex.Message, "错误", MessageBoxButton.OK, MessageBoxImage.Error); }
+        catch (Exception ex) { LogLineError("备份失败: " + ex.Message); DarkMessageBox.Show("备份失败: " + ex.Message, "错误", MessageBoxButton.OK, MessageBoxImage.Error); }
         finally { EndBusy(); }
     }
 
@@ -52,9 +52,9 @@ public partial class MainWindow
     {
         List<string> hosts;
         try { hosts = IpHelper.ExpandIps(cboPeerIp.Text ?? ""); }
-        catch (FormatException ex) { MessageBox.Show(ex.Message, "错误", MessageBoxButton.OK, MessageBoxImage.Warning); return; }
-        if (hosts.Count == 0) { MessageBox.Show("请输入对方 IP 或范围。", "提示", MessageBoxButton.OK, MessageBoxImage.Information); return; }
-        if (!TryGetPeerPort(out int port)) { MessageBox.Show("对方端口无效。", "错误", MessageBoxButton.OK, MessageBoxImage.Warning); return; }
+        catch (FormatException ex) { DarkMessageBox.Show(ex.Message, "错误", MessageBoxButton.OK, MessageBoxImage.Warning); return; }
+        if (hosts.Count == 0) { DarkMessageBox.Show("请输入对方 IP 或范围。", "提示", MessageBoxButton.OK, MessageBoxImage.Information); return; }
+        if (!TryGetPeerPort(out int port)) { DarkMessageBox.Show("对方端口无效。", "错误", MessageBoxButton.OK, MessageBoxImage.Warning); return; }
         StartBusy();
         var ct = _coordinator.Token; _opLabel = "备份";
         var okIps = new List<string>(); var failed = new List<string>();
@@ -100,7 +100,7 @@ public partial class MainWindow
             EndBusy();
         }
         if (okIps.Count > 0) txtStatus.Text = hosts.Count > 1 ? $"远程备份完成（{okIps.Count}/{hosts.Count} 台）" : "远程备份完成";
-        if (failed.Count > 0) MessageBox.Show("以下电脑备份失败：\n" + string.Join("\n", failed), "部分失败", MessageBoxButton.OK, MessageBoxImage.Warning);
+        if (failed.Count > 0) DarkMessageBox.Show("以下电脑备份失败：\n" + string.Join("\n", failed), "部分失败", MessageBoxButton.OK, MessageBoxImage.Warning);
     }
 
     private async Task BackupFromShareAsync(string dest)
@@ -118,7 +118,7 @@ public partial class MainWindow
         else target = BackupTargetPath(dest, ComputerNameFor(txtShareIp.Text.Trim()));
         BackupEngine engine;
         try { engine = new BackupEngine(unc, target, ReadBackupOptions()); }
-        catch (Exception ex) { MessageBox.Show(ex.Message, "错误", MessageBoxButton.OK, MessageBoxImage.Warning); return; }
+        catch (Exception ex) { DarkMessageBox.Show(ex.Message, "错误", MessageBoxButton.OK, MessageBoxImage.Warning); return; }
         StartBusy();
         try
         {
@@ -130,14 +130,14 @@ public partial class MainWindow
             await CompressAndRemoveFolderAsync(target, ShouldCompress);
         }
         catch (OperationCanceledException) { LogLine("备份已取消"); }
-        catch (Exception ex) { LogLineError("备份失败: " + ex.Message); MessageBox.Show("备份失败: " + ex.Message, "错误", MessageBoxButton.OK, MessageBoxImage.Error); }
+        catch (Exception ex) { LogLineError("备份失败: " + ex.Message); DarkMessageBox.Show("备份失败: " + ex.Message, "错误", MessageBoxButton.OK, MessageBoxImage.Error); }
         finally { EndBusy(); }
     }
 
     private string? TryGetShareUnc()
     {
         string ip = txtShareIp.Text.Trim();
-        if (string.IsNullOrWhiteSpace(ip)) { MessageBox.Show("请输入对方电脑的 IP。", "提示", MessageBoxButton.OK, MessageBoxImage.Information); return null; }
+        if (string.IsNullOrWhiteSpace(ip)) { DarkMessageBox.Show("请输入对方电脑的 IP。", "提示", MessageBoxButton.OK, MessageBoxImage.Information); return null; }
         string unc = SmbHelper.MakeUnc(ip, txtSharePath.Text.Trim());
         string user = txtShareUser.Text.Trim(), password = pwdSharePass.Password;
         try
@@ -145,7 +145,7 @@ public partial class MainWindow
             SmbHelper.Connect(unc, string.IsNullOrEmpty(user) ? null : user, password);
             LogLine("已连接共享 " + unc); return unc;
         }
-        catch (Exception ex) { LogLineError("连接共享失败: " + ex.Message); MessageBox.Show("连接共享失败: " + ex.Message, "错误", MessageBoxButton.OK, MessageBoxImage.Error); return null; }
+        catch (Exception ex) { LogLineError("连接共享失败: " + ex.Message); DarkMessageBox.Show("连接共享失败: " + ex.Message, "错误", MessageBoxButton.OK, MessageBoxImage.Error); return null; }
     }
 
     private void BtnShareTest_Click(object sender, RoutedEventArgs e)
@@ -157,19 +157,19 @@ public partial class MainWindow
             string first = Directory.EnumerateDirectories(unc).FirstOrDefault() ?? Directory.EnumerateFiles(unc).FirstOrDefault() ?? "";
             LogLine(string.IsNullOrEmpty(first) ? $"连接成功 {unc}，但共享中没有可访问的内容。" : $"连接成功 {unc}，可访问。（示例: {first}）");
         }
-        catch (Exception ex) { LogLineError("连接成功但无法读取共享内容: " + ex.Message); MessageBox.Show("连接成功但无法读取共享内容: " + ex.Message, "错误", MessageBoxButton.OK, MessageBoxImage.Error); }
+        catch (Exception ex) { LogLineError("连接成功但无法读取共享内容: " + ex.Message); DarkMessageBox.Show("连接成功但无法读取共享内容: " + ex.Message, "错误", MessageBoxButton.OK, MessageBoxImage.Error); }
     }
 
     private async void BtnSync_Click(object sender, RoutedEventArgs e)
     {
         if (tabs.SelectedIndex == 2) { await TransferToRemoteAsync(); return; }
-        if (MessageBox.Show("确认开始更新？\n\n将按当前配置对[" + cboPeerIp.Text + "]电脑执行文件同步。", "确认", MessageBoxButton.OKCancel, MessageBoxImage.Question) != MessageBoxResult.OK) return;
+        if (DarkMessageBox.Show("确认开始更新？\n\n将按当前配置对[" + cboPeerIp.Text + "]电脑执行文件同步。", "确认", MessageBoxButton.OKCancel, MessageBoxImage.Question) != MessageBoxResult.OK) return;
         if (rbSyncShare.IsChecked == true) { await SyncFromShareAsync(); return; }
         List<string> hosts;
         try { hosts = IpHelper.ExpandIps(cboPeerIp.Text ?? ""); }
-        catch (FormatException ex) { MessageBox.Show(ex.Message, "错误", MessageBoxButton.OK, MessageBoxImage.Warning); return; }
-        if (hosts.Count == 0) { MessageBox.Show("请输入对方 IP 或范围。", "提示", MessageBoxButton.OK, MessageBoxImage.Information); return; }
-        if (!TryGetPeerPort(out int port)) { MessageBox.Show("对方端口无效。", "错误", MessageBoxButton.OK, MessageBoxImage.Warning); return; }
+        catch (FormatException ex) { DarkMessageBox.Show(ex.Message, "错误", MessageBoxButton.OK, MessageBoxImage.Warning); return; }
+        if (hosts.Count == 0) { DarkMessageBox.Show("请输入对方 IP 或范围。", "提示", MessageBoxButton.OK, MessageBoxImage.Information); return; }
+        if (!TryGetPeerPort(out int port)) { DarkMessageBox.Show("对方端口无效。", "错误", MessageBoxButton.OK, MessageBoxImage.Warning); return; }
         bool push = rbPush.IsChecked == true;
         string root = txtRoot.Text.Trim();
         var options = ReadOptions();
@@ -223,7 +223,7 @@ public partial class MainWindow
             EndBusy();
         }
         if (okIps.Count > 0) txtStatus.Text = hosts.Count > 1 ? $"同步完成（{okIps.Count}/{hosts.Count} 台）" : "同步完成";
-        if (failed.Count > 0) MessageBox.Show("以下电脑同步失败：\n" + string.Join("\n", failed), "部分失败", MessageBoxButton.OK, MessageBoxImage.Warning);
+        if (failed.Count > 0) DarkMessageBox.Show("以下电脑同步失败：\n" + string.Join("\n", failed), "部分失败", MessageBoxButton.OK, MessageBoxImage.Warning);
     }
 
     private async Task SyncFromShareAsync()
@@ -247,22 +247,22 @@ public partial class MainWindow
             LogLine("共享同步完成"); txtStatus.Text = "共享同步完成";
         }
         catch (OperationCanceledException) { LogLine("已取消"); }
-        catch (Exception ex) { LogLineError("共享同步失败: " + ex.Message); MessageBox.Show("共享同步失败: " + ex.Message, "错误", MessageBoxButton.OK, MessageBoxImage.Error); }
+        catch (Exception ex) { LogLineError("共享同步失败: " + ex.Message); DarkMessageBox.Show("共享同步失败: " + ex.Message, "错误", MessageBoxButton.OK, MessageBoxImage.Error); }
         finally { EndBusy(); }
     }
 
     private async Task TransferToRemoteAsync()
     {
         string itemPath = txtTransferPath.Text.Trim();
-        if (string.IsNullOrWhiteSpace(itemPath)) { MessageBox.Show("请先选择要传输的文件或文件夹。", "提示", MessageBoxButton.OK, MessageBoxImage.Information); return; }
-        if (!Directory.Exists(itemPath) && !File.Exists(itemPath)) { MessageBox.Show("路径无效或不存在：" + itemPath, "错误", MessageBoxButton.OK, MessageBoxImage.Warning); return; }
+        if (string.IsNullOrWhiteSpace(itemPath)) { DarkMessageBox.Show("请先选择要传输的文件或文件夹。", "提示", MessageBoxButton.OK, MessageBoxImage.Information); return; }
+        if (!Directory.Exists(itemPath) && !File.Exists(itemPath)) { DarkMessageBox.Show("路径无效或不存在：" + itemPath, "错误", MessageBoxButton.OK, MessageBoxImage.Warning); return; }
         List<string> hosts;
         try { hosts = IpHelper.ExpandIps(cboPeerIp.Text ?? ""); }
-        catch (FormatException ex) { MessageBox.Show(ex.Message, "错误", MessageBoxButton.OK, MessageBoxImage.Warning); return; }
-        if (hosts.Count == 0) { MessageBox.Show("请输入对方 IP 或范围。", "提示", MessageBoxButton.OK, MessageBoxImage.Information); return; }
-        if (!TryGetPeerPort(out int port)) { MessageBox.Show("对方端口无效。", "错误", MessageBoxButton.OK, MessageBoxImage.Warning); return; }
+        catch (FormatException ex) { DarkMessageBox.Show(ex.Message, "错误", MessageBoxButton.OK, MessageBoxImage.Warning); return; }
+        if (hosts.Count == 0) { DarkMessageBox.Show("请输入对方 IP 或范围。", "提示", MessageBoxButton.OK, MessageBoxImage.Information); return; }
+        if (!TryGetPeerPort(out int port)) { DarkMessageBox.Show("对方端口无效。", "错误", MessageBoxButton.OK, MessageBoxImage.Warning); return; }
         bool isDir = Directory.Exists(itemPath);
-        if (MessageBox.Show("确认开始传输？\n\n将把 [" + itemPath + "] 传输到[" + cboPeerIp.Text + "]电脑的相同路径（" + (isDir ? "文件夹" : "文件") + "）。\n传输前会自动备份对方相应的文件/文件夹。", "确认", MessageBoxButton.OKCancel, MessageBoxImage.Question) != MessageBoxResult.OK) return;
+        if (DarkMessageBox.Show("确认开始传输？\n\n将把 [" + itemPath + "] 传输到[" + cboPeerIp.Text + "]电脑的相同路径（" + (isDir ? "文件夹" : "文件") + "）。\n传输前会自动备份对方相应的文件/文件夹。", "确认", MessageBoxButton.OKCancel, MessageBoxImage.Question) != MessageBoxResult.OK) return;
         StartBusy();
         var ct = _coordinator.Token; _opLabel = "传输";
         var okIps = new List<string>(); var failed = new List<string>();
@@ -289,7 +289,7 @@ public partial class MainWindow
             EndBusy();
         }
         if (okIps.Count > 0) txtStatus.Text = hosts.Count > 1 ? $"传输完成（{okIps.Count}/{hosts.Count} 台）" : "传输完成";
-        if (failed.Count > 0) MessageBox.Show("以下电脑传输失败：\n" + string.Join("\n", failed), "部分失败", MessageBoxButton.OK, MessageBoxImage.Warning);
+        if (failed.Count > 0) DarkMessageBox.Show("以下电脑传输失败：\n" + string.Join("\n", failed), "部分失败", MessageBoxButton.OK, MessageBoxImage.Warning);
     }
 
     private void LogBackupSummary(string what, BackupEngine engine, int total)
@@ -325,12 +325,12 @@ public partial class MainWindow
     private async void BtnUpdateProgram_Click(object sender, RoutedEventArgs e)
     {
         string host = cboPeerIp.Text.Trim();
-        if (string.IsNullOrWhiteSpace(host)) { MessageBox.Show("请输入远端电脑 IP。", "提示", MessageBoxButton.OK, MessageBoxImage.Information); return; }
+        if (string.IsNullOrWhiteSpace(host)) { DarkMessageBox.Show("请输入远端电脑 IP。", "提示", MessageBoxButton.OK, MessageBoxImage.Information); return; }
         int port = int.TryParse(txtPeerPort.Text.Trim(), out int p) ? p : Constants.DefaultPort;
 
         string exePath = Environment.ProcessPath ?? "";
         if (string.IsNullOrEmpty(exePath) || !File.Exists(exePath))
-        { MessageBox.Show("无法获取当前程序路径。", "错误", MessageBoxButton.OK, MessageBoxImage.Error); return; }
+        { DarkMessageBox.Show("无法获取当前程序路径。", "错误", MessageBoxButton.OK, MessageBoxImage.Error); return; }
 
         List<string> hosts = IpHelper.ExpandIps(host);
         var failed = new List<string>();
@@ -369,6 +369,6 @@ public partial class MainWindow
             EndBusy();
         }
         if (okIps.Count > 0) txtStatus.Text = hosts.Count > 1 ? $"更新完成（{okIps.Count}/{hosts.Count} 台）" : "更新完成";
-        if (failed.Count > 0) MessageBox.Show("以下电脑更新失败：\n" + string.Join("\n", failed), "部分失败", MessageBoxButton.OK, MessageBoxImage.Warning);
+        if (failed.Count > 0) DarkMessageBox.Show("以下电脑更新失败：\n" + string.Join("\n", failed), "部分失败", MessageBoxButton.OK, MessageBoxImage.Warning);
     }
 }

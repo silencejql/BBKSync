@@ -396,6 +396,13 @@
         <Setter Property="Foreground" Value="{DynamicResource TextMainBrush}" />
     </Style>
 
+    <!-- TabControl -->
+    <Style TargetType="TabControl">
+        <Setter Property="Background" Value="Transparent" />
+        <Setter Property="BorderBrush" Value="{DynamicResource CardBorderBrush}" />
+        <Setter Property="BorderThickness" Value="1" />
+    </Style>
+
     <!-- 标题栏按钮 -->
     <Style x:Key="TitleBarButton" TargetType="Button">
         <Setter Property="Width" Value="44" />

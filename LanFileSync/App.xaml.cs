@@ -13,7 +13,7 @@ public partial class App : Application
         _mutex = new Mutex(true, "BBKSync_SingleInstance", out bool createdNew);
         if (!createdNew)
         {
-            MessageBox.Show("BBKSync 已在运行中，不能重复启动。", "提示", MessageBoxButton.OK, MessageBoxImage.Information);
+            DarkMessageBox.Show("BBKSync 已在运行中，不能重复启动。", "提示", MessageBoxButton.OK, MessageBoxImage.Information);
             Shutdown();
             return;
         }
@@ -21,7 +21,7 @@ public partial class App : Application
         DispatcherUnhandledException += (_, e) =>
         {
             LogCrash(e.Exception);
-            MessageBox.Show(
+            DarkMessageBox.Show(
                 "程序遇到未处理的错误：\n\n" + e.Exception + "\n\n详细信息已写入崩溃日志 crash.log。",
                 "程序错误", MessageBoxButton.OK, MessageBoxImage.Error);
             e.Handled = true;

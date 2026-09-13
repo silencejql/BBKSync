@@ -19,7 +19,7 @@
             <Setter Property="Width" Value="44" />
             <Setter Property="Height" Value="32" />
             <Setter Property="Background" Value="Transparent" />
-            <Setter Property="Foreground" Value="{StaticResource TextMainBrush}" />
+            <Setter Property="Foreground" Value="{DynamicResource TextMainBrush}" />
             <Setter Property="Focusable" Value="False" />
             <Setter Property="Cursor" Value="Hand" />
             <Setter Property="Template">
@@ -44,7 +44,7 @@
             <Setter Property="Width" Value="44" />
             <Setter Property="Height" Value="32" />
             <Setter Property="Background" Value="Transparent" />
-            <Setter Property="Foreground" Value="{StaticResource TextMainBrush}" />
+            <Setter Property="Foreground" Value="{DynamicResource TextMainBrush}" />
             <Setter Property="Focusable" Value="False" />
             <Setter Property="Cursor" Value="Hand" />
             <Setter Property="Template">
@@ -117,9 +117,9 @@
                 BorderBrush="{DynamicResource CardBorderBrush}" BorderThickness="0,1,0,0">
                     <DockPanel Margin="12,0">
                         <TextBlock DockPanel.Dock="Right" x:Name="txtLocalIp" VerticalAlignment="Center"
-                           Foreground="{StaticResource TextSubBrush}" Text="未启动服务" TextElement.FontSize="12" />
+                           Foreground="{DynamicResource TextSubBrush}" Text="未启动服务" TextElement.FontSize="12" />
                         <TextBlock x:Name="txtStatus" VerticalAlignment="Center"
-                           Foreground="{StaticResource TextMainBrush}" Text="就绪" TextElement.FontSize="12" />
+                           Foreground="{DynamicResource TextMainBrush}" Text="就绪" TextElement.FontSize="12" />
                     </DockPanel>
                 </Border>
 
@@ -210,7 +210,7 @@
                                             <TextBox x:Name="txtPeerPort" Grid.Column="1" Width="90" Margin="8,0,0,0" Height="30"
                                              ToolTip="对方服务监听端口。软件打开后会自动启动服务，端口即以本机端口为准" />
                                             <TextBlock Grid.Column="2" Margin="12,0,0,0" VerticalAlignment="Center"
-                                               Foreground="{StaticResource TextSubBrush}" TextWrapping="Wrap" FontSize="10"
+                                               Foreground="{DynamicResource TextSubBrush}" TextWrapping="Wrap" FontSize="10"
                                                Text="多台依次处理：逗号分隔，或范围如 192.168.1.5-8、192.168.1.5-192.168.1.8" />
                                         </Grid>
                                     </StackPanel>
@@ -233,7 +233,7 @@
                                                 <RadioButton x:Name="rbBackupRemote" GroupName="bsrc" Content="局域网电脑(可多台)" Margin="10,0,0,0" VerticalAlignment="Center" Checked="RbBackupSource_Changed" />
                                                 <RadioButton x:Name="rbBackupShare" GroupName="bsrc" Content="Windows共享" Margin="10,0,0,0" VerticalAlignment="Center" Checked="RbBackupSource_Changed" />
                                             </StackPanel>
-                                            <TextBlock x:Name="txtBackupHint" Margin="0,7,0,0" Foreground="{StaticResource TextSubBrush}" TextWrapping="Wrap" FontSize="10" FontWeight="Normal"
+                                            <TextBlock x:Name="txtBackupHint" Margin="0,7,0,0" Foreground="{DynamicResource TextSubBrush}" TextWrapping="Wrap" FontSize="10" FontWeight="Normal"
                                                Text="局域网电脑备份用上方&#x201c;远端电脑&#x201d;的 IP/范围，逐台处理；Windows共享用下方连接。" />
                                             <Grid Margin="0,10,0,0">
                                                 <Grid.ColumnDefinitions>
@@ -262,18 +262,18 @@
                                             <CheckBox x:Name="cbRunPreBackupBat" Content="备份前先执行PostgreSQL备份脚本" IsChecked="False" Margin="0,8,0,0"
                                               ToolTip="勾选后开始备份前先执行目标电脑预设的脚本（PostgreSQL_Backup.bat，默认含 pg_dump 数据库备份命令）：局域网备份在对方电脑执行（成功后再拉取备份文件）。" />
                                         </StackPanel>
-                                        <Rectangle Grid.Column="1" Width="1" Fill="{StaticResource CardBorderBrush}" Margin="14,0" />
+                                        <Rectangle Grid.Column="1" Width="1" Fill="{DynamicResource CardBorderBrush}" Margin="14,0" />
                                         <StackPanel Grid.Column="2" Margin="5,0,0,0">
                                             <CheckBox x:Name="cbIgnoreEnabled" Content="启用忽略规则（正则表达式）" IsChecked="True"
                                               ToolTip="取消勾选后，下面的忽略规则不生效，所有文件都会被备份。" />
-                                            <TextBlock Margin="0,6,0,0" Foreground="{StaticResource TextSubBrush}" TextWrapping="Wrap" FontSize="10" FontWeight="Normal"
+                                            <TextBlock Margin="0,6,0,0" Foreground="{DynamicResource TextSubBrush}" TextWrapping="Wrap" FontSize="10" FontWeight="Normal"
                                                Text="忽略文件/文件夹（每行一条正则表达式，匹配相对路径）：" />
                                             <TextBox x:Name="txtBackupIgnore" Margin="0,4,0,0" Height="60" AcceptsReturn="True"
                                              TextWrapping="Wrap" VerticalScrollBarVisibility="Auto" HorizontalAlignment="Stretch"
                                              ToolTip="每行一条合法正则表达式，大小写不敏感，匹配文件/文件夹相对源目录的路径，命中即忽略备份。&#x0a;&#x0a;忽略文件示例：&#x0a;&#x0a;  Log\.log$           结尾为 Log.log 的文件&#x0a;&#x0a;  \.bak$              所有 .bak 文件（注意 * 号无效，这是正则）&#x0a;&#x0a;  副本                 路径中含&#x201c;副本&#x201d;的文件&#x0a;&#x0a;忽略文件夹示例：&#x0a;&#x0a;  (^|/)\.git(/|$)      任何路径下的 .git 文件夹&#x0a;&#x0a;  (^|/)Temp(/|$)       顶层 Temp 文件夹&#x0a;&#x0a;  若要整条容错，可用 ^ 和 $ 锁定。" />
-                                            <TextBlock x:Name="txtIgnoreExample" Margin="0,6,0,0" Foreground="{StaticResource TextSubBrush}" TextWrapping="Wrap" FontSize="10" FontWeight="Normal"
+                                            <TextBlock x:Name="txtIgnoreExample" Margin="0,6,0,0" Foreground="{DynamicResource TextSubBrush}" TextWrapping="Wrap" FontSize="10" FontWeight="Normal"
                                                Text="示例：忽略 .bak 文件：\.bak$；忽略全部副本文件：副本；忽略 .git 文件夹：(^|/)\.git(/|$)。" />
-                                            <TextBlock Margin="0,4,0,0" Foreground="{StaticResource TextSubBrush}" TextWrapping="Wrap" FontSize="10" FontWeight="Normal"
+                                            <TextBlock Margin="0,4,0,0" Foreground="{DynamicResource TextSubBrush}" TextWrapping="Wrap" FontSize="10" FontWeight="Normal"
                                                Text="备份自动存入 备份目录\BBK_电脑名称_日期。" />
                                         </StackPanel>
                                     </Grid>
@@ -286,19 +286,19 @@
                                             <ColumnDefinition Width="*" />
                                         </Grid.ColumnDefinitions>
                                         <StackPanel>
-                                            <TextBlock Text="更新方式" FontWeight="SemiBold" Foreground="{StaticResource TextSubBrush}" Margin="0,0,0,6" />
+                                            <TextBlock Text="更新方式" FontWeight="SemiBold" Foreground="{DynamicResource TextSubBrush}" Margin="0,0,0,6" />
                                             <RadioButton x:Name="rbReceive" GroupName="dir" Content="接收对方更新（对方为源）" Checked="RbDir_Changed" Margin="0,3,0,0" />
                                             <RadioButton x:Name="rbPush" GroupName="dir" Content="推送本机给对方（本机为源）" Margin="0,6,0,0" Checked="RbDir_Changed" />
                                             <RadioButton x:Name="rbSyncShare" GroupName="dir" Content="从共享文件夹更新本机（免安装）" Margin="0,6,0,0" Checked="RbDir_Changed" />
-                                            <TextBlock x:Name="txtHint" Margin="0,8,0,0" Foreground="{StaticResource TextSubBrush}" TextWrapping="Wrap" FontSize="10" FontWeight="Normal"
+                                            <TextBlock x:Name="txtHint" Margin="0,8,0,0" Foreground="{DynamicResource TextSubBrush}" TextWrapping="Wrap" FontSize="10" FontWeight="Normal"
                                                Text="接收对方更新：对方需先&#x201c;启动服务&#x201d;。更新规则按本机设置执行。" />
-                                            <TextBlock Margin="0,6,0,0" Foreground="{StaticResource TextSubBrush}" TextWrapping="Wrap" FontSize="10" FontWeight="Normal"
+                                            <TextBlock Margin="0,6,0,0" Foreground="{DynamicResource TextSubBrush}" TextWrapping="Wrap" FontSize="10" FontWeight="Normal"
                                                Text="说明：更新BBK文件夹，自动跳过 Log 与 Config 文件夹。" />
                                         </StackPanel>
-                                        <Rectangle Grid.Column="1" Width="1" Fill="{StaticResource CardBorderBrush}" Margin="14,0" />
+                                        <Rectangle Grid.Column="1" Width="1" Fill="{DynamicResource CardBorderBrush}" Margin="14,0" />
                                         <StackPanel Grid.Column="2" Margin="14,0,0,0">
                                             <TextBlock Text="更新规则（接收 / 从共享时生效）" FontWeight="SemiBold"
-                                               Foreground="{StaticResource TextSubBrush}" Margin="0,0,0,6" />
+                                               Foreground="{DynamicResource TextSubBrush}" Margin="0,0,0,6" />
                                             <CheckBox x:Name="cbBinReplace" Content="Bin 整体替换（不勾则按日期增量）" Margin="0,3,0,0"
                                               ToolTip="勾选：先删除本地 Bin 再整体拷贝。不勾选：按修改日期/大小只传输不同的文件。" />
 
@@ -345,9 +345,9 @@
                                                                 <Grid Width="18" Height="18">
                                                                     <Path x:Name="eyeIcon" Stretch="Uniform"
                                                                           Data="M12 4.5C7 4.5 2.73 7.61 1 12c1.73 4.39 6 7.5 11 7.5s9.27-3.11 11-7.5c-1.73-4.39-6-7.5-11-7.5zM12 17c-2.76 0-5-2.24-5-5s2.24-5 5-5 5 2.24 5 5-2.24 5-5 5zm0-8c-1.66 0-3 1.34-3 3s1.34 3 3 3 3-1.34 3-3-1.34-3-3-3z"
-                                                                          Fill="{StaticResource TextSubBrush}" />
+                                                                          Fill="{DynamicResource TextSubBrush}" />
                                                                     <Line x:Name="eyeLine" X1="2" Y1="2" X2="22" Y2="22"
-                                                                          Stroke="{StaticResource TextSubBrush}" StrokeThickness="2"
+                                                                          Stroke="{DynamicResource TextSubBrush}" StrokeThickness="2"
                                                                           Visibility="Visible" />
                                                                 </Grid>
                                                             </Button>
@@ -373,7 +373,7 @@
                                         </Grid.ColumnDefinitions>
                                         <StackPanel>
                                             <TextBlock Text="选择本地文件或文件夹（LAN 远程传输）" FontWeight="SemiBold"
-                                               Foreground="{StaticResource TextSubBrush}" Margin="0,0,0,6" />
+                                               Foreground="{DynamicResource TextSubBrush}" Margin="0,0,0,6" />
                                             <Grid>
                                                 <Grid.ColumnDefinitions>
                                                     <ColumnDefinition Width="Auto" />
@@ -387,19 +387,19 @@
                                                 <Button Grid.Column="2" Content="选择文件..." Padding="10,6" Margin="8,0,0,0" Click="BtnTransferFile_Click" />
                                                 <Button Grid.Column="3" Content="选择文件夹..." Padding="10,6" Margin="8,0,0,0" Click="BtnTransferDir_Click" />
                                             </Grid>
-                                            <TextBlock x:Name="txtTransferHint" Margin="0,10,0,0" Foreground="{StaticResource TextSubBrush}" TextWrapping="Wrap" FontSize="10" FontWeight="Normal"
+                                            <TextBlock x:Name="txtTransferHint" Margin="0,10,0,0" Foreground="{DynamicResource TextSubBrush}" TextWrapping="Wrap" FontSize="10" FontWeight="Normal"
                                                Text="将选中的文件/文件夹更新到对方电脑的相同路径（对方需先&#x201c;启动服务&#x201d;）。同名同大小同修改时间的文件会跳过。" />
-                                            <TextBlock Margin="0,8,0,0" Foreground="{StaticResource TextSubBrush}" TextWrapping="Wrap" FontSize="10" FontWeight="Normal"
+                                            <TextBlock Margin="0,8,0,0" Foreground="{DynamicResource TextSubBrush}" TextWrapping="Wrap" FontSize="10" FontWeight="Normal"
                                                Text="更新前会自动备份对方相应的文件/文件夹（原文件重命名为&#x201c;原名-更新自动备份-日期&#x201d;）。" />
                                         </StackPanel>
-                                        <Rectangle Grid.Column="1" Width="1" Fill="{StaticResource CardBorderBrush}" Margin="14,0" />
+                                        <Rectangle Grid.Column="1" Width="1" Fill="{DynamicResource CardBorderBrush}" Margin="14,0" />
                                         <StackPanel Grid.Column="2" Margin="14,0,0,0">
                                             <TextBlock Text="更新设置" FontWeight="SemiBold"
-                                               Foreground="{StaticResource TextSubBrush}" Margin="0,0,0,6" />
+                                               Foreground="{DynamicResource TextSubBrush}" Margin="0,0,0,6" />
                                             <CheckBox x:Name="cbTransferSameSkip" Content="修改时间与大小都相同则跳过传输" IsChecked="True" Margin="0,3,0,0"
                                               ToolTip="勾选后，目标电脑上已存在且大小、修改时间相同的文件不再重复传输。" />
 
-                                            <TextBlock Margin="0,8,0,0" Foreground="{StaticResource TextSubBrush}" TextWrapping="Wrap" FontSize="10" FontWeight="Normal"
+                                            <TextBlock Margin="0,8,0,0" Foreground="{DynamicResource TextSubBrush}" TextWrapping="Wrap" FontSize="10" FontWeight="Normal"
                                                Text="说明：传输的目标路径与本机完全相同（如本机 D:\X\bin\app.exe 将传到对方 D:\X\bin\app.exe）。" />
                                         </StackPanel>
                                     </Grid>
@@ -413,8 +413,8 @@
                                         </Grid.ColumnDefinitions>
                                         <StackPanel x:Name="processContent" IsEnabled="False">
                                             <TextBlock Text="远程管理 FreeFormAlways 进程" FontWeight="SemiBold"
-                                                       Foreground="{StaticResource TextSubBrush}" Margin="0,0,0,6" />
-                                            <TextBlock TextWrapping="Wrap" Foreground="{StaticResource TextSubBrush}" FontSize="11"
+                                                       Foreground="{DynamicResource TextSubBrush}" Margin="0,0,0,6" />
+                                            <TextBlock TextWrapping="Wrap" Foreground="{DynamicResource TextSubBrush}" FontSize="11"
                                                        Text="关闭或启动远端电脑的 FreeFormAlways 进程。&#x0a;远端电脑需先启动 BBK 服务。" />
                                             <Grid Margin="0,10,0,0">
                                                 <Grid.ColumnDefinitions>
@@ -437,13 +437,13 @@
                                                          ToolTip="要结束的远端进程名前缀，多个用逗号或分号分隔。留空则使用 FreeFormAlways。&#x0a;例：FreeFormAlways,MyApp;AnotherApp" />
                                             </Grid>
                                         </StackPanel>
-                                        <Rectangle Grid.Column="1" Width="1" Fill="{StaticResource CardBorderBrush}" Margin="14,0" />
+                                        <Rectangle Grid.Column="1" Width="1" Fill="{DynamicResource CardBorderBrush}" Margin="14,0" />
                                         <StackPanel Grid.Column="2" Margin="14,0,0,0">
                                             <TextBlock Text="操作" FontWeight="SemiBold"
-                                                       Foreground="{StaticResource TextSubBrush}" Margin="0,0,0,6" />
-                                            <TextBlock x:Name="txtProcessHint" Margin="0,8,0,0" Foreground="{StaticResource TextSubBrush}" TextWrapping="Wrap" FontSize="10"
+                                                       Foreground="{DynamicResource TextSubBrush}" Margin="0,0,0,6" />
+                                            <TextBlock x:Name="txtProcessHint" Margin="0,8,0,0" Foreground="{DynamicResource TextSubBrush}" TextWrapping="Wrap" FontSize="10"
                                                        Text="启动：在远端执行指定路径的程序。&#x0a;关闭：结束远端指定进程名前缀的进程。" />
-                                            <TextBlock x:Name="txtProcessStatus" Margin="0,6,0,0" Foreground="{StaticResource TextMainBrush}" TextWrapping="Wrap" FontSize="11"
+                                            <TextBlock x:Name="txtProcessStatus" Margin="0,6,0,0" Foreground="{DynamicResource TextMainBrush}" TextWrapping="Wrap" FontSize="11"
                                                        FontWeight="SemiBold" />
                                             <Grid>
                                                 <Grid.ColumnDefinitions>
@@ -493,9 +493,9 @@
                                                                 <Grid Width="18" Height="18">
                                                                     <Path x:Name="eyeIconProcess" Stretch="Uniform"
                                                                           Data="M12 4.5C7 4.5 2.73 7.61 1 12c1.73 4.39 6 7.5 11 7.5s9.27-3.11 11-7.5c-1.73-4.39-6-7.5-11-7.5zM12 17c-2.76 0-5-2.24-5-5s2.24-5 5-5 5 2.24 5 5-2.24 5-5 5zm0-8c-1.66 0-3 1.34-3 3s1.34 3 3 3 3-1.34 3-3-1.34-3-3-3z"
-                                                                          Fill="{StaticResource TextSubBrush}" />
+                                                                          Fill="{DynamicResource TextSubBrush}" />
                                                                     <Line x:Name="eyeLineProcess" X1="2" Y1="2" X2="22" Y2="22"
-                                                                          Stroke="{StaticResource TextSubBrush}" StrokeThickness="2"
+                                                                          Stroke="{DynamicResource TextSubBrush}" StrokeThickness="2"
                                                                           Visibility="Visible" />
                                                                 </Grid>
                                                             </Button>
@@ -521,27 +521,27 @@
                                         </Grid.ColumnDefinitions>
                                         <StackPanel>
                                             <TextBlock Text="更新远端电脑的 BBKSync 程序" FontWeight="SemiBold"
-                                                       Foreground="{StaticResource TextSubBrush}" Margin="0,0,0,6" />
-                                            <TextBlock TextWrapping="Wrap" Foreground="{StaticResource TextSubBrush}" FontSize="11"
+                                                       Foreground="{DynamicResource TextSubBrush}" Margin="0,0,0,6" />
+                                            <TextBlock TextWrapping="Wrap" Foreground="{DynamicResource TextSubBrush}" FontSize="11"
                                                        Text="将本机当前运行的 BBKSync.exe 发送到远端电脑并自动替换。&#x0a;远端电脑需先启动 BBK 服务。" />
                                             <TextBlock Margin="0,10,0,0" FontWeight="SemiBold"
-                                                       Foreground="{StaticResource TextSubBrush}" Text="更新步骤：" />
-                                            <TextBlock Margin="0,4,0,0" Foreground="{StaticResource TextSubBrush}" FontSize="11" TextWrapping="Wrap"
+                                                       Foreground="{DynamicResource TextSubBrush}" Text="更新步骤：" />
+                                            <TextBlock Margin="0,4,0,0" Foreground="{DynamicResource TextSubBrush}" FontSize="11" TextWrapping="Wrap"
                                                        Text="1. 本机自动将当前 BBKSync.exe 发送到远端电脑" />
-                                            <TextBlock Margin="0,2,0,0" Foreground="{StaticResource TextSubBrush}" FontSize="11" TextWrapping="Wrap"
+                                            <TextBlock Margin="0,2,0,0" Foreground="{DynamicResource TextSubBrush}" FontSize="11" TextWrapping="Wrap"
                                                        Text="2. 远端电脑执行脚本：关闭旧程序 → 删除旧程序 → 重命名新程序 → 启动新程序" />
                                         </StackPanel>
-                                        <Rectangle Grid.Column="1" Width="1" Fill="{StaticResource CardBorderBrush}" Margin="14,0" />
+                                        <Rectangle Grid.Column="1" Width="1" Fill="{DynamicResource CardBorderBrush}" Margin="14,0" />
                                         <StackPanel Grid.Column="2" Margin="14,0,0,0">
                                             <TextBlock Text="注意事项" FontWeight="SemiBold"
-                                                       Foreground="{StaticResource TextSubBrush}" Margin="0,0,0,6" />
-                                            <TextBlock Foreground="{StaticResource TextSubBrush}" FontSize="11" TextWrapping="Wrap"
+                                                       Foreground="{DynamicResource TextSubBrush}" Margin="0,0,0,6" />
+                                            <TextBlock Foreground="{DynamicResource TextSubBrush}" FontSize="11" TextWrapping="Wrap"
                                                        Text="• 更新期间远端 BBK 服务会短暂中断（约 5 秒）" />
-                                            <TextBlock Margin="0,4,0,0" Foreground="{StaticResource TextSubBrush}" FontSize="11" TextWrapping="Wrap"
+                                            <TextBlock Margin="0,4,0,0" Foreground="{DynamicResource TextSubBrush}" FontSize="11" TextWrapping="Wrap"
                                                        Text="• 更新完成后远端程序会自动重新启动" />
-                                            <TextBlock Margin="0,4,0,0" Foreground="{StaticResource TextSubBrush}" FontSize="11" TextWrapping="Wrap"
+                                            <TextBlock Margin="0,4,0,0" Foreground="{DynamicResource TextSubBrush}" FontSize="11" TextWrapping="Wrap"
                                                        Text="• 确保本机和远端电脑的 BBKSync 版本架构一致（均为 x64）" />
-                                            <TextBlock Margin="0,4,0,0" Foreground="{StaticResource TextSubBrush}" FontSize="11" TextWrapping="Wrap"
+                                            <TextBlock Margin="0,4,0,0" Foreground="{DynamicResource TextSubBrush}" FontSize="11" TextWrapping="Wrap"
                                                        Text="• 更新前建议先关闭远端电脑上正在运行的 BBK 相关操作" />
                                         </StackPanel>
                                     </Grid>
@@ -606,7 +606,7 @@
                                         </Grid.ColumnDefinitions>
                                         <Button x:Name="btnShareTest" Content="测试连接" Padding="14,6" Click="BtnShareTest_Click" />
                                         <TextBlock Grid.Column="1" Margin="12,0,0,0" VerticalAlignment="Center"
-                                           Foreground="{StaticResource TextSubBrush}" TextWrapping="Wrap"
+                                           Foreground="{DynamicResource TextSubBrush}" TextWrapping="Wrap"
                                            Text="对方只需共享 D:\BBK（或开放 c$ 管理共享），无需安装本程序。" />
                                     </Grid>
                                 </StackPanel>
@@ -619,7 +619,7 @@
                           Background="Transparent" Cursor="SizeNS" ResizeBehavior="PreviousAndNext"
                           ResizeDirection="Rows" />
                     <Border Grid.Row="1" Height="1" HorizontalAlignment="Stretch" VerticalAlignment="Center"
-                    Background="{StaticResource CardBorderBrush}" />
+                    Background="{DynamicResource CardBorderBrush}" />
 
                     <!-- 日志 -->
                     <GroupBox Grid.Row="2" Header="日志" Margin="0,2,0,0">
