@@ -434,7 +434,7 @@
                                         </StackPanel>
                                     </Grid>
                                 </TabItem>
-                                <TabItem Header="Always管理" Width="100">
+                                <TabItem Header="进程管理" Width="100">
                                     <Grid Margin="6,10,6,6">
                                         <Grid.ColumnDefinitions>
                                             <ColumnDefinition Width="*" />

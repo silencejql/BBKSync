@@ -386,6 +386,17 @@ public partial class MainWindow : Window
             txtUpdatePwd.Visibility = Visibility.Collapsed;
             eyeLine.Visibility = Visibility.Visible;
         }
+        if (tabs.SelectedIndex != 4)
+        {
+            alwaysOverlay.Visibility = Visibility.Visible;
+            alwaysContent.IsEnabled = false;
+            pwdAlways.Clear();
+            txtAlwaysPwd.Clear();
+            txtAlwaysError.Visibility = Visibility.Collapsed;
+            pwdAlways.Visibility = Visibility.Visible;
+            txtAlwaysPwd.Visibility = Visibility.Collapsed;
+            eyeLineAlways.Visibility = Visibility.Visible;
+        }
         RefreshOpButtons();
     }
     private void RefreshOpButtons()
