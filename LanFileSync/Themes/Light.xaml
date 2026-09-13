@@ -248,7 +248,7 @@
                                          Foreground="{TemplateBinding Foreground}"
                                          VerticalAlignment="{TemplateBinding VerticalContentAlignment}"
                                          Padding="{TemplateBinding Padding}"
-                                         IsReadOnly="True" />
+                                         IsReadOnly="{TemplateBinding IsReadOnly}" />
                                 <ToggleButton x:Name="dropDownButton" Grid.Column="1"
                                               Background="Transparent" BorderThickness="0"
                                               Focusable="False" IsChecked="{Binding Path=IsDropDownOpen, Mode=TwoWay, RelativeSource={RelativeSource TemplatedParent}}"
