@@ -467,7 +467,7 @@ public partial class MainWindow : Window
         btnThemeToggle.ToolTip = dark ? "切换为亮色主题" : "切换为暗色主题";
 
         var icon = btnThemeToggle.Template.FindName("icon", btnThemeToggle) as System.Windows.Controls.TextBlock;
-        if (icon != null) icon.Text = dark ? "☀" : "☾";
+        if (icon != null) icon.Text = dark ? "☾" : "☀";
 
         s_logBrush = new SolidColorBrush(dark ? Color.FromRgb(0xE6, 0xED, 0xF3) : Color.FromRgb(0x20, 0x24, 0x2E));
         s_logErrorBrush = new SolidColorBrush(dark ? Color.FromRgb(0xFF, 0x6B, 0x6B) : Color.FromRgb(0xDC, 0x26, 0x26));
