@@ -35,7 +35,7 @@ public sealed class BackupSection
 
 public sealed class TransferSection
 {
-    public string Path { get; set; } = "";
+    public string Path { get; set; } = @"D:\BBK\FAS\Always.xmlFreeForm";
     public bool SameSkip { get; set; } = true;
 }
 
