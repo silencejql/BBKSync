@@ -418,7 +418,7 @@
                                                     <ColumnDefinition Width="*" />
                                                     <ColumnDefinition Width="Auto" />
                                                 </Grid.ColumnDefinitions>
-                                                <TextBlock Text="程序路径:" VerticalAlignment="Center" />
+                                                <TextBlock Text="启动程序路径:" VerticalAlignment="Center" />
                                                 <TextBox x:Name="txtProcessPath" Grid.Column="1" Margin="8,0,0,0" Height="30"
                                                          ToolTip="要启动的程序完整路径（如 D:\FreeForm\bin\FreeFormAlways.exe）" />
                                                 <Button Grid.Column="2" Content="浏览..." Padding="12,6" Margin="8,0,0,0" Click="BtnProcessBrowse_Click" />
@@ -428,7 +428,7 @@
                                                     <ColumnDefinition Width="Auto" />
                                                     <ColumnDefinition Width="*" />
                                                 </Grid.ColumnDefinitions>
-                                                <TextBlock Text="关闭进程名:" VerticalAlignment="Center" ToolTip="要结束的远端进程名前缀，多个用逗号或分号分隔" />
+                                                <TextBlock Text="关闭进程前缀:" VerticalAlignment="Center" ToolTip="要结束的远端进程名前缀，多个用逗号或分号分隔" />
                                                 <TextBox x:Name="txtProcessKillNames" Grid.Column="1" Margin="8,0,0,0" Height="30"
                                                          ToolTip="要结束的远端进程名前缀，多个用逗号或分号分隔。留空则使用 FreeFormAlways。&#x0a;例：FreeFormAlways,MyApp;AnotherApp" />
                                             </Grid>
@@ -437,21 +437,21 @@
                                         <StackPanel Grid.Column="2" Margin="14,0,0,0">
                                             <TextBlock Text="操作" FontWeight="SemiBold"
                                                        Foreground="{StaticResource TextSubBrush}" Margin="0,0,0,6" />
-                                            <Grid>
-                                                <Grid.ColumnDefinitions>
-                                                    <ColumnDefinition Width="*" />
-                                                    <ColumnDefinition Width="Auto" />
-                                                    <ColumnDefinition Width="Auto" />
-                                                </Grid.ColumnDefinitions>
-                                                <Button x:Name="btnProcessOpen" Grid.Column="1" Content="启动远端应用程序" Padding="14,6"
-                                                        Click="BtnProcessOpen_Click" />
-                                                <Button x:Name="btnProcessClose" Grid.Column="2" Content="关闭远端应用程序" Padding="14,6" Margin="8,0,0,0"
-                                                        Click="BtnProcessClose_Click" />
-                                            </Grid>
                                             <TextBlock x:Name="txtProcessHint" Margin="0,8,0,0" Foreground="{StaticResource TextSubBrush}" TextWrapping="Wrap" FontSize="10"
                                                        Text="启动：在远端执行指定路径的程序。&#x0a;关闭：结束远端指定进程名前缀的进程。" />
                                             <TextBlock x:Name="txtProcessStatus" Margin="0,6,0,0" Foreground="{StaticResource TextMainBrush}" TextWrapping="Wrap" FontSize="11"
                                                        FontWeight="SemiBold" />
+                                            <Grid>
+                                                <Grid.ColumnDefinitions>
+                                                    <ColumnDefinition Width="Auto" />
+                                                    <ColumnDefinition Width="Auto" />
+                                                    <ColumnDefinition Width="Auto" />
+                                                </Grid.ColumnDefinitions>
+                                                <Button x:Name="btnProcessOpen" Grid.Column="0" Content="启动远端应用程序" Padding="14,6"
+                                                        Click="BtnProcessOpen_Click" />
+                                                <Button x:Name="btnProcessClose" Grid.Column="1" Content="关闭远端应用程序" Padding="14,6" Margin="8,0,0,0"
+                                                        Click="BtnProcessClose_Click" />
+                                            </Grid>
                                         </StackPanel>
                                         <!-- 半透明玻璃遮罩（密码保护） -->
                                         <Border x:Name="processOverlay" Grid.ColumnSpan="3"
