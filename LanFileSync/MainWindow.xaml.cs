@@ -166,8 +166,11 @@ public partial class MainWindow : Window
         return new string(chars);
     }
 
-    private void LogLine(string msg) => LogLine(msg, Brushes.Black);
-    private void LogLineError(string msg) => LogLine(msg, Brushes.Red);
+    private static Brush s_logBrush = Brushes.Black;
+    private static Brush s_logErrorBrush = Brushes.Red;
+
+    private void LogLine(string msg) => LogLine(msg, s_logBrush);
+    private void LogLineError(string msg) => LogLine(msg, s_logErrorBrush);
     private void LogDivider() => LogLine("------------------------------------------------");
 
     private void LogLine(string msg, Brush brush)
@@ -456,6 +459,19 @@ public partial class MainWindow : Window
     }
 
     private void TitleClose_Click(object sender, RoutedEventArgs e) { Close(); }
+
+    private void BtnThemeToggle_Click(object sender, RoutedEventArgs e) => ThemeManager.Toggle();
+
+    internal void UpdateTheme(bool dark)
+    {
+        btnThemeToggle.ToolTip = dark ? "切换为亮色主题" : "切换为暗色主题";
+
+        var icon = btnThemeToggle.Template.FindName("icon", btnThemeToggle) as System.Windows.Controls.TextBlock;
+        if (icon != null) icon.Text = dark ? "☀" : "☾";
+
+        s_logBrush = new SolidColorBrush(dark ? Color.FromRgb(0xE6, 0xED, 0xF3) : Color.FromRgb(0x20, 0x24, 0x2E));
+        s_logErrorBrush = new SolidColorBrush(dark ? Color.FromRgb(0xFF, 0x6B, 0x6B) : Color.FromRgb(0xDC, 0x26, 0x26));
+    }
 
     private void PwdUpdate_KeyDown(object sender, KeyEventArgs e)
     {
