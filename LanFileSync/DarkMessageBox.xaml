@@ -12,7 +12,7 @@
         <shell:WindowChrome CaptionHeight="32" GlassFrameThickness="0" CornerRadius="0"
                             ResizeBorderThickness="0" UseAeroCaptionButtons="False" />
     </WindowChrome.WindowChrome>
-    <Grid>
+    <Grid Background="{DynamicResource WindowBgBrush}">
         <Grid.RowDefinitions>
             <RowDefinition Height="32" />
             <RowDefinition Height="*" />
