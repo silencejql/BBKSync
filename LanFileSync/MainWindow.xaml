@@ -364,7 +364,7 @@
                                         </Border>
                                     </Grid>
                                 </TabItem>
-                                <TabItem Header="文件传输" Width="100">
+                                <TabItem Header="文件同步" Width="100">
                                     <Grid Margin="6,10,6,6">
                                         <Grid.ColumnDefinitions>
                                             <ColumnDefinition Width="*" />
@@ -451,9 +451,9 @@
                                                     <ColumnDefinition Width="Auto" />
                                                     <ColumnDefinition Width="Auto" />
                                                 </Grid.ColumnDefinitions>
-                                                <Button x:Name="btnProcessOpen" Grid.Column="0" Content="启动远端应用程序" Padding="14,6"
+                                                <Button x:Name="btnProcessOpen" Grid.Column="0" Content="启动远端应用程序" Padding="14,6" Margin="0,5,0,0"
                                                         Click="BtnProcessOpen_Click" />
-                                                <Button x:Name="btnProcessClose" Grid.Column="1" Content="关闭远端应用程序" Padding="14,6" Margin="8,0,0,0"
+                                                <Button x:Name="btnProcessClose" Grid.Column="1" Content="关闭远端应用程序" Padding="14,6" Margin="8,5,0,0"
                                                         Click="BtnProcessClose_Click" />
                                             </Grid>
                                         </StackPanel>
@@ -512,7 +512,7 @@
                                         </Border>
                                     </Grid>
                                 </TabItem>
-                                <TabItem Header="程序更新" Width="100">
+                                <TabItem Header="程序升级" Width="100">
                                     <Grid Margin="6,10,6,6">
                                         <Grid.ColumnDefinitions>
                                             <ColumnDefinition Width="*" />
@@ -563,7 +563,7 @@
                                         Click="BtnBackup_Click" />
                                         <Button x:Name="btnSync" Grid.Column="1" Content="开始更新" IsEnabled="False" Margin="8,0,0,0"
                                         Padding="20,7" Style="{StaticResource AccentButton}" Click="BtnSync_Click" />
-                                        <Button x:Name="btnUpdateProgram" Grid.Column="2" Content="更新远端程序" IsEnabled="False" Margin="8,0,0,0"
+                                        <Button x:Name="btnUpdateProgram" Grid.Column="2" Content="程序升级" IsEnabled="False" Margin="8,0,0,0"
                                         Padding="20,7" Style="{StaticResource AccentButton}" Click="BtnUpdateProgram_Click" />
                                         <Button x:Name="btnCancel" Grid.Column="4" Content="取消" IsEnabled="False" Click="BtnCancel_Click" />
                                     </Grid>
