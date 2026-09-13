@@ -31,6 +31,10 @@ public partial class MainWindow : Window
             a.Equals("--minimized", StringComparison.OrdinalIgnoreCase) ||
             a.Equals("--autostart", StringComparison.OrdinalIgnoreCase));
         InitializeComponent();
+        var ver = System.Reflection.Assembly.GetEntryAssembly()?.GetName().Version;
+        string verStr = ver != null ? $"v{ver.Major}.{ver.Minor}.{ver.Build}" : "";
+        Title = $"BBK文件同步与备份工具 {verStr}";
+        txtTitle.Text = $"BBKFileSync {verStr}";
         if (_startMinimized) { ShowInTaskbar = false; WindowState = WindowState.Minimized; }
         Icon = AppIcons.WindowIcon() ?? Icon;
         BindSettingsToControls();
