@@ -470,7 +470,7 @@
                 <ControlTemplate TargetType="Button">
                     <Border x:Name="bd" Background="{TemplateBinding Background}"
                             CornerRadius="4" Padding="4">
-                        <TextBlock x:Name="icon" Text="☾" FontSize="14"
+                        <TextBlock x:Name="icon" Text="☀" FontSize="14"
                                    HorizontalAlignment="Center" VerticalAlignment="Center"
                                    Foreground="#D4A017" />
                     </Border>
