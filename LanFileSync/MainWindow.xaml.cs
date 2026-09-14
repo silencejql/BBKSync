@@ -49,11 +49,11 @@ public partial class MainWindow : Window
     private static void EnsureUpdateBat()
     {
         string batPath = Path.Combine(AppPaths.ExeDir(), "Update_BBKSync.bat");
-        if (File.Exists(batPath))
-        {
-            string existing = File.ReadAllText(batPath);
-            if (!string.IsNullOrWhiteSpace(existing)) return;
-        }
+        //if (File.Exists(batPath))
+        //{
+        //    string existing = File.ReadAllText(batPath);
+        //    if (!string.IsNullOrWhiteSpace(existing)) return;
+        //}
         string exeDir = AppPaths.ExeDir();
         string exeName = Path.GetFileName(Environment.ProcessPath ?? "BBKSync.exe");
         string content =
