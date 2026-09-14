@@ -336,6 +336,7 @@ public sealed class PeerServer : IDisposable
                         throw new InvalidOperationException("未知消息: " + op0);
                     string exePath = init.GetProperty("path").GetString()!;
                     string fileName = Path.GetFileNameWithoutExtension(exePath);
+                    string exeName = new[] { "Always", "xmlFreeForm" }.Any(name => exePath.Contains(name, StringComparison.CurrentCultureIgnoreCase)) ? "FreeFormsAlways" : "";
                     _log($"收到启动请求：{exePath}");
                     try
                     {
@@ -345,7 +346,7 @@ public sealed class PeerServer : IDisposable
                             UseShellExecute = true,
                         };
                         Process.Start(psi);
-                        int running = FreeFormKiller.CountByName(fileName);
+                        int running = FreeFormKiller.CountByName(exeName.Length > 0 ? exeName : fileName);
                         string msg = $"{fileName}程序已启动，当前{running}个进程运行中";
                         _log(msg);
                         await conn.SendJsonAsync(new { op = "ok", msg, running }, CancellationToken.None);

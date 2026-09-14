@@ -54,7 +54,7 @@ public static class FreeFormKiller
         {
             try
             {
-                return p.ProcessName.Equals(name, StringComparison.OrdinalIgnoreCase);
+                return p.ProcessName.StartsWith(name, StringComparison.OrdinalIgnoreCase);
             }
             catch
             {

@@ -197,7 +197,7 @@
                                             Click="BtnTestConnect_Click" ToolTip="验证与对方 IP 和端口的 TCP 连接是否可达" />
                                             <Button x:Name="btnHistory" Grid.Column="3" Content="历史" Margin="8,0,0,0" Padding="10,6"
                                             Click="BtnHistory_Click" ToolTip="管理历史连接的 IP 与备注" />
-                                            <Button x:Name="btnComputers" Grid.Column="4" Content="电脑名称" Margin="8,0,0,0" Padding="10,6"
+                                            <Button x:Name="btnComputers" Grid.Column="4" Content="IP配置" Margin="8,0,0,0" Padding="10,6"
                                             Click="BtnComputers_Click" ToolTip="配置 IP 与电脑名称的对应关系，用于下拉选择和备份自动命名" />
                                         </Grid>
                                         <Grid Margin="0,8,0,0">
