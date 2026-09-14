@@ -101,6 +101,7 @@
     <!-- 输入框 -->
     <Style TargetType="TextBox">
         <Setter Property="Foreground" Value="{DynamicResource TextMainBrush}" />
+        <Setter Property="FontWeight" Value="Normal" />
         <Setter Property="Background" Value="#FFFFFF" />
         <Setter Property="BorderBrush" Value="{DynamicResource InputBorderBrush}" />
         <Setter Property="BorderThickness" Value="1" />
@@ -162,6 +163,7 @@
     <!-- 密码框 -->
     <Style TargetType="PasswordBox">
         <Setter Property="Foreground" Value="{DynamicResource TextMainBrush}" />
+        <Setter Property="FontWeight" Value="Normal" />
         <Setter Property="Background" Value="#FFFFFF" />
         <Setter Property="BorderBrush" Value="{DynamicResource InputBorderBrush}" />
         <Setter Property="BorderThickness" Value="1" />
@@ -223,6 +225,7 @@
     <!-- 下拉框 -->
     <Style TargetType="ComboBox">
         <Setter Property="Foreground" Value="{DynamicResource TextMainBrush}" />
+        <Setter Property="FontWeight" Value="Normal" />
         <Setter Property="Background" Value="#FFFFFF" />
         <Setter Property="BorderBrush" Value="{DynamicResource InputBorderBrush}" />
         <Setter Property="BorderThickness" Value="1" />
@@ -503,6 +506,24 @@
         <Setter Property="Background" Value="Transparent" />
         <Setter Property="BorderBrush" Value="{DynamicResource CardBorderBrush}" />
         <Setter Property="BorderThickness" Value="1" />
+        <Setter Property="Template">
+            <Setter.Value>
+                <ControlTemplate TargetType="TabControl">
+                    <Grid>
+                        <Grid.RowDefinitions>
+                            <RowDefinition Height="Auto" />
+                            <RowDefinition Height="*" />
+                        </Grid.RowDefinitions>
+                        <!-- 标签页头整条白底 -->
+                        <Border Grid.Row="0" Background="Transparent" />
+                        <TabPanel Grid.Row="0" IsItemsHost="True" Margin="4,0,4,0" />
+                        <!-- 标签页内容白底 -->
+                        <Border Grid.Row="1" Background="#FFFFFF" />
+                        <ContentPresenter Grid.Row="1" ContentSource="SelectedContent" />
+                    </Grid>
+                </ControlTemplate>
+            </Setter.Value>
+        </Setter>
     </Style>
 
     <!-- 标题栏按钮 -->

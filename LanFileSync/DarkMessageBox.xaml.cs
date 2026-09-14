@@ -44,7 +44,7 @@ public partial class DarkMessageBox : Window
             };
             btn.Style = isAccent
                 ? (Style)Application.Current.FindResource("AccentButton")
-                : (Style)Application.Current.FindResource("Button");
+                : (Style)Application.Current.FindResource(typeof(Button));
             btn.Click += (_, _) => { dlg.DialogResult = result == MessageBoxResult.OK || result == MessageBoxResult.Yes; dlg.Close(); };
             dlg.panelButtons.Children.Add(btn);
         }

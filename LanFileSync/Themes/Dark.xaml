@@ -102,6 +102,7 @@
     <!-- 输入框 -->
     <Style TargetType="TextBox">
         <Setter Property="Foreground" Value="{DynamicResource TextMainBrush}" />
+        <Setter Property="FontWeight" Value="Normal" />
         <Setter Property="Background" Value="#0D1117" />
         <Setter Property="BorderBrush" Value="#2A3040" />
         <Setter Property="BorderThickness" Value="1" />
@@ -163,6 +164,7 @@
     <!-- 密码框 -->
     <Style TargetType="PasswordBox">
         <Setter Property="Foreground" Value="{DynamicResource TextMainBrush}" />
+        <Setter Property="FontWeight" Value="Normal" />
         <Setter Property="Background" Value="#0D1117" />
         <Setter Property="BorderBrush" Value="#2A3040" />
         <Setter Property="BorderThickness" Value="1" />
@@ -224,6 +226,7 @@
     <!-- 下拉框 -->
     <Style TargetType="ComboBox">
         <Setter Property="Foreground" Value="{DynamicResource TextMainBrush}" />
+        <Setter Property="FontWeight" Value="Normal" />
         <Setter Property="Background" Value="#0D1117" />
         <Setter Property="BorderBrush" Value="#2A3040" />
         <Setter Property="BorderThickness" Value="1" />
