@@ -16,6 +16,15 @@
     <RuntimeIdentifier>win-x64</RuntimeIdentifier>
     <EnableCompressionInSingleFile>true</EnableCompressionInSingleFile>
     <IncludeNativeLibrariesForSelfExtract>true</IncludeNativeLibrariesForSelfExtract>
+
+    <!-- 体积优先优化 -->
+    <OptimizationPreference>Size</OptimizationPreference>
+    <!-- 只保留简体中文资源 -->
+    <SatelliteResourceLanguages>zh-Hans</SatelliteResourceLanguages>
+    <InvariantGlobalization>false</InvariantGlobalization>
+    <!-- 启用压缩（会牺牲一点启动速度） -->
+    <EnableCompressionInSingleFile>true</EnableCompressionInSingleFile>
+    
     <DebugType>none</DebugType>
     <DebugSymbols>false</DebugSymbols>
     <PlatformTarget>AnyCPU</PlatformTarget>

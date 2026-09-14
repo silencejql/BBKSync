@@ -1,6 +1,8 @@
 using System.IO;
 using System.Threading;
 using System.Windows;
+using System.Windows.Interop;
+using System.Windows.Media;
 
 namespace LanFileSync;
 
@@ -10,6 +12,7 @@ public partial class App : Application
 
     protected override void OnStartup(StartupEventArgs e)
     {
+        RenderOptions.ProcessRenderMode = RenderMode.SoftwareOnly;
         _mutex = new Mutex(true, "BBKSync_SingleInstance", out bool createdNew);
         if (!createdNew)
         {
