@@ -33,7 +33,7 @@
                 <TextBlock x:Name="txtIcon" FontSize="28" VerticalAlignment="Top" Margin="0,0,12,0"
                            FontFamily="Segoe UI Emoji, Segoe UI Symbol" />
                 <TextBlock x:Name="txtMessage" VerticalAlignment="Center" TextWrapping="Wrap"
-                           Foreground="{DynamicResource TextMainBrush}" MaxWidth="330" />
+                           Foreground="{DynamicResource TextMainBrush}" MaxWidth="320" />
             </StackPanel>
 
             <StackPanel x:Name="panelButtons" Grid.Row="1" Orientation="Horizontal"

@@ -27,6 +27,7 @@ public partial class MainWindow
         string src = txtRoot.Text.Trim();
         if (string.IsNullOrWhiteSpace(src) || !Directory.Exists(src))
         { DarkMessageBox.Show("源文件夹无效或不存在：" + src, "错误", MessageBoxButton.OK, MessageBoxImage.Warning); return; }
+        if (DarkMessageBox.Show("确认开始备份本地BBK程序？\n\n程序备份到：" + dest + "。", "确认", MessageBoxButton.OKCancel, MessageBoxImage.Question) != MessageBoxResult.OK) return;
         string fallback = Environment.MachineName;
         string name = BackupNameFor(fallback);
         string target = BackupTargetPath(dest, name);
@@ -55,6 +56,7 @@ public partial class MainWindow
         catch (FormatException ex) { DarkMessageBox.Show(ex.Message, "错误", MessageBoxButton.OK, MessageBoxImage.Warning); return; }
         if (hosts.Count == 0) { DarkMessageBox.Show("请输入对方 IP 或范围。", "提示", MessageBoxButton.OK, MessageBoxImage.Information); return; }
         if (!TryGetPeerPort(out int port)) { DarkMessageBox.Show("对方端口无效。", "错误", MessageBoxButton.OK, MessageBoxImage.Warning); return; }
+        if (DarkMessageBox.Show("确认开始备份远端BBK程序？\n\n远端电脑：" + string.Join(";", hosts) + "\n程序备份到：" + dest + "。", "确认", MessageBoxButton.OKCancel, MessageBoxImage.Question) != MessageBoxResult.OK) return;
         StartBusy();
         var ct = _coordinator.Token; _opLabel = "备份";
         var okIps = new List<string>(); var failed = new List<string>();
@@ -163,7 +165,6 @@ public partial class MainWindow
     private async void BtnSync_Click(object sender, RoutedEventArgs e)
     {
         if (tabs.SelectedIndex == 2) { await TransferToRemoteAsync(); return; }
-        if (DarkMessageBox.Show("确认开始更新？\n\n将按当前配置对[" + cboPeerIp.Text + "]电脑执行文件同步。", "确认", MessageBoxButton.OKCancel, MessageBoxImage.Question) != MessageBoxResult.OK) return;
         if (rbSyncShare.IsChecked == true) { await SyncFromShareAsync(); return; }
         List<string> hosts;
         try { hosts = IpHelper.ExpandIps(cboPeerIp.Text ?? ""); }
@@ -171,6 +172,9 @@ public partial class MainWindow
         if (hosts.Count == 0) { DarkMessageBox.Show("请输入对方 IP 或范围。", "提示", MessageBoxButton.OK, MessageBoxImage.Information); return; }
         if (!TryGetPeerPort(out int port)) { DarkMessageBox.Show("对方端口无效。", "错误", MessageBoxButton.OK, MessageBoxImage.Warning); return; }
         bool push = rbPush.IsChecked == true;
+        string msgPush = $"将本机BBK按规则推送更新至远端电脑{cboPeerIp.Text}[{AutoDetectedName()}]";
+        string msgPull = $"将远端电脑{cboPeerIp.Text}[{AutoDetectedName()}]的BBK按规则拉取更新至本机";
+        if (DarkMessageBox.Show("确认开始更新？\n\n" + (push ? msgPush : msgPull) + "。", "确认", MessageBoxButton.OKCancel, MessageBoxImage.Question) != MessageBoxResult.OK) return;
         string root = txtRoot.Text.Trim();
         var options = ReadOptions();
         StartBusy();
@@ -262,7 +266,7 @@ public partial class MainWindow
         if (hosts.Count == 0) { DarkMessageBox.Show("请输入对方 IP 或范围。", "提示", MessageBoxButton.OK, MessageBoxImage.Information); return; }
         if (!TryGetPeerPort(out int port)) { DarkMessageBox.Show("对方端口无效。", "错误", MessageBoxButton.OK, MessageBoxImage.Warning); return; }
         bool isDir = Directory.Exists(itemPath);
-        if (DarkMessageBox.Show("确认开始传输？\n\n将把 [" + itemPath + "] 传输到[" + cboPeerIp.Text + "]电脑的相同路径（" + (isDir ? "文件夹" : "文件") + "）。\n传输前会自动备份对方相应的文件/文件夹。", "确认", MessageBoxButton.OKCancel, MessageBoxImage.Question) != MessageBoxResult.OK) return;
+        if (DarkMessageBox.Show("确认开始传输？\n\n将把 [" + itemPath + "] 传输到[" + cboPeerIp.Text + "]:[" + AutoDetectedName() + "]电脑的相同路径（" + (isDir ? "文件夹" : "文件") + "）。\n传输前会自动备份对方相应的文件/文件夹。", "确认", MessageBoxButton.OKCancel, MessageBoxImage.Question) != MessageBoxResult.OK) return;
         StartBusy();
         var ct = _coordinator.Token; _opLabel = "传输";
         var okIps = new List<string>(); var failed = new List<string>();
@@ -332,6 +336,7 @@ public partial class MainWindow
         if (string.IsNullOrEmpty(exePath) || !File.Exists(exePath))
         { DarkMessageBox.Show("无法获取当前程序路径。", "错误", MessageBoxButton.OK, MessageBoxImage.Error); return; }
 
+        if (DarkMessageBox.Show("确认开始升级远端BBKSync程序？\n\n目标电脑：" + host + "。", "确认", MessageBoxButton.OKCancel, MessageBoxImage.Question) != MessageBoxResult.OK) return;
         List<string> hosts = IpHelper.ExpandIps(host);
         var failed = new List<string>();
         var okIps = new List<string>();

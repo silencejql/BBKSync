@@ -618,6 +618,7 @@ public partial class MainWindow : Window
         try { hosts = IpHelper.ExpandIps(cboPeerIp.Text ?? ""); }
         catch (FormatException ex) { DarkMessageBox.Show(ex.Message, "错误", MessageBoxButton.OK, MessageBoxImage.Warning); return; }
         if (hosts.Count == 0) { DarkMessageBox.Show("请输入对方 IP 或范围。", "提示", MessageBoxButton.OK, MessageBoxImage.Information); return; }
+        if (DarkMessageBox.Show("确认关闭指定电脑的应用程序？\n\n[" + cboPeerIp.Text + "][" + AutoDetectedName() + "]\n程序前缀名：" + txtProcessKillNames.Text + "。", "确认", MessageBoxButton.OKCancel, MessageBoxImage.Question) != MessageBoxResult.OK) return;
         string[] killNames = txtProcessKillNames.Text
             .Split(new[] { ',', '，', ';', '；' }, StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries)
             .Where(s => s.Length > 0).ToArray();
@@ -666,6 +667,7 @@ public partial class MainWindow : Window
         try { hosts = IpHelper.ExpandIps(cboPeerIp.Text ?? ""); }
         catch (FormatException ex) { DarkMessageBox.Show(ex.Message, "错误", MessageBoxButton.OK, MessageBoxImage.Warning); return; }
         if (hosts.Count == 0) { DarkMessageBox.Show("请输入对方 IP 或范围。", "提示", MessageBoxButton.OK, MessageBoxImage.Information); return; }
+        if (DarkMessageBox.Show("确认启动指定电脑的应用程序？\n\n[" + cboPeerIp.Text + "][" + AutoDetectedName() + "]\n程序路径：" + exePath + "。", "确认", MessageBoxButton.OKCancel, MessageBoxImage.Question) != MessageBoxResult.OK) return;
         _processOpenCooldownUntil = DateTime.Now.AddSeconds(5);
         StartBusy();
         var ct = _coordinator.Token; _opLabel = "启动FreeForm";
@@ -678,7 +680,7 @@ public partial class MainWindow : Window
                 {
                     using var client = new PeerClient();
                     await client.ConnectAsync(host, port, Constants.RoleProcessOpen, ct);
-                    LogDivider(); LogLine($"连接 {host}:{port}，启动远端应用程序...");
+                    LogDivider(); LogLine($"连接 {host}:{port}[{AutoDetectedName()}]，启动远端应用程序...");
                     var (msg, running) = await client.ProcessOpenAsync(exePath, ct);
                     okIps.Add(host); LogLine($"{host}: {msg}");
                     txtProcessStatus.Text = $"[完成] {host}: {msg}";
