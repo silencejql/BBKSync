@@ -624,7 +624,8 @@ public partial class MainWindow : Window
         if (hosts.Count == 0) { DarkMessageBox.Show("请输入对方 IP 或范围。", "提示", MessageBoxButton.OKCancel, MessageBoxImage.Information); return; }
 
         lstProcessFiles.ItemsSource = null;
-        txtProcessStatus.Text = "正在获取文件列表...";
+            lstProcessFiles.Visibility = Visibility.Visible;
+            txtProcessStatus.Text = "正在获取文件列表...";
         StartBusy();
         var ct = _coordinator.Token; _opLabel = "获取文件列表";
         var okIps = new List<string>(); var failed = new List<string>();
@@ -672,6 +673,8 @@ public partial class MainWindow : Window
     {
         if (lstProcessFiles.SelectedItem is string path && !string.IsNullOrWhiteSpace(path))
             txtProcessPath.Text = path;
+        // 选中后隐藏列表
+        lstProcessFiles.Visibility = Visibility.Collapsed;
     }
 
     private async void BtnProcessClose_Click(object sender, RoutedEventArgs e)
