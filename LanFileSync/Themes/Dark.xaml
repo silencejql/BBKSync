@@ -346,7 +346,7 @@
 
     <!-- TabControl -->
     <Style TargetType="TabControl">
-        <Setter Property="Background" Value="#FFFFFF" />
+        <Setter Property="Background" Value="#0D1117" />
         <Setter Property="BorderBrush" Value="#1E2433" />
         <Setter Property="BorderThickness" Value="1" />
         <Setter Property="Template">
@@ -359,7 +359,7 @@
                         </Grid.RowDefinitions>
                         <Border Grid.Row="0" Background="Transparent" />
                         <TabPanel Grid.Row="0" IsItemsHost="True" Margin="4,0,4,0" />
-                        <Border Grid.Row="1" Background="#FFFFFF" />
+                        <Border Grid.Row="1" Background="#0D1117" />
                         <ContentPresenter Grid.Row="1" ContentSource="SelectedContent" />
                     </Grid>
                 </ControlTemplate>
@@ -429,7 +429,7 @@
                             <DropShadowEffect x:Name="glow" ShadowDepth="0" BlurRadius="0"
                                               Color="#00D4FF" Opacity="0" />
                         </Border.Effect>
-                        <ContentPresenter ContentSource="Header"
+                        <ContentPresenter x:Name="header" ContentSource="Header"
                                           HorizontalAlignment="Center" VerticalAlignment="Center"
                                           RecognizesAccessKey="True" />
                     </Border>
@@ -465,6 +465,7 @@
                             <Setter TargetName="bd" Property="Background" Value="#161B22" />
                             <Setter TargetName="bd" Property="BorderBrush" Value="#1E2433" />
                             <Setter Property="Foreground" Value="#00D4FF" />
+                            <Setter TargetName="header" Property="TextElement.FontSize" Value="14" />
                             <Setter TargetName="bd" Property="Effect">
                                 <Setter.Value>
                                     <DropShadowEffect ShadowDepth="0" BlurRadius="4" Color="#00D4FF" Opacity="0.2" />
