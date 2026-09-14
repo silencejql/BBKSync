@@ -34,7 +34,7 @@ internal static class IpHelper
             for (int i = tailStart; i <= tailEnd; i++)
             {
                 if (i < 1 || i > 254)
-                    throw new FormatException($"IP 段数字需在 1~254 之间（出错处: {part}）");
+                    throw new FormatException($"IP 段数字需在 1~254 之间(出错处: {part})");
                 result.Add(prefix + i);
             }
         }

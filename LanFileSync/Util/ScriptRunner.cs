@@ -26,7 +26,7 @@ internal static class ScriptRunner
             if (p == null)
                 return "启动备份前脚本失败";
             if (p.ExitCode != 0)
-                return $"备份前脚本执行失败（ExitCode {p.ExitCode}）";
+                return $"备份前脚本执行失败(ExitCode {p.ExitCode})";
             return null;
         }
         catch (Exception ex)

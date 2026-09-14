@@ -138,7 +138,7 @@ public sealed class TransferEngine
             {
                 string sp = frame.GetProperty("p").GetString() ?? "";
                 string sm = frame.GetProperty("msg").GetString() ?? "";
-                ReceiveMessage($"源文件读取失败，已跳过: {sp}（{sm}）", onError);
+                ReceiveMessage($"源文件读取失败，已跳过: {sp}({sm})", onError);
                 continue;
             }
             if (op != "data")
@@ -229,7 +229,7 @@ public sealed class TransferEngine
                     Thread.Sleep(Constants.RetryDelayMs * attempt);
                     continue;
                 }
-                ReceiveMessage($"更新失败（已重试 {attempt - 1} 次）: {target}", onError);
+                ReceiveMessage($"更新失败(已重试 {attempt - 1} 次): {target}", onError);
                 return false;
             }
         }

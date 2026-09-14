@@ -126,7 +126,7 @@ public sealed class BackupSyncEngine
         catch (IOException)
         {
             try { if (File.Exists(tmp)) File.Delete(tmp); } catch { }
-            onError?.Invoke(rel + "  无法覆盖（文件被占用等），已跳过");
+            onError?.Invoke(rel + "  无法覆盖(文件被占用等)，已跳过");
             return;
         }
 

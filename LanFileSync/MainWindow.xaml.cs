@@ -122,7 +122,7 @@ public partial class MainWindow : Window
         foreach (var e in _history.Entries)
         {
             string name = ComputerNameFor(e.Host);
-            string display = name != e.Host ? $"{name}（{e.Host}）" : e.Host;
+            string display = name != e.Host ? $"{name}({e.Host})" : e.Host;
             if (!string.IsNullOrEmpty(e.Note)) display += $" [{e.Note}]";
             items.Add(new IpComboItem { Ip = e.Host, Label = display });
         }
@@ -131,7 +131,7 @@ public partial class MainWindow : Window
             if (string.IsNullOrWhiteSpace(c.Ip)) continue;
             string ip = c.Ip.Trim();
             if (items.Any(i => string.Equals(i.Ip, ip, StringComparison.OrdinalIgnoreCase))) continue;
-            string display = !string.IsNullOrWhiteSpace(c.Name) ? $"{c.Name}（{ip}）" : ip;
+            string display = !string.IsNullOrWhiteSpace(c.Name) ? $"{c.Name}({ip})" : ip;
             items.Add(new IpComboItem { Ip = ip, Label = display });
         }
         cboPeerIp.ItemsSource = items; cboPeerIp.Text = host;
@@ -290,17 +290,17 @@ public partial class MainWindow : Window
         }
         catch (OperationCanceledException)
         {
-            var msg = $"连接超时：{host}:{port}\n4 秒内未建立连接（10060 超时：对方不可达，或防火墙静默丢弃）。";
+            var msg = $"连接超时：{host}:{port}\n4 秒内未建立连接(10060 超时：对方不可达，或防火墙静默丢弃)。";
             LogLineError(msg); DarkMessageBox.Show(msg, "测试结果", MessageBoxButton.OK, MessageBoxImage.Warning); return;
         }
         catch (SocketException ex)
         {
             string hint = ex.SocketErrorCode switch
             {
-                SocketError.AccessDenied => "（10013 权限访问：本机安全软件/防火墙拦截本程序外发连接；若程序放在桌面/深层局部目录运行，请改用纯英文目录如 C:\\BBKApp 再试）",
-                SocketError.ConnectionRefused => "（10061 积极拒绝：对方端口未监听，服务没启动）",
-                SocketError.TimedOut => "（10060 超时：对方不可达，或防火墙静默丢弃）",
-                _ => $"（错误码 {(int)ex.SocketErrorCode}）",
+                SocketError.AccessDenied => "(10013 权限访问：本机安全软件/防火墙拦截本程序外发连接；若程序放在桌面/深层局部目录运行，请改用纯英文目录如 C:\\BBKApp 再试)",
+                SocketError.ConnectionRefused => "(10061 积极拒绝：对方端口未监听，服务没启动)",
+                SocketError.TimedOut => "(10060 超时：对方不可达，或防火墙静默丢弃)",
+                _ => $"(错误码 {(int)ex.SocketErrorCode})",
             };
             var msg = $"连接失败：{host}:{port}\n{ex.Message} {hint}";
             LogLineError(msg); DarkMessageBox.Show(msg, "测试结果", MessageBoxButton.OK, MessageBoxImage.Warning); return;
@@ -618,7 +618,8 @@ public partial class MainWindow : Window
         try { hosts = IpHelper.ExpandIps(cboPeerIp.Text ?? ""); }
         catch (FormatException ex) { DarkMessageBox.Show(ex.Message, "错误", MessageBoxButton.OK, MessageBoxImage.Warning); return; }
         if (hosts.Count == 0) { DarkMessageBox.Show("请输入对方 IP 或范围。", "提示", MessageBoxButton.OK, MessageBoxImage.Information); return; }
-        if (DarkMessageBox.Show("确认关闭指定电脑的应用程序？\n\n[" + cboPeerIp.Text + "][" + AutoDetectedName() + "]\n程序前缀名：" + txtProcessKillNames.Text + "。", "确认", MessageBoxButton.OKCancel, MessageBoxImage.Question) != MessageBoxResult.OK) return;
+        string deviceInfo = hosts.Count == 1 ? await GetDeviceInfo(hosts[0]) : "";
+        if (DarkMessageBox.Show("确认关闭指定电脑的应用程序？\n\n[" + cboPeerIp.Text + "]" + deviceInfo + "\n\n程序前缀名：" + txtProcessKillNames.Text + "。", "确认", MessageBoxButton.OKCancel, MessageBoxImage.Question) != MessageBoxResult.OK) return;
         string[] killNames = txtProcessKillNames.Text
             .Split(new[] { ',', '，', ';', '；' }, StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries)
             .Where(s => s.Length > 0).ToArray();
@@ -648,8 +649,19 @@ public partial class MainWindow : Window
             if (okIps.Count > 0) { foreach (var ip in okIps) _history.Upsert(ip, port); ReloadHistoryCombo(); }
             EndBusy();
         }
-        if (okIps.Count > 0) txtStatus.Text = hosts.Count > 1 ? $"关闭完成（{okIps.Count}/{hosts.Count} 台）" : "关闭完成";
+        if (okIps.Count > 0) txtStatus.Text = hosts.Count > 1 ? $"关闭完成({okIps.Count}/{hosts.Count} 台)" : "关闭完成";
         if (failed.Count > 0) DarkMessageBox.Show("以下电脑失败：\n" + string.Join("\n", failed), "部分失败", MessageBoxButton.OK, MessageBoxImage.Warning);
+    }
+
+    private async Task<string> GetDeviceInfo(string host)
+    {
+        if (!TryGetPeerPort(out int port)) { DarkMessageBox.Show("对方端口无效。", "错误", MessageBoxButton.OK, MessageBoxImage.Warning); return ""; }
+        var client = new PeerClient();
+        using var cts = new CancellationTokenSource(TimeSpan.FromSeconds(5));
+        await client.ConnectAsync(host, port, Constants.RoleProbe, cts.Token);
+        var (name, line) = await client.ProbeDeviceAsync(cts.Token);
+
+        return string.IsNullOrWhiteSpace(name) ? "" : $"[设备 {name}{(string.IsNullOrWhiteSpace(line) ? "" : "/Line" + line)}]";
     }
 
     private async void BtnProcessOpen_Click(object sender, RoutedEventArgs e)
@@ -667,7 +679,8 @@ public partial class MainWindow : Window
         try { hosts = IpHelper.ExpandIps(cboPeerIp.Text ?? ""); }
         catch (FormatException ex) { DarkMessageBox.Show(ex.Message, "错误", MessageBoxButton.OK, MessageBoxImage.Warning); return; }
         if (hosts.Count == 0) { DarkMessageBox.Show("请输入对方 IP 或范围。", "提示", MessageBoxButton.OK, MessageBoxImage.Information); return; }
-        if (DarkMessageBox.Show("确认启动指定电脑的应用程序？\n\n[" + cboPeerIp.Text + "][" + AutoDetectedName() + "]\n程序路径：" + exePath + "。", "确认", MessageBoxButton.OKCancel, MessageBoxImage.Question) != MessageBoxResult.OK) return;
+        string deviceInfo = hosts.Count == 1 ? await GetDeviceInfo(hosts[0]) : "";
+        if (DarkMessageBox.Show("确认启动指定电脑的应用程序？\n\n[" + cboPeerIp.Text + "]" + deviceInfo + "\n\n程序路径：" + exePath + "。", "确认", MessageBoxButton.OKCancel, MessageBoxImage.Question) != MessageBoxResult.OK) return;
         _processOpenCooldownUntil = DateTime.Now.AddSeconds(5);
         StartBusy();
         var ct = _coordinator.Token; _opLabel = "启动FreeForm";
@@ -680,7 +693,7 @@ public partial class MainWindow : Window
                 {
                     using var client = new PeerClient();
                     await client.ConnectAsync(host, port, Constants.RoleProcessOpen, ct);
-                    LogDivider(); LogLine($"连接 {host}:{port}[{AutoDetectedName()}]，启动远端应用程序...");
+                    LogDivider(); LogLine($"连接 {host}:{port}[{deviceInfo}]，启动远端应用程序...");
                     var (msg, running) = await client.ProcessOpenAsync(exePath, ct);
                     okIps.Add(host); LogLine($"{host}: {msg}");
                     txtProcessStatus.Text = $"[完成] {host}: {msg}";
@@ -695,7 +708,7 @@ public partial class MainWindow : Window
             if (okIps.Count > 0) { foreach (var ip in okIps) _history.Upsert(ip, port); ReloadHistoryCombo(); }
             EndBusy();
         }
-        if (okIps.Count > 0) txtStatus.Text = hosts.Count > 1 ? $"启动完成（{okIps.Count}/{hosts.Count} 台）" : "启动完成";
+        if (okIps.Count > 0) txtStatus.Text = hosts.Count > 1 ? $"启动完成({okIps.Count}/{hosts.Count} 台)" : "启动完成";
         if (failed.Count > 0) DarkMessageBox.Show("以下电脑失败：\n" + string.Join("\n", failed), "部分失败", MessageBoxButton.OK, MessageBoxImage.Warning);
     }
 

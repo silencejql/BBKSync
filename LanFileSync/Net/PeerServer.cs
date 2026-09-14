@@ -126,7 +126,7 @@ public sealed class PeerServer : IDisposable
                 _ => "本机为文件源",
             };
             _log("------------------------------------------------");
-            _log($"收到连接（角色: {roleDesc}）{tcp.Client.RemoteEndPoint}");
+            _log($"收到连接(角色: {roleDesc}){tcp.Client.RemoteEndPoint}");
 
             if (role == Constants.RoleProbe)
             {
@@ -170,7 +170,7 @@ public sealed class PeerServer : IDisposable
                     var paths = req.GetProperty("paths").EnumerateArray().Select(x => x.GetString()!).ToList();
 
                     int sent = 0;
-                    _log(paths.Count == 0 ? "对方无需更新/备份（所有文件相同）。" : $"对方需要 {paths.Count} 个文件，开始发送...");
+                    _log(paths.Count == 0 ? "对方无需更新/备份(所有文件相同)。" : $"对方需要 {paths.Count} 个文件，开始发送...");
                     if (paths.Count > 0 && paths.Count < 10)
                         foreach (var p in paths) _log("  → " + p);
                     await SourceSide.SendRequestedFilesAsync(conn, _root, paths,
@@ -181,7 +181,7 @@ public sealed class PeerServer : IDisposable
                 {
                     var list = new List<FileEntry>();
                     await TargetSide.ReceiveManifestAsync(conn, ct, list);
-                    _log($"已收到对方文件清单（{list.Count} 项），按本机规则计算需要更新的文件...");
+                    _log($"已收到对方文件清单({list.Count} 项)，按本机规则计算需要更新的文件...");
 
                     var engine = new SyncEngine(_root, _options);
                     engine.Plan(list);
@@ -195,7 +195,7 @@ public sealed class PeerServer : IDisposable
                             var be = new BackupEngine(_root, dest, _backupOptions);
                             var files = be.Plan();
                             await be.RunAsync(null, m => _onError("同步前备份跳过: " + m), ct);
-                            _log($"同步前备份完成（{files.Count} 项）");
+                            _log($"同步前备份完成({files.Count} 项)");
                             await CompressAndRemoveFolderAsync(dest, _compressUpdateZip);
                         }
                         catch (ArgumentException)
@@ -234,11 +234,11 @@ public sealed class PeerServer : IDisposable
                     string itemPath = init.GetProperty("p").GetString()!;
                     bool isDir = init.GetProperty("isDir").GetBoolean();
                     bool sameSkip = init.GetProperty("sameSkip").GetBoolean();
-                    _log($"收到传输请求（本机为目标）：{itemPath}（{(isDir ? "文件夹" : "文件")}）...");
+                    _log($"收到传输请求(本机为目标)：{itemPath}({(isDir ? "文件夹" : "文件")})...");
 
                     var list = new List<FileEntry>();
                     await TargetSide.ReceiveManifestAsync(conn, ct, list);
-                    _log($"已收到对方文件清单（{list.Count} 项），按本机电脑相同路径计算需要更新的文件...");
+                    _log($"已收到对方文件清单({list.Count} 项)，按本机电脑相同路径计算需要更新的文件...");
 
                     var engine = new TransferEngine(itemPath, isDir, sameSkip);
                     engine.Plan(list);
@@ -318,7 +318,7 @@ public sealed class PeerServer : IDisposable
                         throw new InvalidOperationException("未知消息: " + op0);
                     var namesArr = init.GetProperty("names").EnumerateArray().Select(x => x.GetString()!).ToArray();
                     string namesDisplay = namesArr.Length > 0 ? string.Join(", ", namesArr) : FreeFormKiller.ProcessPrefixAsterisk;
-                    _log($"收到关闭请求（进程名: {namesDisplay}）...");
+                    _log($"收到关闭请求(进程名: {namesDisplay})...");
                     int killed = FreeFormKiller.KillByNames(namesArr);
                     int remaining = FreeFormKiller.FindProcessesByNames(namesArr).Count();
                     string msg = killed > 0

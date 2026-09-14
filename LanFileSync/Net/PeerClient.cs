@@ -29,7 +29,7 @@ public sealed class PeerClient : IDisposable
         var list = new List<FileEntry>();
 
         await TargetSide.ReceiveManifestAsync(_conn!, ct, list);
-        log($"已收到对方文件清单（{list.Count} 项），按本机规则计算...");
+        log($"已收到对方文件清单({list.Count} 项)，按本机规则计算...");
 
         engine.Plan(list);
         onTotal(engine.NeedList.Count);
@@ -111,7 +111,7 @@ public sealed class PeerClient : IDisposable
         var list = new List<FileEntry>();
 
         await TargetSide.ReceiveManifestAsync(_conn!, ct, list);
-        log($"已收到对方文件清单（{list.Count} 项），按备份规则计算...");
+        log($"已收到对方文件清单({list.Count} 项)，按备份规则计算...");
 
         engine.Plan(list);
         onTotal(engine.NeedList.Count);

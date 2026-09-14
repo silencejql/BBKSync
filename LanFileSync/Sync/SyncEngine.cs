@@ -30,7 +30,7 @@ public sealed class SyncEngine
             {
                 SafeHardDelete(bin);
                 if (Directory.Exists(bin))
-                    throw new IOException("无法删除 Bin 文件夹（被占用）: " + bin);
+                    throw new IOException("无法删除 Bin 文件夹(被占用): " + bin);
             }
         }
 

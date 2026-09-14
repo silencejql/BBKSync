@@ -80,7 +80,7 @@ public sealed class BackupEngine
             try { size = new FileInfo(srcPath).Length; }
             catch (Exception ex)
             {
-                onError?.Invoke(rel + "  无法读取（文件被占用等）: " + ex.Message);
+                onError?.Invoke(rel + "  无法读取(文件被占用等): " + ex.Message);
                 onFile?.Invoke(rel, 0);
                 continue;
             }
@@ -112,7 +112,7 @@ public sealed class BackupEngine
             catch (Exception ex)
             {
                 try { if (File.Exists(tmp)) File.Delete(tmp); } catch { }
-                onError?.Invoke(rel + "  复制失败（文件被占用等，已跳过）: " + ex.Message);
+                onError?.Invoke(rel + "  复制失败(文件被占用等，已跳过): " + ex.Message);
             }
 
             if (copied)

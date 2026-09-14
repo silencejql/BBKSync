@@ -8,7 +8,7 @@
                 <ResourceDictionary Source="Themes/Light.xaml" />
             </ResourceDictionary.MergedDictionaries>
 
-            <!-- 基础画刷（主题切换时动态更新） -->
+            <!-- 基础画刷(主题切换时动态更新) -->
             <SolidColorBrush x:Key="WindowBgBrush" Color="#F3F5F9" />
             <SolidColorBrush x:Key="CardBorderBrush" Color="#E1E6EE" />
             <SolidColorBrush x:Key="AccentBrush" Color="#2563EB" />

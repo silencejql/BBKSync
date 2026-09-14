@@ -11,7 +11,7 @@ public sealed class PeerHistoryEntry
     public int Connects { get; set; }
 
     public override string ToString()
-        => string.IsNullOrEmpty(Note) ? Host : $"{Host}（{Note}）";
+        => string.IsNullOrEmpty(Note) ? Host : $"{Host}({Note})";
 }
 
 public sealed class HistoryStore

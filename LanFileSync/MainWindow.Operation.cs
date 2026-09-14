@@ -39,7 +39,7 @@ public partial class MainWindow
         {
             var files = engine.Plan(); _totalCount = files.Count; _opLabel = "备份";
             OnTotal(files.Count);
-            LogDivider(); LogLine($"开始备份 {src} → {target}（共 {files.Count} 项）...");
+            LogDivider(); LogLine($"开始备份 {src} → {target}(共 {files.Count} 项)...");
             await engine.RunAsync(OnFileProgress, m => LogLineError("跳过: " + m), _coordinator.Token);
             LogBackupSummary("备份", engine, files.Count); txtStatus.Text = "备份完成";
             await CompressAndRemoveFolderAsync(target, ShouldCompress);
@@ -56,7 +56,8 @@ public partial class MainWindow
         catch (FormatException ex) { DarkMessageBox.Show(ex.Message, "错误", MessageBoxButton.OK, MessageBoxImage.Warning); return; }
         if (hosts.Count == 0) { DarkMessageBox.Show("请输入对方 IP 或范围。", "提示", MessageBoxButton.OK, MessageBoxImage.Information); return; }
         if (!TryGetPeerPort(out int port)) { DarkMessageBox.Show("对方端口无效。", "错误", MessageBoxButton.OK, MessageBoxImage.Warning); return; }
-        if (DarkMessageBox.Show("确认开始备份远端BBK程序？\n\n远端电脑：" + string.Join(";", hosts) + "\n程序备份到：" + dest + "。", "确认", MessageBoxButton.OKCancel, MessageBoxImage.Question) != MessageBoxResult.OK) return;
+        string deviceInfo = hosts.Count == 1 ? await GetDeviceInfo(hosts[0]) : "";
+        if (DarkMessageBox.Show("确认开始备份远端BBK程序？\n\n远端电脑：[" + string.Join(";", hosts) + "]" + deviceInfo + "\n程序备份到：" + dest + "。", "确认", MessageBoxButton.OKCancel, MessageBoxImage.Question) != MessageBoxResult.OK) return;
         StartBusy();
         var ct = _coordinator.Token; _opLabel = "备份";
         var okIps = new List<string>(); var failed = new List<string>();
@@ -101,7 +102,7 @@ public partial class MainWindow
             if (okIps.Count > 0) { foreach (var ip in okIps) _history.Upsert(ip, port); ReloadHistoryCombo(); }
             EndBusy();
         }
-        if (okIps.Count > 0) txtStatus.Text = hosts.Count > 1 ? $"远程备份完成（{okIps.Count}/{hosts.Count} 台）" : "远程备份完成";
+        if (okIps.Count > 0) txtStatus.Text = hosts.Count > 1 ? $"远程备份完成({okIps.Count}/{hosts.Count} 台)" : "远程备份完成";
         if (failed.Count > 0) DarkMessageBox.Show("以下电脑备份失败：\n" + string.Join("\n", failed), "部分失败", MessageBoxButton.OK, MessageBoxImage.Warning);
     }
 
@@ -126,7 +127,7 @@ public partial class MainWindow
         {
             var files = engine.Plan(); _totalCount = files.Count; _opLabel = "备份";
             OnTotal(files.Count);
-            LogDivider(); LogLine($"开始从共享 {unc} 备份 → {target}（共 {files.Count} 项）...");
+            LogDivider(); LogLine($"开始从共享 {unc} 备份 → {target}(共 {files.Count} 项)...");
             await engine.RunAsync(OnFileProgress, m => LogLineError("跳过: " + m), _coordinator.Token);
             LogBackupSummary("共享备份", engine, files.Count); txtStatus.Text = "备份完成";
             await CompressAndRemoveFolderAsync(target, ShouldCompress);
@@ -157,7 +158,7 @@ public partial class MainWindow
         try
         {
             string first = Directory.EnumerateDirectories(unc).FirstOrDefault() ?? Directory.EnumerateFiles(unc).FirstOrDefault() ?? "";
-            LogLine(string.IsNullOrEmpty(first) ? $"连接成功 {unc}，但共享中没有可访问的内容。" : $"连接成功 {unc}，可访问。（示例: {first}）");
+            LogLine(string.IsNullOrEmpty(first) ? $"连接成功 {unc}，但共享中没有可访问的内容。" : $"连接成功 {unc}，可访问。(示例: {first})");
         }
         catch (Exception ex) { LogLineError("连接成功但无法读取共享内容: " + ex.Message); DarkMessageBox.Show("连接成功但无法读取共享内容: " + ex.Message, "错误", MessageBoxButton.OK, MessageBoxImage.Error); }
     }
@@ -171,9 +172,11 @@ public partial class MainWindow
         catch (FormatException ex) { DarkMessageBox.Show(ex.Message, "错误", MessageBoxButton.OK, MessageBoxImage.Warning); return; }
         if (hosts.Count == 0) { DarkMessageBox.Show("请输入对方 IP 或范围。", "提示", MessageBoxButton.OK, MessageBoxImage.Information); return; }
         if (!TryGetPeerPort(out int port)) { DarkMessageBox.Show("对方端口无效。", "错误", MessageBoxButton.OK, MessageBoxImage.Warning); return; }
+        if (rbReceive.IsChecked == true && hosts.Count > 1) { DarkMessageBox.Show("拉取对方更新时只能选择一个IP地址", "错误", MessageBoxButton.OK, MessageBoxImage.Warning); return; }
         bool push = rbPush.IsChecked == true;
-        string msgPush = $"将本机BBK按规则推送更新至远端电脑{cboPeerIp.Text}[{AutoDetectedName()}]";
-        string msgPull = $"将远端电脑{cboPeerIp.Text}[{AutoDetectedName()}]的BBK按规则拉取更新至本机";
+        string deviceInfo = hosts.Count == 1 ? await GetDeviceInfo(hosts[0]) : "";
+        string msgPush = $"将本机BBK按规则推送更新至远端电脑[{cboPeerIp.Text}]{deviceInfo}";
+        string msgPull = $"将远端电脑[{cboPeerIp.Text}]{deviceInfo}的BBK按规则拉取更新至本机";
         if (DarkMessageBox.Show("确认开始更新？\n\n" + (push ? msgPush : msgPull) + "。", "确认", MessageBoxButton.OKCancel, MessageBoxImage.Question) != MessageBoxResult.OK) return;
         string root = txtRoot.Text.Trim();
         var options = ReadOptions();
@@ -206,7 +209,7 @@ public partial class MainWindow
                                 var be = new BackupEngine(root, dest, ReadBackupOptions());
                                 var bakFiles = be.Plan();
                                 await be.RunAsync(OnFileProgress, m => LogLineError("同步前备份跳过: " + m), ct);
-                                LogLine($"同步前备份完成（{bakFiles.Count} 项）");
+                                LogLine($"同步前备份完成({bakFiles.Count} 项)");
                                 await CompressAndRemoveFolderAsync(dest, ShouldCompress);
                             }
                             catch (ArgumentException) { LogLine($"{txtBackupDest.Text.Trim()} 为空或与同步目录相同，跳过同步前备份。"); }
@@ -226,7 +229,7 @@ public partial class MainWindow
             if (okIps.Count > 0) { foreach (var ip in okIps) _history.Upsert(ip, port); ReloadHistoryCombo(); }
             EndBusy();
         }
-        if (okIps.Count > 0) txtStatus.Text = hosts.Count > 1 ? $"同步完成（{okIps.Count}/{hosts.Count} 台）" : "同步完成";
+        if (okIps.Count > 0) txtStatus.Text = hosts.Count > 1 ? $"同步完成({okIps.Count}/{hosts.Count} 台)" : "同步完成";
         if (failed.Count > 0) DarkMessageBox.Show("以下电脑同步失败：\n" + string.Join("\n", failed), "部分失败", MessageBoxButton.OK, MessageBoxImage.Warning);
     }
 
@@ -266,7 +269,8 @@ public partial class MainWindow
         if (hosts.Count == 0) { DarkMessageBox.Show("请输入对方 IP 或范围。", "提示", MessageBoxButton.OK, MessageBoxImage.Information); return; }
         if (!TryGetPeerPort(out int port)) { DarkMessageBox.Show("对方端口无效。", "错误", MessageBoxButton.OK, MessageBoxImage.Warning); return; }
         bool isDir = Directory.Exists(itemPath);
-        if (DarkMessageBox.Show("确认开始传输？\n\n将把 [" + itemPath + "] 传输到[" + cboPeerIp.Text + "]:[" + AutoDetectedName() + "]电脑的相同路径（" + (isDir ? "文件夹" : "文件") + "）。\n传输前会自动备份对方相应的文件/文件夹。", "确认", MessageBoxButton.OKCancel, MessageBoxImage.Question) != MessageBoxResult.OK) return;
+        string deviceInfo = hosts.Count == 1 ? await GetDeviceInfo(hosts[0]) : "";
+        if (DarkMessageBox.Show("确认开始传输？\n\n将把 [" + itemPath + "] 传输到[" + cboPeerIp.Text + "]" + deviceInfo + "电脑的相同路径(" + (isDir ? "文件夹" : "文件") + ")。\n\n传输前会自动备份对方相应的文件/文件夹。", "确认", MessageBoxButton.OKCancel, MessageBoxImage.Question) != MessageBoxResult.OK) return;
         StartBusy();
         var ct = _coordinator.Token; _opLabel = "传输";
         var okIps = new List<string>(); var failed = new List<string>();
@@ -278,7 +282,7 @@ public partial class MainWindow
                 {
                     using var client = new PeerClient();
                     await client.ConnectAsync(host, port, Constants.RoleTransfer, ct);
-                    LogDivider(); LogLine($"传输到 {host}:{port}（目标路径不变，同名同大小同时跳过）...");
+                    LogDivider(); LogLine($"传输到 {host}:{port}(目标路径不变，同名同大小同时跳过)...");
                     await client.TransferAsync(itemPath, isDir, cbTransferSameSkip.IsChecked == true, LogLine, OnFileProgress, OnTotal, m => LogLineError("远端电脑: " + m), ct);
                     okIps.Add(host); LogLine($"传输完成: {host}");
                 }
@@ -292,7 +296,7 @@ public partial class MainWindow
             if (okIps.Count > 0) { foreach (var ip in okIps) _history.Upsert(ip, port); ReloadHistoryCombo(); }
             EndBusy();
         }
-        if (okIps.Count > 0) txtStatus.Text = hosts.Count > 1 ? $"传输完成（{okIps.Count}/{hosts.Count} 台）" : "传输完成";
+        if (okIps.Count > 0) txtStatus.Text = hosts.Count > 1 ? $"传输完成({okIps.Count}/{hosts.Count} 台)" : "传输完成";
         if (failed.Count > 0) DarkMessageBox.Show("以下电脑传输失败：\n" + string.Join("\n", failed), "部分失败", MessageBoxButton.OK, MessageBoxImage.Warning);
     }
 
@@ -373,7 +377,7 @@ public partial class MainWindow
             if (okIps.Count > 0) { foreach (var ip in okIps) _history.Upsert(ip, port); ReloadHistoryCombo(); }
             EndBusy();
         }
-        if (okIps.Count > 0) txtStatus.Text = hosts.Count > 1 ? $"更新完成（{okIps.Count}/{hosts.Count} 台）" : "更新完成";
+        if (okIps.Count > 0) txtStatus.Text = hosts.Count > 1 ? $"更新完成({okIps.Count}/{hosts.Count} 台)" : "更新完成";
         if (failed.Count > 0) DarkMessageBox.Show("以下电脑更新失败：\n" + string.Join("\n", failed), "部分失败", MessageBoxButton.OK, MessageBoxImage.Warning);
     }
 }
