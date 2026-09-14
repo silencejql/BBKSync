@@ -101,6 +101,8 @@
     <!-- 输入框 -->
     <Style TargetType="TextBox">
         <Setter Property="Foreground" Value="{DynamicResource TextMainBrush}" />
+        <Setter Property="FontFamily" Value="Microsoft YaHei UI, Segoe UI Variable, Segoe UI" />
+        <Setter Property="FontSize" Value="13" />
         <Setter Property="FontWeight" Value="Normal" />
         <Setter Property="Background" Value="#FFFFFF" />
         <Setter Property="BorderBrush" Value="{DynamicResource InputBorderBrush}" />
@@ -163,6 +165,8 @@
     <!-- 密码框 -->
     <Style TargetType="PasswordBox">
         <Setter Property="Foreground" Value="{DynamicResource TextMainBrush}" />
+        <Setter Property="FontFamily" Value="Microsoft YaHei UI, Segoe UI Variable, Segoe UI" />
+        <Setter Property="FontSize" Value="13" />
         <Setter Property="FontWeight" Value="Normal" />
         <Setter Property="Background" Value="#FFFFFF" />
         <Setter Property="BorderBrush" Value="{DynamicResource InputBorderBrush}" />
@@ -225,6 +229,8 @@
     <!-- 下拉框 -->
     <Style TargetType="ComboBox">
         <Setter Property="Foreground" Value="{DynamicResource TextMainBrush}" />
+        <Setter Property="FontFamily" Value="Microsoft YaHei UI, Segoe UI Variable, Segoe UI" />
+        <Setter Property="FontSize" Value="13" />
         <Setter Property="FontWeight" Value="Normal" />
         <Setter Property="Background" Value="#FFFFFF" />
         <Setter Property="BorderBrush" Value="{DynamicResource InputBorderBrush}" />

@@ -196,7 +196,7 @@ public sealed class PeerClient : IDisposable
     public async Task<(string Msg, int Running)> ProcessOpenAsync(string exePath, CancellationToken ct)
     {
         await _conn!.SendJsonAsync(new { op = "aopen", path = exePath }, ct);
-        var frame = await _conn!.RecvJsonAsync(ct)
+        var frame = await _conn.RecvJsonAsync(ct)
             ?? throw new EndOfStreamException("连接已断开");
         string op = frame.GetProperty("op").GetString()!;
         if (op == "err")
@@ -204,6 +204,26 @@ public sealed class PeerClient : IDisposable
         if (op != "ok")
             throw new InvalidOperationException("未知消息: " + op);
         return (frame.GetProperty("msg").GetString() ?? "", frame.GetProperty("running").GetInt32());
+    }
+
+    public async Task<List<string>> FileListAsync(string suffixes, CancellationToken ct)
+    {
+        await _conn!.SendJsonAsync(new { op = "flst", suffixes }, ct);
+        var paths = new List<string>();
+        while (true)
+        {
+            var frame = await _conn.RecvJsonAsync(ct)
+                ?? throw new EndOfStreamException("连接已断开");
+            string op = frame.GetProperty("op").GetString()!;
+            if (op == "err")
+                throw new InvalidOperationException(frame.GetProperty("msg").GetString());
+            if (op == "fpath")
+                paths.Add(frame.GetProperty("path").GetString() ?? "");
+            else if (op == "fend")
+                return paths;
+            else
+                throw new InvalidOperationException("未知消息: " + op);
+        }
     }
 
     public async Task UpdateAsync(

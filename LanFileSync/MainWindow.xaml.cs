@@ -109,6 +109,7 @@ public partial class MainWindow : Window
         FreeFormKiller.ProcessPrefix = _settings.Settings.Process.ProcessPrefix;
         txtProcessPath.Text = _settings.Settings.Process.ProcessPath;
         txtProcessKillNames.Text = _settings.Settings.Process.ProcessKillNames;
+        txtProcessFileSuffixes.Text = _settings.Settings.Process.ProcessFileSuffixes;
         chkAutoStart.IsChecked = _settings.Settings.Server.AutoStartAndListen;
         rbReceive.IsChecked = true;
         RbBackupSource_Changed(null, null!);
@@ -435,6 +436,8 @@ public partial class MainWindow : Window
         "rbBackupShare","txtShareIp","txtSharePath","txtShareUser","pwdSharePass","btnShareTest",
         "rbSyncShare","chkAutoStart","txtTransferPath","cbTransferSameSkip",
         "cbRunPreBackupBat","cbBinReplace","cbUpdateCompressZip",
+        "txtProcessPath","txtProcessKillNames","txtProcessFileSuffixes","btnProcessOpen","btnProcessClose","btnProcessFetchFiles",
+        "lstProcessFiles",
     };
 
     private void BtnClearLog_Click(object sender, RoutedEventArgs e) { txtLog?.Document.Blocks.Clear(); }
@@ -583,6 +586,7 @@ public partial class MainWindow : Window
         _settings.Settings.Transfer.SameSkip = cbTransferSameSkip.IsChecked ?? true;
         _settings.Settings.Process.ProcessPath = txtProcessPath.Text.Trim();
         _settings.Settings.Process.ProcessKillNames = txtProcessKillNames.Text.Trim();
+        _settings.Settings.Process.ProcessFileSuffixes = txtProcessFileSuffixes.Text.Trim();
         _settings.Save();
     }
 
@@ -609,6 +613,65 @@ public partial class MainWindow : Window
         };
         if (dlg.ShowDialog() == true)
             txtProcessPath.Text = dlg.FileName;
+    }
+
+    private async void BtnProcessFetchFiles_Click(object sender, RoutedEventArgs e)
+    {
+        if (!TryGetPeerPort(out int port)) { DarkMessageBox.Show("对方端口无效。", "错误", MessageBoxButton.OKCancel, MessageBoxImage.Warning); return; }
+        List<string> hosts;
+        try { hosts = IpHelper.ExpandIps(cboPeerIp.Text ?? ""); }
+        catch (FormatException ex) { DarkMessageBox.Show(ex.Message, "错误", MessageBoxButton.OKCancel, MessageBoxImage.Warning); return; }
+        if (hosts.Count == 0) { DarkMessageBox.Show("请输入对方 IP 或范围。", "提示", MessageBoxButton.OKCancel, MessageBoxImage.Information); return; }
+
+        lstProcessFiles.ItemsSource = null;
+        txtProcessStatus.Text = "正在获取文件列表...";
+        StartBusy();
+        var ct = _coordinator.Token; _opLabel = "获取文件列表";
+        var okIps = new List<string>(); var failed = new List<string>();
+        var allPaths = new List<string>();
+        try
+        {
+            foreach (var host in hosts)
+            {
+                try
+                {
+                    using var client = new PeerClient();
+                    await client.ConnectAsync(host, port, Constants.RoleFileList, ct);
+                    LogDivider(); LogLine($"连接 {host}:{port}，获取远端文件列表...");
+                    var paths = await client.FileListAsync(txtProcessFileSuffixes.Text, ct);
+                    allPaths.AddRange(paths);
+                    okIps.Add(host);
+                    txtProcessStatus.Text = $"{host}: 找到 {paths.Count} 个文件";
+                    LogLine($"找到 {paths.Count} 个文件");
+                }
+                catch (OperationCanceledException) { throw; }
+                catch (Exception ex) { failed.Add($"{host} - {ex.Message}"); LogLineError($"获取列表失败 {host}: {ex.Message}"); }
+            }
+        }
+        catch (OperationCanceledException) { LogLine("已取消"); }
+        finally { EndBusy(); }
+
+        if (allPaths.Count > 0)
+        {
+            var distinct = allPaths.Distinct(StringComparer.OrdinalIgnoreCase).OrderBy(p => p, StringComparer.OrdinalIgnoreCase).ToList();
+            lstProcessFiles.ItemsSource = distinct;
+            txtProcessStatus.Text = $"共 {distinct.Count} 个文件";
+            LogLine($"文件列表完成: {distinct.Count} 个文件");
+        }
+        else
+        {
+            lstProcessFiles.ItemsSource = Array.Empty<string>();
+            txtProcessStatus.Text = "未找到匹配文件";
+            LogLine("未找到匹配文件");
+        }
+        if (failed.Count > 0)
+            DarkMessageBox.Show("以下电脑获取失败：\n" + string.Join("\n", failed), "部分失败", MessageBoxButton.OK, MessageBoxImage.Warning);
+    }
+
+    private void ProcessFileList_SelectionChanged(object sender, SelectionChangedEventArgs e)
+    {
+        if (lstProcessFiles.SelectedItem is string path && !string.IsNullOrWhiteSpace(path))
+            txtProcessPath.Text = path;
     }
 
     private async void BtnProcessClose_Click(object sender, RoutedEventArgs e)

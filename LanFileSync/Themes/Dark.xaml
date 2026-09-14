@@ -102,6 +102,8 @@
     <!-- 输入框 -->
     <Style TargetType="TextBox">
         <Setter Property="Foreground" Value="{DynamicResource TextMainBrush}" />
+        <Setter Property="FontFamily" Value="Microsoft YaHei UI, Segoe UI Variable, Segoe UI" />
+        <Setter Property="FontSize" Value="13" />
         <Setter Property="FontWeight" Value="Normal" />
         <Setter Property="Background" Value="#0D1117" />
         <Setter Property="BorderBrush" Value="#2A3040" />
@@ -164,6 +166,8 @@
     <!-- 密码框 -->
     <Style TargetType="PasswordBox">
         <Setter Property="Foreground" Value="{DynamicResource TextMainBrush}" />
+        <Setter Property="FontFamily" Value="Microsoft YaHei UI, Segoe UI Variable, Segoe UI" />
+        <Setter Property="FontSize" Value="13" />
         <Setter Property="FontWeight" Value="Normal" />
         <Setter Property="Background" Value="#0D1117" />
         <Setter Property="BorderBrush" Value="#2A3040" />
@@ -226,6 +230,8 @@
     <!-- 下拉框 -->
     <Style TargetType="ComboBox">
         <Setter Property="Foreground" Value="{DynamicResource TextMainBrush}" />
+        <Setter Property="FontFamily" Value="Microsoft YaHei UI, Segoe UI Variable, Segoe UI" />
+        <Setter Property="FontSize" Value="13" />
         <Setter Property="FontWeight" Value="Normal" />
         <Setter Property="Background" Value="#0D1117" />
         <Setter Property="BorderBrush" Value="#2A3040" />
@@ -338,11 +344,27 @@
         </Setter>
     </Style>
 
-    <!-- TabControl 深色背景 -->
+    <!-- TabControl -->
     <Style TargetType="TabControl">
-        <Setter Property="Background" Value="#0D1117" />
+        <Setter Property="Background" Value="#FFFFFF" />
         <Setter Property="BorderBrush" Value="#1E2433" />
         <Setter Property="BorderThickness" Value="1" />
+        <Setter Property="Template">
+            <Setter.Value>
+                <ControlTemplate TargetType="TabControl">
+                    <Grid>
+                        <Grid.RowDefinitions>
+                            <RowDefinition Height="Auto" />
+                            <RowDefinition Height="*" />
+                        </Grid.RowDefinitions>
+                        <Border Grid.Row="0" Background="Transparent" />
+                        <TabPanel Grid.Row="0" IsItemsHost="True" Margin="4,0,4,0" />
+                        <Border Grid.Row="1" Background="#FFFFFF" />
+                        <ContentPresenter Grid.Row="1" ContentSource="SelectedContent" />
+                    </Grid>
+                </ControlTemplate>
+            </Setter.Value>
+        </Setter>
     </Style>
 
     <!-- 卡片式分组框 -->

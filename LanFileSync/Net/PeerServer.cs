@@ -123,6 +123,7 @@ public sealed class PeerServer : IDisposable
                 Constants.RoleTransfer => "本机为传输目标",
                 Constants.RoleProcessClose => "关闭远端进程",
                 Constants.RoleProcessOpen => "启动远端进程",
+                Constants.RoleFileList => "获取远端文件列表",
                 _ => "本机为文件源",
             };
             _log("------------------------------------------------");
@@ -357,6 +358,29 @@ public sealed class PeerServer : IDisposable
                         await conn.SendJsonAsync(new { op = "err", msg = ex.Message }, CancellationToken.None);
                     }
                 }
+                else if (role == Constants.RoleFileList)
+                {
+                    var init = await conn.RecvJsonAsync(ct)
+                        ?? throw new EndOfStreamException("连接已断开");
+                    string op0 = init.GetProperty("op").GetString()!;
+                    if (op0 != "flst")
+                        throw new InvalidOperationException("未知消息: " + op0);
+                    string suffixes = init.GetProperty("suffixes").GetString() ?? "";
+                    _log($"收到文件列表请求(后缀: {suffixes})...");
+                    try
+                    {
+                        var paths = EnumerateFiles(Constants.DefaultRoot, suffixes);
+                        foreach (var path in paths)
+                            await conn.SendJsonAsync(new { op = "fpath", path = path }, CancellationToken.None);
+                        await conn.SendJsonAsync(new { op = "fend" }, CancellationToken.None);
+                        _log($"文件列表完成(共{paths.Count}个文件)");
+                    }
+                    catch (Exception ex)
+                    {
+                        _log("文件列表失败: " + ex.Message);
+                        await conn.SendJsonAsync(new { op = "err", msg = ex.Message }, CancellationToken.None);
+                    }
+                }
                 else
                 {
                     await conn.SendJsonAsync(new { op = "err", msg = "未知角色: " + role }, CancellationToken.None);
@@ -376,4 +400,64 @@ public sealed class PeerServer : IDisposable
     }
 
     public void Dispose() => Stop();
+
+    private static string[] ParseSuffixes(string suffixes)
+    {
+        if (string.IsNullOrWhiteSpace(suffixes))
+            return new[] { "xmlFreeForm" };
+
+        return suffixes.Split(new[] { ',', '，', ';', '；', '\n', '\r' },
+                StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries)
+            .Select(s => s.Trim().TrimStart('.').Trim())
+            .Where(s => s.Length > 0)
+            .Distinct(StringComparer.OrdinalIgnoreCase)
+            .ToArray();
+    }
+
+    private static bool HasSuffix(string filePath, IReadOnlyList<string> suffixes)
+    {
+        string fileName = Path.GetFileName(filePath);
+        string ext = Path.GetExtension(filePath).TrimStart('.');
+        for (int i = 0; i < suffixes.Count; i++)
+        {
+            string suffix = suffixes[i];
+            if (string.IsNullOrEmpty(suffix))
+                continue;
+            if (fileName.Contains(suffix, StringComparison.OrdinalIgnoreCase) ||
+                ext.Contains(suffix, StringComparison.OrdinalIgnoreCase))
+                return true;
+        }
+        return false;
+    }
+
+    private static List<string> EnumerateFiles(string root, string suffixes)
+    {
+        if (!Directory.Exists(root))
+            throw new DirectoryNotFoundException($"目录不存在: {root}");
+
+        var patterns = ParseSuffixes(suffixes);
+        var result = new List<string>();
+        var stack = new Stack<string>(new[] { root });
+
+        while (stack.Count > 0)
+        {
+            string dir = stack.Pop();
+            try
+            {
+                foreach (var file in Directory.EnumerateFiles(dir, "*", SearchOption.TopDirectoryOnly))
+                {
+                    if (HasSuffix(file, patterns))
+                        result.Add(file);
+                }
+                foreach (var subDir in Directory.EnumerateDirectories(dir, "*", SearchOption.TopDirectoryOnly))
+                    stack.Push(subDir);
+            }
+            catch (UnauthorizedAccessException) { }
+            catch (DirectoryNotFoundException) { }
+            catch (IOException) { }
+        }
+
+        result.Sort(StringComparer.OrdinalIgnoreCase);
+        return result;
+    }
 }

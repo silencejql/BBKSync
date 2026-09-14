@@ -42,6 +42,7 @@ public sealed class ProcessSection
     public string ProcessPrefix { get; set; } = "FreeFormsAlways";
     public string ProcessPath { get; set; } = @"D:\BBK\FAS\Always.xmlFreeForm";
     public string ProcessKillNames { get; set; } = "FreeFormsAlways";
+    public string ProcessFileSuffixes { get; set; } = "xmlFreeForm";
 }
 
 public sealed class AppSettings

@@ -20,6 +20,7 @@ internal static class Constants
     internal const string RoleUpdate = "update";
     internal const string RoleProcessClose = "process-close";
     internal const string RoleProcessOpen = "process-open";
+    internal const string RoleFileList = "file-list";
     internal const string DefaultShareName = "c$";
     internal const string DefaultSharePath = "c$\\BBK";
 
