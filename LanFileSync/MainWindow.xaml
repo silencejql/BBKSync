@@ -8,7 +8,7 @@
         WindowStartupLocation="CenterScreen"
         WindowStyle="None" AllowsTransparency="True"
         Background="Transparent"
-        BorderBrush="{DynamicResource WindowBorderBrush}" BorderThickness="0.1"
+        BorderBrush="Transparent" BorderThickness="0.1"
         TextElement.FontFamily="Microsoft YaHei UI, Segoe UI Variable, Segoe UI"
         TextElement.FontSize="13"
         Loaded="MainWindow_Loaded"
@@ -73,7 +73,30 @@
                             GlassFrameThickness="0" CornerRadius="0"
                             UseAeroCaptionButtons="False" />
     </shell:WindowChrome.WindowChrome>
-    <Border BorderBrush="{DynamicResource WindowBorderBrush}" BorderThickness="2">
+    <Border BorderThickness="2">
+        <Border.BorderBrush>
+            <!--  渐变边框：深蓝→白→深蓝，加载后持续旋转（线性插值自然平滑）  -->
+            <LinearGradientBrush StartPoint="0,0" EndPoint="1,1">
+                <LinearGradientBrush.RelativeTransform>
+                    <RotateTransform CenterX="0.5" CenterY="0.5" Angle="0" />
+                </LinearGradientBrush.RelativeTransform>
+                <GradientStop Color="#1E40AF" Offset="0" />
+                <GradientStop Color="#93B4F5" Offset="0.25" />
+                <GradientStop Color="#FFFFFF" Offset="0.5" />
+                <GradientStop Color="#93B4F5" Offset="0.75" />
+                <GradientStop Color="#1E40AF" Offset="1" />
+            </LinearGradientBrush>
+        </Border.BorderBrush>
+        <Border.Triggers>
+            <EventTrigger RoutedEvent="Loaded">
+                <BeginStoryboard>
+                    <Storyboard>
+                        <DoubleAnimation Storyboard.TargetProperty="(Border.BorderBrush).(LinearGradientBrush.RelativeTransform).(RotateTransform.Angle)"
+                                         From="0" To="360" Duration="0:0:3" RepeatBehavior="Forever" />
+                    </Storyboard>
+                </BeginStoryboard>
+            </EventTrigger>
+        </Border.Triggers>
         <Grid Background="{DynamicResource WindowBgBrush}">
             <Grid.RowDefinitions>
                 <RowDefinition Height="32" />
@@ -412,7 +435,7 @@
                                             <ColumnDefinition Width="*" />
                                         </Grid.ColumnDefinitions>
                                         <StackPanel x:Name="processContent" IsEnabled="False">
-                                            <TextBlock Text="远程管理 FreeFormAlways 进程" FontWeight="SemiBold"
+                                            <TextBlock Text="远程管理进程" FontWeight="SemiBold"
                                                        Foreground="{DynamicResource TextSubBrush}" Margin="0,0,0,6" />
                                             <Grid Margin="0,0,0,0">
                                                 <Grid.ColumnDefinitions>
@@ -423,7 +446,7 @@
                                                 <TextBlock Text="程序路径:" VerticalAlignment="Center" />
                                                 <ComboBox x:Name="txtProcessPath" Grid.Column="1" Margin="8,0,0,0" Height="30" IsEditable="True"
                                                           VerticalContentAlignment="Center"
-                                                          ToolTip="要启动的程序完整路径(如 D:\FreeForm\bin\FreeFormAlways.exe)。点击&#x201c;获取xmlFreeForm文件列表&#x201d;后可下拉选择远端文件。" />
+                                                          ToolTip="要启动的程序完整路径(如 D:\BBK\bin\FreeFormsAlways.exe)。点击&#x201c;获取xmlFreeForm文件列表&#x201d;后可下拉选择远端文件。" />
                                                 <Button Grid.Column="2" Content="浏览..." Padding="12,6" Margin="8,0,0,0" Click="BtnProcessBrowse_Click" />
                                             </Grid>
                                             <Grid Margin="0,8,0,0">
@@ -438,7 +461,7 @@
                                                 <Button x:Name="btnProcessFetchFiles" Grid.Column="2" Content="获取xmlFreeForm文件列表" Padding="14,6" Margin="8,0,0,0"
                                                         Click="BtnProcessFetchFiles_Click" />
                                             </Grid>
-                                            <Button x:Name="btnProcessOpen" Margin="0,8,0,0" Padding="14,6" HorizontalAlignment="Left"
+                                            <Button x:Name="btnProcessOpen" Margin="0,8,0,0" Padding="14,6" HorizontalAlignment="Right"
                                                     Content="启动远端应用程序" Click="BtnProcessOpen_Click" />
                                             <TextBlock x:Name="txtProcessStatus" Margin="0,8,0,0" Foreground="{DynamicResource TextMainBrush}" TextWrapping="Wrap" FontSize="11"
                                                        FontWeight="SemiBold" />
@@ -448,7 +471,7 @@
                                             <TextBlock Text="操作" FontWeight="SemiBold"
                                                        Foreground="{DynamicResource TextSubBrush}" Margin="0,0,0,6" />
                                             <TextBlock TextWrapping="Wrap" Foreground="{DynamicResource TextSubBrush}" FontSize="11" Margin="0,0,0,8"
-                                                       Text="启动或关闭远端电脑的 FreeFormAlways 进程。&#x0a;远端电脑需先启动 BBK 服务。" />
+                                                       Text="启动或关闭远端电脑的进程。&#x0a;远端电脑需先启动 BBK 服务。" />
                                             <Grid Margin="0,0,0,8">
                                                 <Grid.ColumnDefinitions>
                                                     <ColumnDefinition Width="Auto" />
@@ -456,7 +479,7 @@
                                                 </Grid.ColumnDefinitions>
                                                 <TextBlock Text="关闭进程前缀:" VerticalAlignment="Center" ToolTip="要结束的远端进程名前缀，多个用逗号或分号分隔" />
                                                 <TextBox x:Name="txtProcessKillNames" Grid.Column="1" Margin="8,0,0,0" Height="30"
-                                                         ToolTip="要结束的远端进程名前缀，多个用逗号或分号分隔。留空则使用 FreeFormAlways。&#x0a;例：FreeFormAlways,MyApp;AnotherApp" />
+                                                         ToolTip="要结束的远端进程名前缀，多个用逗号或分号分隔。留空则使用 FreeFormsAlways。&#x0a;例：FreeFormsAlways,MyApp;AnotherApp" />
                                             </Grid>
                                             <TextBlock x:Name="txtProcessHint" Margin="0,0,0,6" Foreground="{DynamicResource TextSubBrush}" TextWrapping="Wrap" FontSize="10"
                                                        Text="获取：从对端 D:\BBK 列出匹配后缀的文件，写入启动路径下拉框供选择。&#x0a;关闭：结束远端指定进程名前缀的进程。" />

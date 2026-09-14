@@ -159,7 +159,7 @@ public sealed class SettingsStore
         public string TransferPath { get; set; } = "";
         public bool TransferSameSkip { get; set; } = true;
         public bool TransferKillFreeForm { get; set; } = true;
-        public string FreeFormProcessPrefix { get; set; } = "FreeFormAlways";
+        public string FreeFormProcessPrefix { get; set; } = "FreeFormsAlways";
         public List<ComputerMapping> Computers { get; set; } = new();
     }
 }
