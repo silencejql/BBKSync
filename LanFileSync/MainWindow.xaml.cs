@@ -437,7 +437,6 @@ public partial class MainWindow : Window
         "rbSyncShare","chkAutoStart","txtTransferPath","cbTransferSameSkip",
         "cbRunPreBackupBat","cbBinReplace","cbUpdateCompressZip",
         "txtProcessPath","txtProcessKillNames","txtProcessFileSuffixes","btnProcessOpen","btnProcessClose","btnProcessFetchFiles",
-        "lstProcessFiles",
     };
 
     private void BtnClearLog_Click(object sender, RoutedEventArgs e) { txtLog?.Document.Blocks.Clear(); }
@@ -623,8 +622,8 @@ public partial class MainWindow : Window
         catch (FormatException ex) { DarkMessageBox.Show(ex.Message, "错误", MessageBoxButton.OKCancel, MessageBoxImage.Warning); return; }
         if (hosts.Count == 0) { DarkMessageBox.Show("请输入对方 IP 或范围。", "提示", MessageBoxButton.OKCancel, MessageBoxImage.Information); return; }
 
-        lstProcessFiles.ItemsSource = null;
-            lstProcessFiles.Visibility = Visibility.Visible;
+        string savedText = txtProcessPath.Text;
+        txtProcessPath.ItemsSource = null;
             txtProcessStatus.Text = "正在获取文件列表...";
         StartBusy();
         var ct = _coordinator.Token; _opLabel = "获取文件列表";
@@ -655,26 +654,21 @@ public partial class MainWindow : Window
         if (allPaths.Count > 0)
         {
             var distinct = allPaths.Distinct(StringComparer.OrdinalIgnoreCase).OrderBy(p => p, StringComparer.OrdinalIgnoreCase).ToList();
-            lstProcessFiles.ItemsSource = distinct;
-            txtProcessStatus.Text = $"共 {distinct.Count} 个文件";
+            txtProcessPath.ItemsSource = distinct;
+            txtProcessPath.Text = savedText;
+            txtProcessPath.IsDropDownOpen = true;
+            txtProcessStatus.Text = $"共 {distinct.Count} 个文件，已在下拉列表中供选择";
             LogLine($"文件列表完成: {distinct.Count} 个文件");
         }
         else
         {
-            lstProcessFiles.ItemsSource = Array.Empty<string>();
+            txtProcessPath.ItemsSource = null;
+            txtProcessPath.Text = savedText;
             txtProcessStatus.Text = "未找到匹配文件";
             LogLine("未找到匹配文件");
         }
         if (failed.Count > 0)
             DarkMessageBox.Show("以下电脑获取失败：\n" + string.Join("\n", failed), "部分失败", MessageBoxButton.OK, MessageBoxImage.Warning);
-    }
-
-    private void ProcessFileList_SelectionChanged(object sender, SelectionChangedEventArgs e)
-    {
-        if (lstProcessFiles.SelectedItem is string path && !string.IsNullOrWhiteSpace(path))
-            txtProcessPath.Text = path;
-        // 选中后隐藏列表
-        lstProcessFiles.Visibility = Visibility.Collapsed;
     }
 
     private async void BtnProcessClose_Click(object sender, RoutedEventArgs e)

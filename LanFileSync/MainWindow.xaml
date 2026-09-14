@@ -414,21 +414,17 @@
                                         <StackPanel x:Name="processContent" IsEnabled="False">
                                             <TextBlock Text="远程管理 FreeFormAlways 进程" FontWeight="SemiBold"
                                                        Foreground="{DynamicResource TextSubBrush}" Margin="0,0,0,6" />
-                                            <TextBlock TextWrapping="Wrap" Foreground="{DynamicResource TextSubBrush}" FontSize="11"
-                                                       Text="启动或关闭远端电脑的 FreeFormAlways 进程。&#x0a;远端电脑需先启动 BBK 服务。" />
-                                            <Grid Margin="0,10,0,0">
+                                            <Grid Margin="0,0,0,0">
                                                 <Grid.ColumnDefinitions>
                                                     <ColumnDefinition Width="Auto" />
                                                     <ColumnDefinition Width="*" />
                                                     <ColumnDefinition Width="Auto" />
-                                                    <ColumnDefinition Width="Auto" />
                                                 </Grid.ColumnDefinitions>
                                                 <TextBlock Text="启动程序路径:" VerticalAlignment="Center" />
-                                                <TextBox x:Name="txtProcessPath" Grid.Column="1" Margin="8,0,0,0" Height="30"
-                                                         ToolTip="要启动的程序完整路径(如 D:\FreeForm\bin\FreeFormAlways.exe)" />
+                                                <ComboBox x:Name="txtProcessPath" Grid.Column="1" Margin="8,0,0,0" Height="30" IsEditable="True"
+                                                          VerticalContentAlignment="Center"
+                                                          ToolTip="要启动的程序完整路径(如 D:\FreeForm\bin\FreeFormAlways.exe)。点击&#x201c;获取xmlFreeForm文件列表&#x201d;后可下拉选择远端文件。" />
                                                 <Button Grid.Column="2" Content="浏览..." Padding="12,6" Margin="8,0,0,0" Click="BtnProcessBrowse_Click" />
-                                                <Button x:Name="btnProcessFetchFiles" Grid.Column="3" Content="获取xmlFreeForm文件列表" Padding="14,6" Margin="8,0,0,0"
-                                                        Click="BtnProcessFetchFiles_Click" />
                                             </Grid>
                                             <Grid Margin="0,8,0,0">
                                                 <Grid.ColumnDefinitions>
@@ -439,28 +435,21 @@
                                                 <TextBox x:Name="txtProcessFileSuffixes" Grid.Column="1" Margin="8,0,0,0" Height="30"
                                                          Text="xmlFreeForm" ToolTip="要匹配的文件后缀或关键字，多个用逗号或分号分隔" />
                                             </Grid>
-                                            <Border Margin="0,8,0,0" BorderBrush="{DynamicResource CardBorderBrush}" BorderThickness="1"
-                                                    CornerRadius="5" SnapsToDevicePixels="True" Background="{DynamicResource CardBgBrush2}">
-                                                <ListBox x:Name="lstProcessFiles" SelectionChanged="ProcessFileList_SelectionChanged"
-                                                         MaxHeight="160"
-                                                         Background="Transparent" BorderThickness="0" Padding="0"
-                                                         HorizontalAlignment="Stretch" VerticalAlignment="Stretch"
-                                                         ScrollViewer.HorizontalScrollBarVisibility="Auto"
-                                                         ScrollViewer.VerticalScrollBarVisibility="Auto">
-                                                    <ListBox.ItemTemplate>
-                                                        <DataTemplate>
-                                                            <TextBlock Text="{Binding}" Padding="5,3" TextWrapping="Wrap" />
-                                                        </DataTemplate>
-                                                    </ListBox.ItemTemplate>
-                                                </ListBox>
-                                            </Border>
-                                            <Button x:Name="btnProcessOpen" Margin="0,8,0,0" Padding="14,6"
-                                                    Content="启动远端应用程序" Click="BtnProcessOpen_Click" />
+                                            <StackPanel Orientation="Horizontal" Margin="0,8,0,0">
+                                                <Button x:Name="btnProcessFetchFiles" Content="获取xmlFreeForm文件列表" Padding="14,6"
+                                                        Click="BtnProcessFetchFiles_Click" />
+                                                <Button x:Name="btnProcessOpen" Margin="8,0,0,0" Padding="14,6"
+                                                        Content="启动远端应用程序" Click="BtnProcessOpen_Click" />
+                                            </StackPanel>
+                                            <TextBlock x:Name="txtProcessStatus" Margin="0,8,0,0" Foreground="{DynamicResource TextMainBrush}" TextWrapping="Wrap" FontSize="11"
+                                                       FontWeight="SemiBold" />
                                         </StackPanel>
                                         <Rectangle Grid.Column="1" Width="1" Fill="{DynamicResource CardBorderBrush}" Margin="14,0" />
                                         <StackPanel Grid.Column="2" Margin="14,0,0,0">
                                             <TextBlock Text="操作" FontWeight="SemiBold"
                                                        Foreground="{DynamicResource TextSubBrush}" Margin="0,0,0,6" />
+                                            <TextBlock TextWrapping="Wrap" Foreground="{DynamicResource TextSubBrush}" FontSize="11" Margin="0,0,0,8"
+                                                       Text="启动或关闭远端电脑的 FreeFormAlways 进程。&#x0a;远端电脑需先启动 BBK 服务。" />
                                             <Grid Margin="0,0,0,8">
                                                 <Grid.ColumnDefinitions>
                                                     <ColumnDefinition Width="Auto" />
@@ -470,12 +459,10 @@
                                                 <TextBox x:Name="txtProcessKillNames" Grid.Column="1" Margin="8,0,0,0" Height="30"
                                                          ToolTip="要结束的远端进程名前缀，多个用逗号或分号分隔。留空则使用 FreeFormAlways。&#x0a;例：FreeFormAlways,MyApp;AnotherApp" />
                                             </Grid>
+                                            <TextBlock x:Name="txtProcessHint" Margin="0,0,0,6" Foreground="{DynamicResource TextSubBrush}" TextWrapping="Wrap" FontSize="10"
+                                                       Text="获取：从对端 D:\BBK 列出匹配后缀的文件，写入启动路径下拉框供选择。&#x0a;关闭：结束远端指定进程名前缀的进程。" />
                                             <Button x:Name="btnProcessClose" Content="关闭远端应用程序" Padding="14,6" Margin="0,0,0,5"
                                                     Click="BtnProcessClose_Click" />
-                                            <TextBlock x:Name="txtProcessHint" Margin="0,0,0,6" Foreground="{DynamicResource TextSubBrush}" TextWrapping="Wrap" FontSize="10"
-                                                       Text="获取：从对端 D:\BBK 列出匹配后缀的文件，点击选择后自动填入启动路径。&#x0a;关闭：结束远端指定进程名前缀的进程。" />
-                                            <TextBlock x:Name="txtProcessStatus" Foreground="{DynamicResource TextMainBrush}" TextWrapping="Wrap" FontSize="11"
-                                                       FontWeight="SemiBold" />
                                         </StackPanel>
                                         <!-- 半透明玻璃遮罩(密码保护) -->
                                         <Border x:Name="processOverlay" Grid.ColumnSpan="3"
