@@ -440,68 +440,80 @@
                                             <ColumnDefinition Width="Auto" />
                                             <ColumnDefinition Width="*" />
                                         </Grid.ColumnDefinitions>
-                                        <StackPanel x:Name="processContent" IsEnabled="False">
-                                            <TextBlock Text="远端进程管理" FontWeight="SemiBold"
-                                                       Foreground="{DynamicResource TextSubBrush}" Margin="0,0,0,6" />
-                                            <Grid Margin="0,0,0,0">
-                                                <Grid.ColumnDefinitions>
-                                                    <ColumnDefinition Width="Auto" />
-                                                    <ColumnDefinition Width="*" />
-                                                    <ColumnDefinition Width="Auto" />
-                                                </Grid.ColumnDefinitions>
-                                                <TextBlock Text="程序路径:" VerticalAlignment="Center" FontWeight="SemiBold" />
-                                                <ComboBox x:Name="cboProcessPath" Grid.Column="1" Margin="8,0,0,0" Height="30" IsEditable="True"
-                                                          VerticalContentAlignment="Center"
-                                                          ToolTip="要启动的程序完整路径。点击「获取文件列表」后可下拉选择远端文件。" />
-                                                <Button Grid.Column="2" Content="浏览..." Padding="12,6" Margin="8,0,0,0" Click="BtnProcessBrowse_Click" />
-                                            </Grid>
-                                            <Grid Margin="0,8,0,0">
-                                                <Grid.ColumnDefinitions>
-                                                    <ColumnDefinition Width="Auto" />
-                                                    <ColumnDefinition Width="*" />
-                                                    <ColumnDefinition Width="Auto" />
-                                                </Grid.ColumnDefinitions>
-                                                <TextBlock Text="文件后缀:" VerticalAlignment="Center" FontWeight="SemiBold" />
-                                                <ComboBox x:Name="cboProcessFileSuffixes" Grid.Column="1" Margin="8,0,0,0" Height="30"
-                                                          IsEditable="True" Text="xmlFreeForm"
-                                                          ToolTip="要匹配的文件后缀或关键字，多个用逗号或分号分隔；可下拉选择或手动输入">
-                                                    <ComboBoxItem Content="xmlFreeForm" />
-                                                    <ComboBoxItem Content="exe" />
-                                                </ComboBox>
-                                                <Button x:Name="btnProcessFetchFiles" Grid.Column="2" Content="获取文件列表" Padding="14,6" Margin="8,0,0,0"
-                                                        Click="BtnProcessFetchFiles_Click" />
-                                            </Grid>
-                                            <TextBlock x:Name="txtProcessStatus" Margin="0,8,0,0" Foreground="{DynamicResource TextMainBrush}" TextWrapping="Wrap" FontSize="11"
-                                                       FontWeight="SemiBold" HorizontalAlignment="Left" />
-                                            <TextBlock Margin="0,8,0,0" Foreground="{DynamicResource TextSubBrush}" TextWrapping="Wrap" FontSize="10"
-                                                       Text="获取：从远端 D:\BBK 列出匹配后缀的文件，写入启动路径下拉框供选择。" />
-                                            <Button x:Name="btnProcessOpen" Margin="0,8,0,0" Padding="14,6"
+                                        <Grid x:Name="processContent" IsEnabled="False">
+                                            <Grid.RowDefinitions>
+                                                <RowDefinition Height="*" />
+                                                <RowDefinition Height="Auto" />
+                                            </Grid.RowDefinitions>
+                                            <StackPanel Grid.Row="0">
+                                                <TextBlock Text="远端进程管理" FontWeight="SemiBold"
+                                                           Foreground="{DynamicResource TextSubBrush}" Margin="0,0,0,6" />
+                                                <Grid Margin="0,0,0,0">
+                                                    <Grid.ColumnDefinitions>
+                                                        <ColumnDefinition Width="Auto" />
+                                                        <ColumnDefinition Width="*" />
+                                                        <ColumnDefinition Width="Auto" />
+                                                    </Grid.ColumnDefinitions>
+                                                    <TextBlock Text="程序路径:" VerticalAlignment="Center" FontWeight="SemiBold" />
+                                                    <ComboBox x:Name="cboProcessPath" Grid.Column="1" Margin="8,0,0,0" Height="30" IsEditable="True"
+                                                              VerticalContentAlignment="Center"
+                                                              ToolTip="要启动的程序完整路径。点击「获取文件列表」后可下拉选择远端文件。" />
+                                                    <Button Grid.Column="2" Content="浏览..." Padding="12,6" Margin="8,0,0,0" Click="BtnProcessBrowse_Click" />
+                                                </Grid>
+                                                <Grid Margin="0,8,0,0">
+                                                    <Grid.ColumnDefinitions>
+                                                        <ColumnDefinition Width="Auto" />
+                                                        <ColumnDefinition Width="*" />
+                                                        <ColumnDefinition Width="Auto" />
+                                                    </Grid.ColumnDefinitions>
+                                                    <TextBlock Text="文件后缀:" VerticalAlignment="Center" FontWeight="SemiBold" />
+                                                    <ComboBox x:Name="cboProcessFileSuffixes" Grid.Column="1" Margin="8,0,0,0" Height="30"
+                                                              IsEditable="True" Text="xmlFreeForm"
+                                                              ToolTip="要匹配的文件后缀或关键字，多个用逗号或分号分隔；可下拉选择或手动输入">
+                                                        <ComboBoxItem Content="xmlFreeForm" />
+                                                        <ComboBoxItem Content="exe" />
+                                                    </ComboBox>
+                                                    <Button x:Name="btnProcessFetchFiles" Grid.Column="2" Content="获取文件列表" Padding="14,6" Margin="8,0,0,0"
+                                                            Click="BtnProcessFetchFiles_Click" />
+                                                </Grid>
+                                                <TextBlock x:Name="txtProcessStatus" Margin="0,8,0,0" Foreground="{DynamicResource TextMainBrush}" TextWrapping="Wrap" FontSize="11"
+                                                           FontWeight="SemiBold" HorizontalAlignment="Left" />
+                                                <TextBlock Margin="0,8,0,0" Foreground="{DynamicResource TextSubBrush}" TextWrapping="Wrap" FontSize="10"
+                                                           Text="获取：从远端 D:\BBK 列出匹配后缀的文件，写入启动路径下拉框供选择。" />
+                                            </StackPanel>
+                                            <Button x:Name="btnProcessOpen" Grid.Row="1" Margin="0,8,0,0" Padding="14,6"
                                                     Content="启动远端应用程序" Click="BtnProcessOpen_Click" />
-                                        </StackPanel>
+                                        </Grid>
                                         <Rectangle Grid.Column="1" Width="1" Fill="{DynamicResource CardBorderBrush}" Margin="14,0" />
-                                        <StackPanel Grid.Column="2" Margin="14,0,0,0">
-                                            <TextBlock Text="操作" FontWeight="SemiBold"
-                                                       Foreground="{DynamicResource TextSubBrush}" Margin="0,0,0,6" />
-                                            <TextBlock TextWrapping="Wrap" Foreground="{DynamicResource TextSubBrush}" FontSize="11" Margin="0,0,0,8"
-                                                       Text="启动或关闭远端电脑的进程。&#x0a;远端电脑需先启动 BBK 服务。" />
-                                            <Grid Margin="0,0,0,8">
-                                                <Grid.ColumnDefinitions>
-                                                    <ColumnDefinition Width="Auto" />
-                                                    <ColumnDefinition Width="*" />
-                                                </Grid.ColumnDefinitions>
-                                                <TextBlock Text="关闭进程前缀:" VerticalAlignment="Center" FontWeight="SemiBold" ToolTip="要结束的远端进程名前缀，多个用逗号或分号分隔" />
-                                                <ComboBox x:Name="cboProcessKillNames" Grid.Column="1" Margin="8,0,0,0" Height="30"
-                                                          IsEditable="True" Text="FreeFormsAlways"
-                                                          ToolTip="要结束的远端进程名前缀，多个用逗号或分号分隔；可下拉选择或手动输入。留空则使用 FreeFormsAlways。&#x0a;例：FreeFormsAlways,MyApp;AnotherApp">
-                                                    <ComboBoxItem Content="FreeFormsAlways" />
-                                                    <ComboBoxItem Content="FreeFormAlways" />
-                                                </ComboBox>
-                                            </Grid>
-                                            <TextBlock Margin="0,0,0,6" Foreground="{DynamicResource TextSubBrush}" TextWrapping="Wrap" FontSize="10"
-                                                       Text="关闭：结束远端指定进程名前缀的进程。" />
-                                            <Button x:Name="btnProcessClose" Content="关闭远端应用程序" Padding="14,6" Margin="0,0,0,5"
+                                        <Grid Grid.Column="2" Margin="14,0,0,0">
+                                            <Grid.RowDefinitions>
+                                                <RowDefinition Height="*" />
+                                                <RowDefinition Height="Auto" />
+                                            </Grid.RowDefinitions>
+                                            <StackPanel Grid.Row="0">
+                                                <TextBlock Text="操作" FontWeight="SemiBold"
+                                                           Foreground="{DynamicResource TextSubBrush}" Margin="0,0,0,6" />
+                                                <TextBlock TextWrapping="Wrap" Foreground="{DynamicResource TextSubBrush}" FontSize="11" Margin="0,0,0,8"
+                                                           Text="启动或关闭远端电脑的进程。&#x0a;远端电脑需先启动 BBK 服务。" />
+                                                <Grid Margin="0,0,0,8">
+                                                    <Grid.ColumnDefinitions>
+                                                        <ColumnDefinition Width="Auto" />
+                                                        <ColumnDefinition Width="*" />
+                                                    </Grid.ColumnDefinitions>
+                                                    <TextBlock Text="关闭进程前缀:" VerticalAlignment="Center" FontWeight="SemiBold" ToolTip="要结束的远端进程名前缀，多个用逗号或分号分隔" />
+                                                    <ComboBox x:Name="cboProcessKillNames" Grid.Column="1" Margin="8,0,0,0" Height="30"
+                                                              IsEditable="True" Text="FreeFormsAlways"
+                                                              ToolTip="要结束的远端进程名前缀，多个用逗号或分号分隔；可下拉选择或手动输入。留空则使用 FreeFormsAlways。&#x0a;例：FreeFormsAlways,MyApp;AnotherApp">
+                                                        <ComboBoxItem Content="FreeFormsAlways" />
+                                                        <ComboBoxItem Content="FreeFormAlways" />
+                                                    </ComboBox>
+                                                </Grid>
+                                                <TextBlock Margin="0,0,0,6" Foreground="{DynamicResource TextSubBrush}" TextWrapping="Wrap" FontSize="10"
+                                                           Text="关闭：结束远端指定进程名前缀的进程。" />
+                                            </StackPanel>
+                                            <Button x:Name="btnProcessClose" Grid.Row="1" Content="关闭远端应用程序" Padding="14,6" Margin="0,8,0,5"
                                                     Click="BtnProcessClose_Click" />
-                                        </StackPanel>
+                                        </Grid>
                                         <!-- 半透明玻璃遮罩(密码保护) -->
                                         <Border x:Name="processOverlay" Grid.ColumnSpan="3"
                                                 CornerRadius="8" IsHitTestVisible="True" ClipToBounds="True">
