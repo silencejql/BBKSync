@@ -29,13 +29,13 @@ public sealed class PeerClient : IDisposable
         var list = new List<FileEntry>();
 
         await TargetSide.ReceiveManifestAsync(_conn!, ct, list);
-        log($"已收到对方文件清单({list.Count} 项)，按本机规则计算...");
+        log($"已收到远端文件清单({list.Count} 项)，按本机规则计算...");
 
         engine.Plan(list);
         onTotal(engine.NeedList.Count);
 
         if (engine.NeedList.Count == 0)
-            log("所有文件与对方相同，无需更新。");
+            log("所有文件与远端相同，无需更新。");
         else if (engine.NeedList.Count < 10)
             foreach (var p in engine.NeedList) log("  ← " + p);
 
@@ -53,7 +53,7 @@ public sealed class PeerClient : IDisposable
         CancellationToken ct)
     {
         await SourceSide.SendManifestAsync(_conn!, root, ct);
-        log("本机文件清单已发送，等待对方按对方界面的规则计算...");
+        log("本机文件清单已发送，等待远端按远端界面的规则计算...");
 
         var frame = await _conn!.RecvJsonAsync(ct)
             ?? throw new EndOfStreamException("连接已断开");
@@ -63,7 +63,7 @@ public sealed class PeerClient : IDisposable
 
         var paths = frame.GetProperty("paths").EnumerateArray().Select(x => x.GetString()!).ToList();
         onTotal(paths.Count);
-        log(paths.Count == 0 ? "对方所有文件完全相同，无需更新。" : $"对方需要 {paths.Count} 个文件，开始发送...");
+        log(paths.Count == 0 ? "远端所有文件完全相同，无需更新。" : $"远端需要 {paths.Count} 个文件，开始发送...");
         if (paths.Count > 0 && paths.Count < 10)
             foreach (var p in paths) log("  → " + p);
 
@@ -77,7 +77,7 @@ public sealed class PeerClient : IDisposable
         foreach (var m in resp.GetProperty("msgs").EnumerateArray())
             onError?.Invoke(m.GetString() ?? "");
 
-        log("对方已应用完成");
+        log("远端已应用完成");
     }
 
     public async Task BackupPullAsync(
@@ -102,16 +102,16 @@ public sealed class PeerClient : IDisposable
                 throw new InvalidOperationException("未知消息: " + op);
             string msg = bat.GetProperty("msg").GetString() ?? "";
             if (bat.GetProperty("ok").GetBoolean())
-                log("对方备份前脚本: " + msg);
+                log("远端备份前脚本: " + msg);
             else
-                (logError ?? log)("对方备份前脚本失败，已继续备份: " + msg);
+                (logError ?? log)("远端备份前脚本失败，已继续备份: " + msg);
         }
 
         var engine = new BackupSyncEngine(dest, options);
         var list = new List<FileEntry>();
 
         await TargetSide.ReceiveManifestAsync(_conn!, ct, list);
-        log($"已收到对方文件清单({list.Count} 项)，按备份规则计算...");
+        log($"已收到远端文件清单({list.Count} 项)，按备份规则计算...");
 
         engine.Plan(list);
         onTotal(engine.NeedList.Count);
@@ -150,7 +150,7 @@ public sealed class PeerClient : IDisposable
         CancellationToken ct)
     {
         await TransferSide.SendTransferManifestAsync(_conn!, itemPath, isDir, sameSkip, updateMode, deviceTag, ct);
-        log("传输文件清单已发送，等待对方按相同路径计算...");
+        log("传输文件清单已发送，等待远端按相同路径计算...");
 
         var frame = await _conn!.RecvJsonAsync(ct)
             ?? throw new EndOfStreamException("连接已断开");
@@ -160,7 +160,7 @@ public sealed class PeerClient : IDisposable
 
         var paths = frame.GetProperty("paths").EnumerateArray().Select(x => x.GetString()!).ToList();
         onTotal(paths.Count);
-        log(paths.Count == 0 ? "对方相应文件完全相同，无需传输。" : $"对方需要 {paths.Count} 个文件，开始发送...");
+        log(paths.Count == 0 ? "远端相应文件完全相同，无需传输。" : $"远端需要 {paths.Count} 个文件，开始发送...");
 
         await TransferSide.SendRequestedFilesAsync(_conn, paths, onFile, ct);
 
@@ -173,7 +173,7 @@ public sealed class PeerClient : IDisposable
         foreach (var m in resp.GetProperty("msgs").EnumerateArray())
             onError?.Invoke(m.GetString() ?? "");
 
-        log("对方已应用完成");
+        log("远端已应用完成");
     }
 
     public async Task TransferFromRemoteAsync(
@@ -189,7 +189,7 @@ public sealed class PeerClient : IDisposable
     {
         // 请求远端发送文件清单(isDir 由远端根据其文件系统自行判断)
         await _conn!.SendJsonAsync(new { op = "tinit", p = remotePath.Replace('\\', '/') }, ct);
-        log("已请求远端文件清单，等待对方计算...");
+        log("已请求远端文件清单，等待远端计算...");
 
         var list = new List<FileEntry>();
         await TargetSide.ReceiveManifestAsync(_conn, ct, list);
@@ -210,18 +210,18 @@ public sealed class PeerClient : IDisposable
         string saveRoot;
         if (updateMode)
         {
-            string localTag = SanitizeFileName(string.IsNullOrWhiteSpace(localDevice) ? Environment.MachineName : localDevice);
+            string localTag = FileHelper.SanitizeName(string.IsNullOrWhiteSpace(localDevice) ? Environment.MachineName : localDevice);
             RenameLocalForUpdate(normRemote, dirMode, localTag, dateStr, log);
             saveRoot = normRemote;
         }
         else
         {
-            string sourceTag = SanitizeFileName(string.IsNullOrWhiteSpace(remoteDevice) ? "远端" : remoteDevice);
+            string sourceTag = FileHelper.SanitizeName(string.IsNullOrWhiteSpace(remoteDevice) ? "远端" : remoteDevice);
             if (dirMode)
             {
                 string parent = Path.GetDirectoryName(normRemote) ?? "";
                 string folder = Path.GetFileName(normRemote);
-                saveRoot = UniquePath(Path.Combine(parent, $"{folder}_AutoBackupFrom_{sourceTag}_{dateStr}"), isDir: true);
+                saveRoot = FileHelper.UniquePath(Path.Combine(parent, $"{folder}_AutoBackupFrom_{sourceTag}_{dateStr}"), isDir: true);
             }
             else
             {
@@ -266,10 +266,10 @@ public sealed class PeerClient : IDisposable
             }
             else
             {
-                string sourceTag = SanitizeFileName(string.IsNullOrWhiteSpace(remoteDevice) ? "远端" : remoteDevice);
+                string sourceTag = FileHelper.SanitizeName(string.IsNullOrWhiteSpace(remoteDevice) ? "远端" : remoteDevice);
                 string baseName = Path.GetFileNameWithoutExtension(localPath);
                 string ext = Path.GetExtension(localPath);
-                savedPath = UniquePath(Path.Combine(saveRoot, $"{baseName}_AutoBackupFrom_{sourceTag}_{dateStr}{ext}"), isDir: false);
+                savedPath = FileHelper.UniquePath(Path.Combine(saveRoot, $"{baseName}_AutoBackupFrom_{sourceTag}_{dateStr}{ext}"), isDir: false);
             }
 
             string? savedDir = Path.GetDirectoryName(savedPath);
@@ -313,7 +313,7 @@ public sealed class PeerClient : IDisposable
             if (!Directory.Exists(itemPath)) { log("本地文件夹不存在，无需重命名: " + itemPath); return; }
             string parent = Path.GetDirectoryName(itemPath) ?? "";
             string folder = Path.GetFileName(itemPath);
-            string renamed = UniquePath(Path.Combine(parent, $"{folder}_AutoBackup_{date}"), isDir: true);
+            string renamed = FileHelper.UniquePath(Path.Combine(parent, $"{folder}_AutoBackup_{date}"), isDir: true);
             log($"更新前重命名本地文件夹: {itemPath} → {renamed}");
             Directory.Move(itemPath, renamed);
         }
@@ -323,28 +323,9 @@ public sealed class PeerClient : IDisposable
             string dirOf = Path.GetDirectoryName(itemPath) ?? "";
             string baseName = Path.GetFileNameWithoutExtension(itemPath);
             string ext = Path.GetExtension(itemPath);
-            string renamed = UniquePath(Path.Combine(dirOf, $"{baseName}_AutoBackup_{date}{ext}"), isDir: false);
+            string renamed = FileHelper.UniquePath(Path.Combine(dirOf, $"{baseName}_AutoBackup_{date}{ext}"), isDir: false);
             log($"更新前重命名本地文件: {itemPath} → {renamed}");
             File.Move(itemPath, renamed);
-        }
-    }
-
-    private static string SanitizeFileName(string name)
-    {
-        foreach (char c in Path.GetInvalidFileNameChars()) name = name.Replace(c, '_');
-        return name;
-    }
-
-    private static string UniquePath(string path, bool isDir)
-    {
-        if (!(isDir ? Directory.Exists(path) : File.Exists(path))) return path;
-        string parent = Path.GetDirectoryName(path) ?? "";
-        string baseName = isDir ? Path.GetFileName(path) : Path.GetFileNameWithoutExtension(path);
-        string ext = isDir ? "" : Path.GetExtension(path);
-        for (int i = 1; ; i++)
-        {
-            string candidate = Path.Combine(parent, $"{baseName}_{i}{ext}");
-            if (!(isDir ? Directory.Exists(candidate) : File.Exists(candidate))) return candidate;
         }
     }
 
@@ -408,7 +389,7 @@ public sealed class PeerClient : IDisposable
         var frame = await _conn!.RecvJsonAsync(ct)
             ?? throw new EndOfStreamException("连接已断开");
         if (frame.GetProperty("op").GetString() != "ready")
-            throw new InvalidOperationException("对方未就绪");
+            throw new InvalidOperationException("远端未就绪");
 
         log("正在发送程序文件...");
         var fi = new FileInfo(exePath);
@@ -428,7 +409,7 @@ public sealed class PeerClient : IDisposable
             }
         }
 
-        log("等待对方执行更新...");
+        log("等待远端执行更新...");
         var resp = await _conn.RecvJsonAsync(ct)
             ?? throw new EndOfStreamException("连接已断开");
         string op = resp.GetProperty("op").GetString()!;

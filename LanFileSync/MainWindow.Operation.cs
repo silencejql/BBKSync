@@ -12,16 +12,7 @@ public partial class MainWindow
     /// </summary>
     private List<string>? ExcludeLocalHosts(List<string> hosts)
     {
-        var local = new HashSet<string>(GetLocalIPs(), StringComparer.OrdinalIgnoreCase) { "127.0.0.1", "::1", "localhost" };
-        try
-        {
-            foreach (var a in System.Net.Dns.GetHostAddresses(System.Net.Dns.GetHostName()))
-                if (a.AddressFamily == AddressFamily.InterNetwork) local.Add(a.ToString());
-        }
-        catch { }
-
-        var skipped = hosts.Where(h => local.Contains(h)).Distinct(StringComparer.OrdinalIgnoreCase).ToList();
-        var remote = hosts.Where(h => !local.Contains(h)).ToList();
+        var (remote, skipped) = HostHelper.FilterLocalHosts(hosts);
         if (skipped.Count > 0)
         {
             LogLine("目标 IP 为本机地址，已跳过: " + string.Join(", ", skipped));
@@ -30,6 +21,13 @@ public partial class MainWindow
                 "提示", MessageBoxButton.OK, MessageBoxImage.Information);
         }
         return remote.Count == 0 ? null : remote;
+    }
+
+    /// <summary>保存当前 IP 输入到历史记录并刷新下拉列表。</summary>
+    private void SaveIpHistory(int port)
+    {
+        _history.Upsert(cboPeerIp.Text.Trim(), port);
+        ReloadHistoryCombo();
     }
 
     private async void BtnBackup_Click(object sender, RoutedEventArgs e)
@@ -78,10 +76,10 @@ public partial class MainWindow
         List<string> hosts;
         try { hosts = IpHelper.ExpandIps(cboPeerIp.Text ?? ""); }
         catch (FormatException ex) { DarkMessageBox.Show(ex.Message, "错误", MessageBoxButton.OK, MessageBoxImage.Warning); return; }
-        if (hosts.Count == 0) { DarkMessageBox.Show("请输入对方 IP 或范围。", "提示", MessageBoxButton.OK, MessageBoxImage.Information); return; }
-        if (!TryGetPeerPort(out int port)) { DarkMessageBox.Show("对方端口无效。", "错误", MessageBoxButton.OK, MessageBoxImage.Warning); return; }
+        if (hosts.Count == 0) { DarkMessageBox.Show("请输入远端 IP 或范围。", "提示", MessageBoxButton.OK, MessageBoxImage.Information); return; }
+        if (!TryGetPeerPort(out int port)) { DarkMessageBox.Show("远端端口无效。", "错误", MessageBoxButton.OK, MessageBoxImage.Warning); return; }
         string deviceInfo = hosts.Count == 1 ? await GetDeviceInfo(hosts[0]) : "";
-        if (DarkMessageBox.Show("确认开始备份远端BBK程序？\n\n远端电脑：[" + string.Join(";", hosts) + "]" + deviceInfo + "\n程序备份到：" + dest + "。", "确认", MessageBoxButton.OKCancel, MessageBoxImage.Question) != MessageBoxResult.OK) return;
+        if (DarkMessageBox.Show("确认开始备份远端 BBK 程序？\n\n远端电脑：" + string.Join("、", hosts) + deviceInfo + "\n备份到：" + dest + "。", "确认", MessageBoxButton.OKCancel, MessageBoxImage.Question) != MessageBoxResult.OK) return;
         StartBusy();
         var ct = _coordinator.Token; _opLabel = "备份";
         var okIps = new List<string>(); var failed = new List<string>();
@@ -110,7 +108,7 @@ public partial class MainWindow
                     bool preBackupBat = cbRunPreBackupBat.IsChecked == true;
                     using var client = new PeerClient();
                     await client.ConnectAsync(host, port, Constants.RolePull, ct, preBackupBat);
-                    LogDivider(); LogLine($"已连接对方 {host}:{port}，开始拉取备份 → {target} ...");
+                    LogDivider(); LogLine($"已连接远端 {host}:{port}，开始拉取备份 → {target} ...");
                     _opLabel = "备份";
                     await client.BackupPullAsync(target, ReadBackupOptions(), preBackupBat, LogLine, OnFileProgress, OnTotal, m => LogLineError("跳过: " + m), ct, LogLineError);
                     okIps.Add(host); LogLine($"备份完成: {host}");
@@ -123,7 +121,7 @@ public partial class MainWindow
         catch (OperationCanceledException) { LogLine("备份已取消"); }
         finally
         {
-            if (okIps.Count > 0) { _history.Upsert(cboPeerIp.Text.Trim(), port); ReloadHistoryCombo(); }
+            if (okIps.Count > 0) SaveIpHistory(port);
             EndBusy();
         }
         if (okIps.Count > 0) txtStatus.Text = hosts.Count > 1 ? $"远程备份完成({okIps.Count}/{hosts.Count} 台)" : "远程备份完成";
@@ -164,7 +162,7 @@ public partial class MainWindow
     private string? TryGetShareUnc()
     {
         string ip = txtShareIp.Text.Trim();
-        if (string.IsNullOrWhiteSpace(ip)) { DarkMessageBox.Show("请输入对方电脑的 IP。", "提示", MessageBoxButton.OK, MessageBoxImage.Information); return null; }
+        if (string.IsNullOrWhiteSpace(ip)) { DarkMessageBox.Show("请输入远端电脑的 IP。", "提示", MessageBoxButton.OK, MessageBoxImage.Information); return null; }
         string unc = SmbHelper.MakeUnc(ip, txtSharePath.Text.Trim());
         string user = txtShareUser.Text.Trim(), password = pwdSharePass.Password;
         try
@@ -198,16 +196,16 @@ public partial class MainWindow
         List<string> hosts;
         try { hosts = IpHelper.ExpandIps(cboPeerIp.Text ?? ""); }
         catch (FormatException ex) { DarkMessageBox.Show(ex.Message, "错误", MessageBoxButton.OK, MessageBoxImage.Warning); return; }
-        if (hosts.Count == 0) { DarkMessageBox.Show("请输入对方 IP 或范围。", "提示", MessageBoxButton.OK, MessageBoxImage.Information); return; }
-        if (!TryGetPeerPort(out int port)) { DarkMessageBox.Show("对方端口无效。", "错误", MessageBoxButton.OK, MessageBoxImage.Warning); return; }
-        if (rbReceive.IsChecked == true && hosts.Count > 1) { DarkMessageBox.Show("拉取对方更新时只能选择一个IP地址", "错误", MessageBoxButton.OK, MessageBoxImage.Warning); return; }
+        if (hosts.Count == 0) { DarkMessageBox.Show("请输入远端 IP 或范围。", "提示", MessageBoxButton.OK, MessageBoxImage.Information); return; }
+        if (!TryGetPeerPort(out int port)) { DarkMessageBox.Show("远端端口无效。", "错误", MessageBoxButton.OK, MessageBoxImage.Warning); return; }
+        if (rbReceive.IsChecked == true && hosts.Count > 1) { DarkMessageBox.Show("拉取更新时只能选择一个远端 IP。", "错误", MessageBoxButton.OK, MessageBoxImage.Warning); return; }
         hosts = ExcludeLocalHosts(hosts);
         if (hosts == null) return;
         bool push = rbPush.IsChecked == true;
         string deviceInfo = hosts.Count == 1 ? await GetDeviceInfo(hosts[0]) : "";
         string msgPush = $"将本机BBK按规则推送更新至远端电脑[{cboPeerIp.Text}]{deviceInfo}";
         string msgPull = $"将远端电脑[{cboPeerIp.Text}]{deviceInfo}的BBK按规则拉取更新至本机";
-        if (DarkMessageBox.Show("确认开始更新？\n\n" + (push ? msgPush : msgPull) + "。", "确认", MessageBoxButton.OKCancel, MessageBoxImage.Question) != MessageBoxResult.OK) return;
+        if (DarkMessageBox.Show("确认开始更新？\n\n" + (push ? msgPush : msgPull), "确认", MessageBoxButton.OKCancel, MessageBoxImage.Question) != MessageBoxResult.OK) return;
         string root = txtRoot.Text.Trim();
         var options = ReadOptions();
         StartBusy();
@@ -224,12 +222,12 @@ public partial class MainWindow
                     await client.ConnectAsync(host, port, push ? Constants.RolePush : Constants.RolePull, ct);
                     if (push)
                     {
-                        LogDivider(); LogLine($"以本机为源连接对方 {host}:{port} 成功，推送 {root} 的文件清单...");
+                        LogDivider(); LogLine($"以本机为源连接远端 {host}:{port} 成功，推送 {root} 的文件清单...");
                         await client.PushAsync(root, options, LogLine, OnFileProgress, OnTotal, m => LogLineError("远端电脑: " + m), ct);
                     }
                     else
                     {
-                        LogDivider(); LogLine($"以对方为源连接对方 {host}:{port} 成功，更新到本机 {root} ...");
+                        LogDivider(); LogLine($"以远端为源连接远端 {host}:{port} 成功，更新到本机 {root} ...");
                         if (cbBackupBeforeSync.IsChecked == true && !string.IsNullOrWhiteSpace(txtBackupDest.Text.Trim()))
                         {
                             string dest = Path.Combine(txtBackupDest.Text.Trim(), $"BBK_接收更新备份_{DateTime.Now:yyyyMMdd}");
@@ -256,7 +254,7 @@ public partial class MainWindow
         catch (OperationCanceledException) { LogLine("已取消"); }
         finally
         {
-            if (okIps.Count > 0) { _history.Upsert(cboPeerIp.Text.Trim(), port); ReloadHistoryCombo(); }
+            if (okIps.Count > 0) SaveIpHistory(port);
             EndBusy();
         }
         if (okIps.Count > 0) txtStatus.Text = hosts.Count > 1 ? $"同步完成({okIps.Count}/{hosts.Count} 台)" : "同步完成";
@@ -291,13 +289,13 @@ public partial class MainWindow
     private async Task TransferToRemoteAsync()
     {
         string itemPath = txtTransferPath.Text.Trim();
-        if (string.IsNullOrWhiteSpace(itemPath)) { DarkMessageBox.Show("请先选择要传输的文件或文件夹。", "提示", MessageBoxButton.OK, MessageBoxImage.Information); return; }
+        if (string.IsNullOrWhiteSpace(itemPath)) { DarkMessageBox.Show("请先选择要同步的文件或文件夹。", "提示", MessageBoxButton.OK, MessageBoxImage.Information); return; }
         if (!Directory.Exists(itemPath) && !File.Exists(itemPath)) { DarkMessageBox.Show("路径无效或不存在：" + itemPath, "错误", MessageBoxButton.OK, MessageBoxImage.Warning); return; }
         List<string> hosts;
         try { hosts = IpHelper.ExpandIps(cboPeerIp.Text ?? ""); }
         catch (FormatException ex) { DarkMessageBox.Show(ex.Message, "错误", MessageBoxButton.OK, MessageBoxImage.Warning); return; }
-        if (hosts.Count == 0) { DarkMessageBox.Show("请输入对方 IP 或范围。", "提示", MessageBoxButton.OK, MessageBoxImage.Information); return; }
-        if (!TryGetPeerPort(out int port)) { DarkMessageBox.Show("对方端口无效。", "错误", MessageBoxButton.OK, MessageBoxImage.Warning); return; }
+        if (hosts.Count == 0) { DarkMessageBox.Show("请输入远端 IP 或范围。", "提示", MessageBoxButton.OK, MessageBoxImage.Information); return; }
+        if (!TryGetPeerPort(out int port)) { DarkMessageBox.Show("远端端口无效。", "错误", MessageBoxButton.OK, MessageBoxImage.Warning); return; }
         hosts = ExcludeLocalHosts(hosts);
         if (hosts == null) return;
         bool isDir = Directory.Exists(itemPath);
@@ -306,9 +304,9 @@ public partial class MainWindow
         if (string.IsNullOrWhiteSpace(localDevice)) localDevice = Environment.MachineName;
         string deviceInfo = hosts.Count == 1 ? await GetDeviceInfo(hosts[0]) : "";
         string modeDesc = updateMode
-            ? "更新模式：会先将对方原文件/文件夹重命名为 名称_设备信息_日期，再覆盖到相同路径。"
-            : "拷贝模式：不改动对方原文件，新文件以 名称_" + localDevice + "_日期 保存。";
-        if (DarkMessageBox.Show("确认开始同步？\n\n将对 [" + cboPeerIp.Text + "]" + deviceInfo + "电脑同步 [" + itemPath + "](" + (isDir ? "文件夹" : "文件") + ")。\n\n" + modeDesc, "确认", MessageBoxButton.OKCancel, MessageBoxImage.Question) != MessageBoxResult.OK) return;
+            ? "更新模式：会先将远端原文件/文件夹重命名为 名称_设备信息_日期，再覆盖到相同路径。"
+            : "拷贝模式：不改动远端原文件，新文件以 名称_" + localDevice + "_日期 保存。";
+        if (DarkMessageBox.Show("确认开始同步？\n\n远端：" + cboPeerIp.Text + deviceInfo + "\n同步内容：" + itemPath + "（" + (isDir ? "文件夹" : "文件") + "）\n\n" + modeDesc, "确认", MessageBoxButton.OKCancel, MessageBoxImage.Question) != MessageBoxResult.OK) return;
         StartBusy();
         var ct = _coordinator.Token; _opLabel = "传输";
         var okIps = new List<string>(); var failed = new List<string>();
@@ -331,7 +329,7 @@ public partial class MainWindow
         catch (OperationCanceledException) { LogLine("已取消"); }
         finally
         {
-            if (okIps.Count > 0) { _history.Upsert(cboPeerIp.Text.Trim(), port); ReloadHistoryCombo(); }
+            if (okIps.Count > 0) SaveIpHistory(port);
             EndBusy();
         }
         if (okIps.Count > 0) txtStatus.Text = hosts.Count > 1 ? $"传输完成({okIps.Count}/{hosts.Count} 台)" : "传输完成";
@@ -341,17 +339,23 @@ public partial class MainWindow
     private async Task TransferFromRemoteAsync()
     {
         string itemPath = txtTransferPath.Text.Trim();
-        if (string.IsNullOrWhiteSpace(itemPath)) { DarkMessageBox.Show("请先输入要拉取的文件或文件夹路径。", "提示", MessageBoxButton.OK, MessageBoxImage.Information); return; }
+        if (string.IsNullOrWhiteSpace(itemPath)) { DarkMessageBox.Show("请先输入要拉取的远端文件或文件夹路径。", "提示", MessageBoxButton.OK, MessageBoxImage.Information); return; }
         List<string> hosts;
         try { hosts = IpHelper.ExpandIps(cboPeerIp.Text ?? ""); }
         catch (FormatException ex) { DarkMessageBox.Show(ex.Message, "错误", MessageBoxButton.OK, MessageBoxImage.Warning); return; }
-        if (hosts.Count == 0) { DarkMessageBox.Show("请输入对方 IP 或范围。", "提示", MessageBoxButton.OK, MessageBoxImage.Information); return; }
-        if (!TryGetPeerPort(out int port)) { DarkMessageBox.Show("对方端口无效。", "错误", MessageBoxButton.OK, MessageBoxImage.Warning); return; }
+        if (hosts.Count == 0) { DarkMessageBox.Show("请输入远端 IP 或范围。", "提示", MessageBoxButton.OK, MessageBoxImage.Information); return; }
+        if (!TryGetPeerPort(out int port)) { DarkMessageBox.Show("远端端口无效。", "错误", MessageBoxButton.OK, MessageBoxImage.Warning); return; }
         hosts = ExcludeLocalHosts(hosts);
         if (hosts == null) return;
 
-        string deviceInfo = hosts.Count == 1 ? await GetDeviceInfo(hosts[0]) : "";
-        string deviceName = hosts.Count == 1 ? (await ProbeDeviceNameAsync(hosts[0], port)) : "";
+        string deviceInfo = "";
+        string deviceName = "";
+        if (hosts.Count == 1)
+        {
+            var (name, line) = await ProbeRemoteAsync(hosts[0], port);
+            deviceName = name;
+            deviceInfo = string.IsNullOrWhiteSpace(name) || name == hosts[0] ? "" : $"[设备 {name}{(string.IsNullOrWhiteSpace(line) ? "" : "/Line" + line)}]";
+        }
         bool updateMode = cbTransferUpdate.IsChecked == true;
         string localDevice = DeviceConfig.ReadFromRoot(txtRoot.Text.Trim()).Name;
         if (string.IsNullOrWhiteSpace(localDevice)) localDevice = Environment.MachineName;
@@ -359,7 +363,7 @@ public partial class MainWindow
             ? "更新模式：会先将本地原文件/文件夹重命名为 名称_" + localDevice + "_日期，再拉取到原路径。"
             : "拷贝模式：不修改本地原文件，拉取的文件命名为 名称_" + (string.IsNullOrWhiteSpace(deviceName) ? "远端" : deviceName) + "_日期。";
 
-        if (DarkMessageBox.Show("确认从远端同步？\n\n将从[" + cboPeerIp.Text + "]" + deviceInfo + "拉取 [" + itemPath + "]。\n" + modeDesc, "确认", MessageBoxButton.OKCancel, MessageBoxImage.Question) != MessageBoxResult.OK) return;
+        if (DarkMessageBox.Show("确认从远端同步？\n\n远端：" + cboPeerIp.Text + deviceInfo + "\n拉取内容：" + itemPath + "\n\n" + modeDesc, "确认", MessageBoxButton.OKCancel, MessageBoxImage.Question) != MessageBoxResult.OK) return;
 
         StartBusy();
         var ct = _coordinator.Token; _opLabel = "拉取";
@@ -383,25 +387,11 @@ public partial class MainWindow
         catch (OperationCanceledException) { LogLine("已取消"); }
         finally
         {
-            if (okIps.Count > 0) { _history.Upsert(cboPeerIp.Text.Trim(), port); ReloadHistoryCombo(); }
+            if (okIps.Count > 0) SaveIpHistory(port);
             EndBusy();
         }
         if (okIps.Count > 0) txtStatus.Text = hosts.Count > 1 ? $"拉取完成({okIps.Count}/{hosts.Count} 台)" : "拉取完成";
         if (failed.Count > 0) DarkMessageBox.Show("以下电脑拉取失败：\n" + string.Join("\n", failed), "部分失败", MessageBoxButton.OK, MessageBoxImage.Warning);
-    }
-
-    private async Task<string> ProbeDeviceNameAsync(string host, int port)
-    {
-        try
-        {
-            var client = new PeerClient();
-            using var cts = new CancellationTokenSource(TimeSpan.FromSeconds(5));
-            await client.ConnectAsync(host, port, Constants.RoleProbe, cts.Token);
-            var (name, line) = await client.ProbeDeviceAsync(cts.Token);
-            client.Dispose();
-            return string.IsNullOrWhiteSpace(name) ? host : name;
-        }
-        catch { return host; }
     }
 
     private void LogBackupSummary(string what, BackupEngine engine, int total)
@@ -424,8 +414,8 @@ public partial class MainWindow
         if (cbTransferSameSkip != null) cbTransferSameSkip.IsEnabled = update;
         if (txtTransferModeHint != null)
             txtTransferModeHint.Text = update
-                ? "更新模式：同步给远端会先把远端原文件重命名为 名称_设备信息_日期 再覆盖；从远端同步会先把本地原文件重命名为 名称_设备信息_日期 再拉取到原路径。"
-                : "拷贝模式：不改动任何原文件。同步给远端的文件保存为 名称_本机设备_日期；从远端同步的文件保存为 名称_远端设备_日期。";
+                ? "更新模式：同步前自动备份原文件，再覆盖到原路径。备份命名：文件名_AutoBackup_日期。"
+                : "拷贝模式：不改动原文件，新文件以 名称_设备信息_日期 另存。";
     }
 
     private void RbTransferDir_Changed(object sender, RoutedEventArgs e)
@@ -433,8 +423,8 @@ public partial class MainWindow
         if (!IsLoaded) return;
         bool isPull = rbTransferPull.IsChecked == true;
         txtTransferHint.Text = isPull
-            ? "从远端电脑拉取输入路径的文件/文件夹。更新模式先重命名本地原文件再拉取到原路径；拷贝模式另存为 名称_设备信息_日期。"
-            : "将选中的文件/文件夹同步到对方电脑(对方需先\u201c启动服务\u201d;)。更新模式先重命名远端原文件再覆盖；拷贝模式另存为 名称_设备信息_日期。";
+            ? "从远端电脑拉取输入路径的文件/文件夹。更新模式先备份本地原文件再拉取覆盖；拷贝模式另存为 名称_设备信息_日期。"
+            : "将选中的文件/文件夹同步到远端电脑（远端需先启动服务）。更新模式先备份远端原文件再覆盖；拷贝模式另存为 名称_设备信息_日期。";
     }
 
     private void RbDir_Changed(object sender, RoutedEventArgs e)
@@ -442,10 +432,10 @@ public partial class MainWindow
         if (!IsLoaded) return;
         UpdateShareVisibility();
         if (rbSyncShare.IsChecked == true)
-        { txtHint.Text = "本机为目标：从下方共享连接直接读取对方机器上的文件并更新到本机文件夹，对方免安装。更新规则按本机设置执行。"; return; }
+        { txtHint.Text = "本机为目标：从共享连接直接读取远端文件并更新到本机，远端免安装。更新规则按本机设置执行。"; return; }
         txtHint.Text = rbPush.IsChecked == true
-            ? "本机为源：对方需先\u201c启动服务\u201d。推送时规则以对方界面设置为准。"
-            : "本机为目标：对方需先\u201c启动服务\u201d并告知 IP/端口。更新规则按本机界面设置执行。";
+            ? "本机为源：远端需先启动服务。推送时规则以远端界面设置为准。"
+            : "本机为目标：远端需先启动服务并告知 IP/端口。更新规则按本机界面设置执行。";
     }
 
     private void RbBackupSource_Changed(object sender, RoutedEventArgs e)
@@ -457,7 +447,7 @@ public partial class MainWindow
     private async void BtnUpdateProgram_Click(object sender, RoutedEventArgs e)
     {
         string host = cboPeerIp.Text.Trim();
-        if (string.IsNullOrWhiteSpace(host)) { DarkMessageBox.Show("请输入远端电脑 IP。", "提示", MessageBoxButton.OK, MessageBoxImage.Information); return; }
+        if (string.IsNullOrWhiteSpace(host)) { DarkMessageBox.Show("请输入远端 IP 或范围。", "提示", MessageBoxButton.OK, MessageBoxImage.Information); return; }
         int port = int.TryParse(txtPeerPort.Text.Trim(), out int p) ? p : Constants.DefaultPort;
 
         string exePath = Environment.ProcessPath ?? "";
@@ -470,7 +460,7 @@ public partial class MainWindow
         hosts = ExcludeLocalHosts(hosts);
         if (hosts == null) return;
 
-        if (DarkMessageBox.Show("确认开始升级远端BBKSync程序？\n\n目标电脑：" + host + "。", "确认", MessageBoxButton.OKCancel, MessageBoxImage.Question) != MessageBoxResult.OK) return;
+        if (DarkMessageBox.Show("确认开始升级远端程序？\n\n目标电脑：" + host, "确认", MessageBoxButton.OKCancel, MessageBoxImage.Question) != MessageBoxResult.OK) return;
         var failed = new List<string>();
         var okIps = new List<string>();
 
@@ -503,7 +493,7 @@ public partial class MainWindow
         catch (OperationCanceledException) { LogLine("操作已取消"); }
         finally
         {
-            if (okIps.Count > 0) { _history.Upsert(cboPeerIp.Text.Trim(), port); ReloadHistoryCombo(); }
+            if (okIps.Count > 0) SaveIpHistory(port);
             EndBusy();
         }
         if (okIps.Count > 0) txtStatus.Text = hosts.Count > 1 ? $"更新完成({okIps.Count}/{hosts.Count} 台)" : "更新完成";

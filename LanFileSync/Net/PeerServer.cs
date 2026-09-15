@@ -144,12 +144,12 @@ public sealed class PeerServer : IDisposable
                         string batPath = Path.Combine(AppPaths.ExeDir(), "PostgreSQL_Backup.bat");
                         if (!File.Exists(batPath) || new FileInfo(batPath).Length == 0)
                         {
-                            _log("对方要求先执行备份前脚本，本机 PostgreSQL_Backup.bat 不存在或为空，跳过");
+                            _log("远端要求先执行备份前脚本，本机 PostgreSQL_Backup.bat 不存在或为空，跳过");
                             await conn.SendJsonAsync(new { op = "bat", ok = true, msg = "本机未配置备份前脚本，跳过" }, CancellationToken.None);
                         }
                         else
                         {
-                            _log("对方要求先执行备份前脚本 ...");
+                            _log("远端要求先执行备份前脚本 ...");
                             string? batErr = RunPreBackupScript(_log);
                             if (batErr != null)
                             {
@@ -164,14 +164,14 @@ public sealed class PeerServer : IDisposable
                         }
                     }
                     await SourceSide.SendManifestAsync(conn, _root, ct);
-                    _log("文件清单已发送，等待对方选择需要更新的文件...");
+                    _log("文件清单已发送，等待远端选择需要更新的文件...");
 
                     var req = await conn.RecvJsonAsync(ct)
                         ?? throw new EndOfStreamException("连接已断开");
                     var paths = req.GetProperty("paths").EnumerateArray().Select(x => x.GetString()!).ToList();
 
                     int sent = 0;
-                    _log(paths.Count == 0 ? "对方无需更新/备份(所有文件相同)。" : $"对方需要 {paths.Count} 个文件，开始发送...");
+                    _log(paths.Count == 0 ? "远端无需更新/备份(所有文件相同)。" : $"远端需要 {paths.Count} 个文件，开始发送...");
                     if (paths.Count > 0 && paths.Count < 10)
                         foreach (var p in paths) _log("  → " + p);
                     await SourceSide.SendRequestedFilesAsync(conn, _root, paths,
@@ -182,7 +182,7 @@ public sealed class PeerServer : IDisposable
                 {
                     var list = new List<FileEntry>();
                     await TargetSide.ReceiveManifestAsync(conn, ct, list);
-                    _log($"已收到对方文件清单({list.Count} 项)，按本机规则计算需要更新的文件...");
+                    _log($"已收到远端文件清单({list.Count} 项)，按本机规则计算需要更新的文件...");
 
                     var engine = new SyncEngine(_root, _options);
                     engine.Plan(list);
@@ -190,7 +190,7 @@ public sealed class PeerServer : IDisposable
                     if (engine.NeedList.Count > 0 && _backupBeforeSync && !string.IsNullOrWhiteSpace(_backupDest))
                     {
                         string dest = Path.Combine(_backupDest, $"BBK_推送更新备份_{DateTime.Now:yyyyMMdd}");
-                        _log($"对方需要 {engine.NeedList.Count} 个文件，先备份本机 BBK 到 {dest}");
+                        _log($"远端需要 {engine.NeedList.Count} 个文件，先备份本机 BBK 到 {dest}");
                         try
                         {
                             var be = new BackupEngine(_root, dest, _backupOptions);
@@ -246,8 +246,8 @@ public sealed class PeerServer : IDisposable
                     var list = new List<FileEntry>();
                     await TargetSide.ReceiveManifestAsync(conn, ct, list);
                     _log(updateMode
-                        ? $"已收到对方文件清单({list.Count} 项)，按本机相同路径计算需要更新的文件..."
-                        : $"已收到对方文件清单({list.Count} 项)，拷贝模式全部保存为重命名副本...");
+                        ? $"已收到远端文件清单({list.Count} 项)，按本机相同路径计算需要更新的文件..."
+                        : $"已收到远端文件清单({list.Count} 项)，拷贝模式全部保存为重命名副本...");
 
                     var engine = new TransferEngine(itemPath, isDir, sameSkip, updateMode, deviceTag);
                     engine.Plan(list);
@@ -313,14 +313,14 @@ public sealed class PeerServer : IDisposable
                             await conn.SendJsonAsync(new { op = "f", p = itemPath.Replace('\\', '/'), s = fi.Length, t = fi.LastWriteTimeUtc.Ticks }, ct);
                     }
                     await conn.SendJsonAsync(new { op = "mend" }, ct);
-                    _log($"文件清单已发送，等待对方选择要拉取的文件...");
+                    _log($"文件清单已发送，等待远端选择要拉取的文件...");
 
                     var req = await conn.RecvJsonAsync(ct)
                         ?? throw new EndOfStreamException("连接已断开");
                     var paths = req.GetProperty("paths").EnumerateArray().Select(x => x.GetString()!).ToList();
 
                     int sent = 0;
-                    _log(paths.Count == 0 ? "对方无需拉取文件。" : $"对方要拉取 {paths.Count} 个文件，开始发送...");
+                    _log(paths.Count == 0 ? "远端无需拉取文件。" : $"远端要拉取 {paths.Count} 个文件，开始发送...");
                     if (paths.Count > 0 && paths.Count < 10)
                         foreach (var p in paths) _log("  → " + p);
                     await TransferSide.SendRequestedFilesAsync(conn, paths,

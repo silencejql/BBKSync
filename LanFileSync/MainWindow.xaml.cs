@@ -1,7 +1,6 @@
 using System.Diagnostics;
 using System.IO;
 using System.IO.Compression;
-using System.Net.NetworkInformation;
 using System.Net.Sockets;
 using System.Windows;
 using System.Windows.Controls;
@@ -169,19 +168,12 @@ public partial class MainWindow : Window
     private string BackupTargetPath(string dest, string name, string line = "")
     {
         if (string.IsNullOrWhiteSpace(line)) line = AutoDetectedLine();
-        string basePath = string.IsNullOrEmpty(line) ? dest : Path.Combine(dest, "Line" + SanitizeName(line));
-        return Path.Combine(basePath, $"BBK_{SanitizeName(name)}_{DateTime.Now:yyyyMMdd}");
+        string basePath = string.IsNullOrEmpty(line) ? dest : Path.Combine(dest, "Line" + FileHelper.SanitizeName(line));
+        return Path.Combine(basePath, $"BBK_{FileHelper.SanitizeName(name)}_{DateTime.Now:yyyyMMdd}");
     }
 
     private string AutoDetectedName() => DeviceConfig.ReadFromRoot(txtRoot.Text.Trim()).Name;
     private string AutoDetectedLine() => DeviceConfig.ReadFromRoot(txtRoot.Text.Trim()).Line;
-    private static string SanitizeName(string s)
-    {
-        char[] invalids = Path.GetInvalidFileNameChars();
-        var chars = new char[s.Length];
-        for (int i = 0; i < s.Length; i++) chars[i] = Array.IndexOf(invalids, s[i]) >= 0 ? '_' : s[i];
-        return new string(chars);
-    }
 
     private static Brush s_logBrush = new SolidColorBrush(Color.FromRgb(0x20, 0x24, 0x2E));
     private static Brush s_logErrorBrush = new SolidColorBrush(Color.FromRgb(0xDC, 0x26, 0x26));
@@ -267,7 +259,7 @@ public partial class MainWindow : Window
             _server.Start();
             btnStart.IsEnabled = false; btnStop.IsEnabled = true;
             txtLocalIp.Text = "本机地址: " + string.Join("   ", GetLocalIPs());
-            LogLine($"服务已启动，端口 {port}，根目录 {root}。对方填上此 IP 与本端口即可同步。");
+            LogLine($"服务已启动，端口 {port}，根目录 {root}。远端填上此 IP 与本端口即可同步。");
         }
         catch (Exception ex)
         {
@@ -292,18 +284,18 @@ public partial class MainWindow : Window
     private async void BtnTestConnect_Click(object sender, RoutedEventArgs e)
     {
         string host = cboPeerIp.Text.Trim();
-        if (string.IsNullOrEmpty(host)) { DarkMessageBox.Show("请输入对方 IP 地址。", "提示", MessageBoxButton.OK, MessageBoxImage.Information); return; }
+        if (string.IsNullOrEmpty(host)) { DarkMessageBox.Show("请输入远端 IP 地址。", "提示", MessageBoxButton.OK, MessageBoxImage.Information); return; }
         if (!TryGetPeerPort(out int port)) { DarkMessageBox.Show("端口无效，请输入 1~65535 之间的数字。", "错误", MessageBoxButton.OK, MessageBoxImage.Warning); return; }
         using var tcp = new TcpClient();
         try
         {
             using var cts = new CancellationTokenSource(TimeSpan.FromSeconds(4));
             await tcp.ConnectAsync(host, port, cts.Token);
-            LogLine($"已连上 {host}:{port}，正在校验对方协议应答...");
+            LogLine($"已连上 {host}:{port}，正在校验远端协议应答...");
         }
         catch (OperationCanceledException)
         {
-            var msg = $"连接超时：{host}:{port}\n4 秒内未建立连接(10060 超时：对方不可达，或防火墙静默丢弃)。";
+            var msg = $"连接超时：{host}:{port}\n4 秒内未建立连接(10060 超时：远端不可达，或防火墙静默丢弃)。";
             LogLineError(msg); DarkMessageBox.Show(msg, "测试结果", MessageBoxButton.OK, MessageBoxImage.Warning); return;
         }
         catch (SocketException ex)
@@ -311,8 +303,8 @@ public partial class MainWindow : Window
             string hint = ex.SocketErrorCode switch
             {
                 SocketError.AccessDenied => "(10013 权限访问：本机安全软件/防火墙拦截本程序外发连接；若程序放在桌面/深层局部目录运行，请改用纯英文目录如 C:\\BBKApp 再试)",
-                SocketError.ConnectionRefused => "(10061 积极拒绝：对方端口未监听，服务没启动)",
-                SocketError.TimedOut => "(10060 超时：对方不可达，或防火墙静默丢弃)",
+                SocketError.ConnectionRefused => "(10061 积极拒绝：远端端口未监听，服务没启动)",
+                SocketError.TimedOut => "(10060 超时：远端不可达，或防火墙静默丢弃)",
                 _ => $"(错误码 {(int)ex.SocketErrorCode})",
             };
             var msg = $"连接失败：{host}:{port}\n{ex.Message} {hint}";
@@ -325,17 +317,17 @@ public partial class MainWindow : Window
             await client.ConnectAsync(host, port, Constants.RoleProbe, cts.Token);
             var (name, line) = await client.ProbeDeviceAsync(cts.Token);
             string info = string.IsNullOrWhiteSpace(name) ? "" : $"[设备 {name}{(string.IsNullOrWhiteSpace(line) ? "" : "/Line" + line)}]";
-            LogLine($"连接正常：{host}:{port}，对方协议应答正确 {info}");
-            DarkMessageBox.Show($"连接正常：{host}:{port}，对方协议应答正确\n {info}: {host}:{port}", "测试结果", MessageBoxButton.OK, MessageBoxImage.Information);
+            LogLine($"连接正常：{host}:{port}，远端协议应答正确 {info}");
+            DarkMessageBox.Show($"连接正常：{host}:{port}，远端协议应答正确\n {info}: {host}:{port}", "测试结果", MessageBoxButton.OK, MessageBoxImage.Information);
         }
         catch (OperationCanceledException)
         {
-            var msg = $"已连上 {host}:{port}，但对方 5 秒内无协议应答：多为对方 BBKSync 进程僵死、重复实例占用端口，或对方跑的不是本程序。\n\n建议到对方机器：tasklist | findstr /i BBKSync 核对实例数，必要时 taskkill /f /im BBKSync 后重启。";
+            var msg = $"已连上 {host}:{port}，但远端 5 秒内无协议应答：多为远端 BBKSync 进程僵死、重复实例占用端口，或远端跑的不是本程序。\n\n建议到远端机器：tasklist | findstr /i BBKSync 核对实例数，必要时 taskkill /f /im BBKSync 后重启。";
             LogLineError(msg); DarkMessageBox.Show(msg, "测试结果", MessageBoxButton.OK, MessageBoxImage.Warning);
         }
         catch (IOException ex)
         {
-            var msg = $"已连上 {host}:{port}，但连接被对端立刻关闭：{ex.Message}\n\n多为对方服务未就绪或端口被其他程序占用。";
+            var msg = $"已连上 {host}:{port}，但连接被对端立刻关闭：{ex.Message}\n\n多为远端服务未就绪或端口被其他程序占用。";
             LogLineError($"已连上 {host}:{port}，但连接被对端立刻关闭：{ex.Message}"); DarkMessageBox.Show(msg, "测试结果", MessageBoxButton.OK, MessageBoxImage.Warning);
         }
         catch (Exception ex)
@@ -628,11 +620,11 @@ public partial class MainWindow : Window
 
     private async void BtnProcessFetchFiles_Click(object sender, RoutedEventArgs e)
     {
-        if (!TryGetPeerPort(out int port)) { DarkMessageBox.Show("对方端口无效。", "错误", MessageBoxButton.OKCancel, MessageBoxImage.Warning); return; }
+        if (!TryGetPeerPort(out int port)) { DarkMessageBox.Show("远端端口无效。", "错误", MessageBoxButton.OKCancel, MessageBoxImage.Warning); return; }
         List<string> hosts;
         try { hosts = IpHelper.ExpandIps(cboPeerIp.Text ?? ""); }
         catch (FormatException ex) { DarkMessageBox.Show(ex.Message, "错误", MessageBoxButton.OKCancel, MessageBoxImage.Warning); return; }
-        if (hosts.Count == 0) { DarkMessageBox.Show("请输入对方 IP 或范围。", "提示", MessageBoxButton.OKCancel, MessageBoxImage.Information); return; }
+        if (hosts.Count == 0) { DarkMessageBox.Show("请输入远端 IP 或范围。", "提示", MessageBoxButton.OKCancel, MessageBoxImage.Information); return; }
 
         string savedText = txtProcessPath.Text;
         txtProcessPath.ItemsSource = null;
@@ -685,11 +677,11 @@ public partial class MainWindow : Window
 
     private async void BtnProcessClose_Click(object sender, RoutedEventArgs e)
     {
-        if (!TryGetPeerPort(out int port)) { DarkMessageBox.Show("对方端口无效。", "错误", MessageBoxButton.OK, MessageBoxImage.Warning); return; }
+        if (!TryGetPeerPort(out int port)) { DarkMessageBox.Show("远端端口无效。", "错误", MessageBoxButton.OK, MessageBoxImage.Warning); return; }
         List<string> hosts;
         try { hosts = IpHelper.ExpandIps(cboPeerIp.Text ?? ""); }
         catch (FormatException ex) { DarkMessageBox.Show(ex.Message, "错误", MessageBoxButton.OK, MessageBoxImage.Warning); return; }
-        if (hosts.Count == 0) { DarkMessageBox.Show("请输入对方 IP 或范围。", "提示", MessageBoxButton.OK, MessageBoxImage.Information); return; }
+        if (hosts.Count == 0) { DarkMessageBox.Show("请输入远端 IP 或范围。", "提示", MessageBoxButton.OK, MessageBoxImage.Information); return; }
         string deviceInfo = hosts.Count == 1 ? await GetDeviceInfo(hosts[0]) : "";
         if (DarkMessageBox.Show("确认关闭指定电脑的应用程序？\n\n[" + cboPeerIp.Text + "]" + deviceInfo + "\n\n程序前缀名：" + txtProcessKillNames.Text + "。", "确认", MessageBoxButton.OKCancel, MessageBoxImage.Question) != MessageBoxResult.OK) return;
         string[] killNames = txtProcessKillNames.Text
@@ -718,22 +710,33 @@ public partial class MainWindow : Window
         catch (OperationCanceledException) { LogLine("已取消"); }
         finally
         {
-            if (okIps.Count > 0) { _history.Upsert(cboPeerIp.Text.Trim(), port); ReloadHistoryCombo(); }
+            if (okIps.Count > 0) SaveIpHistory(port);
             EndBusy();
         }
         if (okIps.Count > 0) txtStatus.Text = hosts.Count > 1 ? $"关闭完成({okIps.Count}/{hosts.Count} 台)" : "关闭完成";
         if (failed.Count > 0) DarkMessageBox.Show("以下电脑失败：\n" + string.Join("\n", failed), "部分失败", MessageBoxButton.OK, MessageBoxImage.Warning);
     }
 
+    /// <summary>探测远端设备名称和线路(失败时返回 host 作为名称)。</summary>
+    private async Task<(string name, string line)> ProbeRemoteAsync(string host, int port)
+    {
+        try
+        {
+            var client = new PeerClient();
+            using var cts = new CancellationTokenSource(TimeSpan.FromSeconds(5));
+            await client.ConnectAsync(host, port, Constants.RoleProbe, cts.Token);
+            var (name, line) = await client.ProbeDeviceAsync(cts.Token);
+            client.Dispose();
+            return (string.IsNullOrWhiteSpace(name) ? host : name, line ?? "");
+        }
+        catch { return (host, ""); }
+    }
+
     private async Task<string> GetDeviceInfo(string host)
     {
-        if (!TryGetPeerPort(out int port)) { DarkMessageBox.Show("对方端口无效。", "错误", MessageBoxButton.OK, MessageBoxImage.Warning); return ""; }
-        var client = new PeerClient();
-        using var cts = new CancellationTokenSource(TimeSpan.FromSeconds(5));
-        await client.ConnectAsync(host, port, Constants.RoleProbe, cts.Token);
-        var (name, line) = await client.ProbeDeviceAsync(cts.Token);
-
-        return string.IsNullOrWhiteSpace(name) ? "" : $"[设备 {name}{(string.IsNullOrWhiteSpace(line) ? "" : "/Line" + line)}]";
+        if (!TryGetPeerPort(out int port)) { DarkMessageBox.Show("远端端口无效。", "错误", MessageBoxButton.OK, MessageBoxImage.Warning); return ""; }
+        var (name, line) = await ProbeRemoteAsync(host, port);
+        return string.IsNullOrWhiteSpace(name) || name == host ? "" : $"[设备 {name}{(string.IsNullOrWhiteSpace(line) ? "" : "/Line" + line)}]";
     }
 
     private async void BtnProcessOpen_Click(object sender, RoutedEventArgs e)
@@ -746,11 +749,11 @@ public partial class MainWindow : Window
         }
         string exePath = txtProcessPath.Text.Trim();
         if (string.IsNullOrWhiteSpace(exePath)) { DarkMessageBox.Show("请输入程序路径。", "提示", MessageBoxButton.OK, MessageBoxImage.Information); return; }
-        if (!TryGetPeerPort(out int port)) { DarkMessageBox.Show("对方端口无效。", "错误", MessageBoxButton.OK, MessageBoxImage.Warning); return; }
+        if (!TryGetPeerPort(out int port)) { DarkMessageBox.Show("远端端口无效。", "错误", MessageBoxButton.OK, MessageBoxImage.Warning); return; }
         List<string> hosts;
         try { hosts = IpHelper.ExpandIps(cboPeerIp.Text ?? ""); }
         catch (FormatException ex) { DarkMessageBox.Show(ex.Message, "错误", MessageBoxButton.OK, MessageBoxImage.Warning); return; }
-        if (hosts.Count == 0) { DarkMessageBox.Show("请输入对方 IP 或范围。", "提示", MessageBoxButton.OK, MessageBoxImage.Information); return; }
+        if (hosts.Count == 0) { DarkMessageBox.Show("请输入远端 IP 或范围。", "提示", MessageBoxButton.OK, MessageBoxImage.Information); return; }
         string deviceInfo = hosts.Count == 1 ? await GetDeviceInfo(hosts[0]) : "";
         if (DarkMessageBox.Show("确认启动指定电脑的应用程序？\n\n[" + cboPeerIp.Text + "]" + deviceInfo + "\n\n程序路径：" + exePath + "。", "确认", MessageBoxButton.OKCancel, MessageBoxImage.Question) != MessageBoxResult.OK) return;
         _processOpenCooldownUntil = DateTime.Now.AddSeconds(5);
@@ -777,7 +780,7 @@ public partial class MainWindow : Window
         catch (OperationCanceledException) { LogLine("已取消"); }
         finally
         {
-            if (okIps.Count > 0) { _history.Upsert(cboPeerIp.Text.Trim(), port); ReloadHistoryCombo(); }
+            if (okIps.Count > 0) SaveIpHistory(port);
             EndBusy();
         }
         if (okIps.Count > 0) txtStatus.Text = hosts.Count > 1 ? $"启动完成({okIps.Count}/{hosts.Count} 台)" : "启动完成";
@@ -824,12 +827,7 @@ public partial class MainWindow : Window
 
     private static List<string> GetLocalIPs()
     {
-        var list = new List<string>();
-        foreach (var ni in NetworkInterface.GetAllNetworkInterfaces())
-        {
-            if (ni.OperationalStatus != OperationalStatus.Up || ni.NetworkInterfaceType == NetworkInterfaceType.Loopback) continue;
-            foreach (var addr in ni.GetIPProperties().UnicastAddresses) if (addr.Address.AddressFamily == AddressFamily.InterNetwork) list.Add(addr.Address.ToString());
-        }
+        var list = HostHelper.GetLocalIPs();
         if (list.Count == 0) list.Add("(未检测到局域网地址)");
         return list;
     }

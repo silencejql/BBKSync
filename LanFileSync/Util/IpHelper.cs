@@ -2,9 +2,6 @@ namespace LanFileSync;
 
 internal static class IpHelper
 {
-    /// <summary>保存原始输入字符串(用于历史记录)。</summary>
-    internal static string NormalizeInput(string text) => text.Trim();
-
     internal static List<string> ExpandIps(string text)
     {
         var result = new List<string>();

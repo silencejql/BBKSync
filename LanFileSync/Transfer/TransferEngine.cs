@@ -19,7 +19,7 @@ public sealed class TransferEngine
         _itemIsDir = isDir;
         _sameSkip = sameSkip;
         _updateMode = updateMode;
-        _deviceTag = SanitizeName(string.IsNullOrWhiteSpace(deviceTag) ? "远端" : deviceTag);
+        _deviceTag = FileHelper.SanitizeName(string.IsNullOrWhiteSpace(deviceTag) ? "远端" : deviceTag);
         _date = DateTime.Now.ToString("yyyyMMdd");
 
         // 拷贝模式的落盘根目录(与原项目同级，命名为 文件夹名_设备信息_日期)
@@ -27,7 +27,7 @@ public sealed class TransferEngine
         {
             string parent = Path.GetDirectoryName(_itemPath) ?? "";
             string folder = Path.GetFileName(_itemPath.TrimEnd(Path.DirectorySeparatorChar));
-            _copyRoot = UniquePath(Path.Combine(parent, $"{folder}_AutoBackupFrom_{_deviceTag}_{_date}"), isDir: true);
+            _copyRoot = FileHelper.UniquePath(Path.Combine(parent, $"{folder}_AutoBackupFrom_{_deviceTag}_{_date}"), isDir: true);
         }
     }
 
@@ -210,26 +210,7 @@ public sealed class TransferEngine
             string dirOf = Path.GetDirectoryName(_itemPath) ?? "";
             string nameOf = Path.GetFileNameWithoutExtension(original);
             string extOf = Path.GetExtension(original);
-            target = UniquePath(Path.Combine(dirOf, $"{nameOf}_AutoBackupFrom_{_deviceTag}_{_date}{extOf}"), isDir: false);
-        }
-    }
-
-    private static string SanitizeName(string name)
-    {
-        foreach (char c in Path.GetInvalidFileNameChars()) name = name.Replace(c, '_');
-        return name;
-    }
-
-    private static string UniquePath(string path, bool isDir)
-    {
-        if (!(isDir ? Directory.Exists(path) : File.Exists(path))) return path;
-        string parent = Path.GetDirectoryName(path) ?? "";
-        string baseName = isDir ? Path.GetFileName(path) : Path.GetFileNameWithoutExtension(path);
-        string ext = isDir ? "" : Path.GetExtension(path);
-        for (int i = 1; ; i++)
-        {
-            string candidate = Path.Combine(parent, $"{baseName}_{i}{ext}");
-            if (!(isDir ? Directory.Exists(candidate) : File.Exists(candidate))) return candidate;
+            target = FileHelper.UniquePath(Path.Combine(dirOf, $"{nameOf}_AutoBackupFrom_{_deviceTag}_{_date}{extOf}"), isDir: false);
         }
     }
 
