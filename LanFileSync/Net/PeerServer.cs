@@ -123,7 +123,7 @@ public sealed class PeerServer : IDisposable
                 Constants.RoleTransfer => "本机为传输目标",
                 Constants.RoleProcessClose => "关闭远端进程",
                 Constants.RoleProcessOpen => "启动远端进程",
-                Constants.RoleFileList => "获取远端文件列表",
+                Constants.RoleTransferPull => "本机为传输源(远端拉取)",
                 _ => "本机为文件源",
             };
             _log("------------------------------------------------");
@@ -259,6 +259,65 @@ public sealed class PeerServer : IDisposable
                     await engine.ReceiveAndApplyAsync(conn, _log, _onFile, _onError, ct);
                     await conn.SendJsonAsync(new { op = "bye", msgs = engine.TransferMessages }, ct);
                     _log("传输应用完成");
+                }
+                else if (role == Constants.RoleTransferPull)
+                {
+                    // 远端请求拉取本机文件（不修改本机文件）
+                    var init = await conn.RecvJsonAsync(ct)
+                        ?? throw new EndOfStreamException("连接已断开");
+                    string op0 = init.GetProperty("op").GetString()!;
+                    if (op0 != "tinit")
+                        throw new InvalidOperationException("未知的传输起始消息: " + op0);
+                    string itemPath = init.GetProperty("p").GetString()!;
+                    bool isDir = Directory.Exists(itemPath);
+                    bool exists = isDir || File.Exists(itemPath);
+                    if (!exists)
+                    {
+                        _log($"拉取请求的路径不存在: {itemPath}");
+                        await conn.SendJsonAsync(new { op = "err", msg = "远端路径不存在: " + itemPath }, CancellationToken.None);
+                        return;
+                    }
+                    _log($"收到拉取请求(本机为源)：{itemPath}({(isDir ? "文件夹" : "文件")})...");
+
+                    // 发送文件清单
+                    if (isDir)
+                    {
+                        if (Directory.Exists(itemPath))
+                        {
+                            foreach (string file in Directory.EnumerateFiles(itemPath, "*", SearchOption.AllDirectories))
+                            {
+                                try
+                                {
+                                    var fi = new FileInfo(file);
+                                    await conn.SendJsonAsync(new { op = "f", p = file.Replace('\\', '/'), s = fi.Length, t = fi.LastWriteTimeUtc.Ticks }, ct);
+                                }
+                                catch { }
+                            }
+                        }
+                    }
+                    else
+                    {
+                        var fi = new FileInfo(itemPath);
+                        if (fi.Exists)
+                            await conn.SendJsonAsync(new { op = "f", p = itemPath.Replace('\\', '/'), s = fi.Length, t = fi.LastWriteTimeUtc.Ticks }, ct);
+                    }
+                    await conn.SendJsonAsync(new { op = "mend" }, ct);
+                    _log($"文件清单已发送，等待对方选择要拉取的文件...");
+
+                    var req = await conn.RecvJsonAsync(ct)
+                        ?? throw new EndOfStreamException("连接已断开");
+                    var paths = req.GetProperty("paths").EnumerateArray().Select(x => x.GetString()!).ToList();
+
+                    int sent = 0;
+                    _log(paths.Count == 0 ? "对方无需拉取文件。" : $"对方要拉取 {paths.Count} 个文件，开始发送...");
+                    if (paths.Count > 0 && paths.Count < 10)
+                        foreach (var p in paths) _log("  → " + p);
+                    await TransferSide.SendRequestedFilesAsync(conn, paths,
+                        (_, _) => { if (++sent % 25 == 0 || sent == paths.Count) _log($"已发送 {sent}/{paths.Count} 个文件..."); }, ct);
+                    _log("文件发送完成");
+
+                    await conn.SendJsonAsync(new { op = "bye", msgs = Array.Empty<string>() }, ct);
+                    _log("拉取传输完成");
                 }
                 else if (role == Constants.RoleUpdate)
                 {

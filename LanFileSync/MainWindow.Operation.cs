@@ -165,7 +165,11 @@ public partial class MainWindow
 
     private async void BtnSync_Click(object sender, RoutedEventArgs e)
     {
-        if (tabs.SelectedIndex == 2) { await TransferToRemoteAsync(); return; }
+        if (tabs.SelectedIndex == 2)
+        {
+            if (rbTransferPull.IsChecked == true) { await TransferFromRemoteAsync(); return; }
+            await TransferToRemoteAsync(); return;
+        }
         if (rbSyncShare.IsChecked == true) { await SyncFromShareAsync(); return; }
         List<string> hosts;
         try { hosts = IpHelper.ExpandIps(cboPeerIp.Text ?? ""); }
@@ -300,6 +304,64 @@ public partial class MainWindow
         if (failed.Count > 0) DarkMessageBox.Show("以下电脑传输失败：\n" + string.Join("\n", failed), "部分失败", MessageBoxButton.OK, MessageBoxImage.Warning);
     }
 
+    private async Task TransferFromRemoteAsync()
+    {
+        string itemPath = txtTransferPath.Text.Trim();
+        if (string.IsNullOrWhiteSpace(itemPath)) { DarkMessageBox.Show("请先输入要拉取的文件或文件夹路径。", "提示", MessageBoxButton.OK, MessageBoxImage.Information); return; }
+        List<string> hosts;
+        try { hosts = IpHelper.ExpandIps(cboPeerIp.Text ?? ""); }
+        catch (FormatException ex) { DarkMessageBox.Show(ex.Message, "错误", MessageBoxButton.OK, MessageBoxImage.Warning); return; }
+        if (hosts.Count == 0) { DarkMessageBox.Show("请输入对方 IP 或范围。", "提示", MessageBoxButton.OK, MessageBoxImage.Information); return; }
+        if (!TryGetPeerPort(out int port)) { DarkMessageBox.Show("对方端口无效。", "错误", MessageBoxButton.OK, MessageBoxImage.Warning); return; }
+
+        string deviceInfo = hosts.Count == 1 ? await GetDeviceInfo(hosts[0]) : "";
+        string deviceName = hosts.Count == 1 ? (await ProbeDeviceNameAsync(hosts[0], port)) : "";
+
+        if (DarkMessageBox.Show("确认从远端拉取文件？\n\n将从[" + cboPeerIp.Text + "]" + deviceInfo + "拉取 [" + itemPath + "]。\n拉取的文件按原路径结构保存到本地，命名为 名称_设备信息_日期，不修改本地原有文件。", "确认", MessageBoxButton.OKCancel, MessageBoxImage.Question) != MessageBoxResult.OK) return;
+
+        StartBusy();
+        var ct = _coordinator.Token; _opLabel = "拉取";
+        var okIps = new List<string>(); var failed = new List<string>();
+        try
+        {
+            foreach (var host in hosts)
+            {
+                try
+                {
+                    using var client = new PeerClient();
+                    await client.ConnectAsync(host, port, Constants.RoleTransferPull, ct);
+                    LogDivider(); LogLine($"从 {host}:{port} 拉取文件(远端路径: {itemPath})...");
+                    await client.TransferFromRemoteAsync(itemPath, deviceName, LogLine, OnFileProgress, OnTotal, m => LogLineError("远端电脑: " + m), ct);
+                    okIps.Add(host); LogLine($"拉取完成: {host}");
+                }
+                catch (OperationCanceledException) { throw; }
+                catch (Exception ex) { failed.Add($"{host} - {ex.Message}"); LogLineError($"拉取失败 {host}: {ex.Message}"); }
+            }
+        }
+        catch (OperationCanceledException) { LogLine("已取消"); }
+        finally
+        {
+            if (okIps.Count > 0) { foreach (var ip in okIps) _history.Upsert(ip, port); ReloadHistoryCombo(); }
+            EndBusy();
+        }
+        if (okIps.Count > 0) txtStatus.Text = hosts.Count > 1 ? $"拉取完成({okIps.Count}/{hosts.Count} 台)" : "拉取完成";
+        if (failed.Count > 0) DarkMessageBox.Show("以下电脑拉取失败：\n" + string.Join("\n", failed), "部分失败", MessageBoxButton.OK, MessageBoxImage.Warning);
+    }
+
+    private async Task<string> ProbeDeviceNameAsync(string host, int port)
+    {
+        try
+        {
+            var client = new PeerClient();
+            using var cts = new CancellationTokenSource(TimeSpan.FromSeconds(5));
+            await client.ConnectAsync(host, port, Constants.RoleProbe, cts.Token);
+            var (name, line) = await client.ProbeDeviceAsync(cts.Token);
+            client.Dispose();
+            return string.IsNullOrWhiteSpace(name) ? host : name;
+        }
+        catch { return host; }
+    }
+
     private void LogBackupSummary(string what, BackupEngine engine, int total)
     {
         int copied = engine.CopiedCount, skipped = engine.SkippedCount;
@@ -311,6 +373,15 @@ public partial class MainWindow
     {
         if (grpShare == null || rbSyncShare == null || rbBackupShare == null) return;
         grpShare.Visibility = ((rbSyncShare.IsChecked == true) || (rbBackupShare.IsChecked == true)) ? Visibility.Visible : Visibility.Collapsed;
+    }
+
+    private void RbTransferDir_Changed(object sender, RoutedEventArgs e)
+    {
+        if (!IsLoaded) return;
+        bool isPull = rbTransferPull.IsChecked == true;
+        txtTransferHint.Text = isPull
+            ? "从远端电脑拉取输入路径的文件/文件夹，按原路径结构保存到本地(文件命名为 名称_设备信息_日期，文件夹命名为 文件夹名_设备信息_日期)，不修改本地原有文件。"
+            : "将选中的文件/文件夹同步到对方电脑的相同路径(对方需先\u201c启动服务\u201d;)。同名同大小同修改时间的文件会跳过。";
     }
 
     private void RbDir_Changed(object sender, RoutedEventArgs e)

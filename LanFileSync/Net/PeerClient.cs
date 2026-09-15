@@ -174,6 +174,139 @@ public sealed class PeerClient : IDisposable
         log("对方已应用完成");
     }
 
+    public async Task TransferFromRemoteAsync(
+        string remotePath,
+        string deviceName,
+        Action<string> log,
+        Action<string, long> onFile,
+        Action<int> onTotal,
+        Action<string> onError,
+        CancellationToken ct)
+    {
+        // 请求远端发送文件清单(isDir 由远端根据其文件系统自行判断)
+        await _conn!.SendJsonAsync(new { op = "tinit", p = remotePath.Replace('\\', '/') }, ct);
+        log("已请求远端文件清单，等待对方计算...");
+
+        var list = new List<FileEntry>();
+        await TargetSide.ReceiveManifestAsync(_conn, ct, list);
+        log($"已收到远端文件清单({list.Count} 项)...");
+
+        // 从远端同步不修改本地文件，拉取所有文件
+        var needPaths = list.Select(e => e.RelPath).ToList();
+        onTotal(needPaths.Count);
+        log(needPaths.Count == 0 ? "远端无匹配文件。" : $"准备拉取 {needPaths.Count} 个文件...");
+
+        // 发送请求列表
+        await _conn.SendJsonAsync(new { op = "req", paths = needPaths }, ct);
+
+        // 保存规则(直接复用 TextBox 中的路径结构，不修改本地原文件)：
+        //   单文件：保存到同目录，命名为 名称_设备信息_日期.扩展名
+        //   文件夹：保存到同级的 文件夹名_设备信息_日期 目录，保留相对目录结构
+        string dateStr = DateTime.Now.ToString("yyyyMMdd");
+        string deviceTag = string.IsNullOrWhiteSpace(deviceName) ? "远端" : SanitizeFileName(deviceName);
+        string normRemote = remotePath.Replace('/', Path.DirectorySeparatorChar).TrimEnd(Path.DirectorySeparatorChar);
+        bool dirMode = list.Count != 1
+            || !string.Equals(list[0].RelPath.Replace('/', Path.DirectorySeparatorChar), normRemote, StringComparison.OrdinalIgnoreCase);
+
+        string saveRoot;
+        if (dirMode)
+        {
+            string parent = Path.GetDirectoryName(normRemote) ?? "";
+            string folder = Path.GetFileName(normRemote);
+            saveRoot = UniquePath(Path.Combine(parent, $"{folder}_{deviceTag}_{dateStr}"), isDir: true);
+        }
+        else
+        {
+            saveRoot = Path.GetDirectoryName(normRemote) ?? "";
+        }
+        Directory.CreateDirectory(saveRoot);
+
+        int received = 0;
+        while (true)
+        {
+            var frame = await _conn.RecvJsonAsync(ct)
+                ?? throw new EndOfStreamException("连接已断开");
+            string op = frame.GetProperty("op").GetString()!;
+            if (op == "done") break;
+            if (op == "skip")
+            {
+                string skipPath = frame.GetProperty("p").GetString()!;
+                onError?.Invoke("远端跳过: " + skipPath + " (" + frame.GetProperty("msg").GetString() + ")");
+                continue;
+            }
+            if (op != "data") throw new InvalidOperationException("未知消息: " + op);
+
+            string path = frame.GetProperty("p").GetString()!;
+            long size = frame.GetProperty("s").GetInt64();
+            string localPath = path.Replace('/', Path.DirectorySeparatorChar);
+
+            string savedPath;
+            if (dirMode)
+            {
+                string rel = localPath.StartsWith(normRemote + Path.DirectorySeparatorChar, StringComparison.OrdinalIgnoreCase)
+                    ? localPath[(normRemote.Length + 1)..]
+                    : Path.GetFileName(localPath);
+                savedPath = Path.Combine(saveRoot, rel);
+            }
+            else
+            {
+                string baseName = Path.GetFileNameWithoutExtension(localPath);
+                string ext = Path.GetExtension(localPath);
+                savedPath = UniquePath(Path.Combine(saveRoot, $"{baseName}_{deviceTag}_{dateStr}{ext}"), isDir: false);
+            }
+
+            string? savedDir = Path.GetDirectoryName(savedPath);
+            if (!string.IsNullOrEmpty(savedDir)) Directory.CreateDirectory(savedDir);
+            using (var fs = new FileStream(savedPath, FileMode.Create, FileAccess.Write, FileShare.None, 128 * 1024))
+            {
+                var buf = new byte[128 * 1024];
+                long remaining = size;
+                while (remaining > 0)
+                {
+                    int toRead = (int)Math.Min(buf.Length, remaining);
+                    await _conn.ReadRawAsync(buf, toRead, ct);
+                    await fs.WriteAsync(buf.AsMemory(0, toRead), ct);
+                    remaining -= toRead;
+                }
+            }
+
+            received++;
+            onFile?.Invoke(savedPath, size);
+            if (received % 10 == 0 || received == needPaths.Count)
+                log($"已拉取 {received}/{needPaths.Count} 个文件...");
+        }
+
+        var resp = await _conn.RecvJsonAsync(ct)
+            ?? throw new EndOfStreamException("连接已断开");
+        string rop = resp.GetProperty("op").GetString()!;
+        if (rop == "err")
+            throw new InvalidOperationException(resp.GetProperty("msg").GetString());
+
+        foreach (var m in resp.GetProperty("msgs").EnumerateArray())
+            onError?.Invoke(m.GetString() ?? "");
+
+        log($"从远端拉取完成({received} 个文件保存到 {saveRoot})");
+    }
+
+    private static string SanitizeFileName(string name)
+    {
+        foreach (char c in Path.GetInvalidFileNameChars()) name = name.Replace(c, '_');
+        return name;
+    }
+
+    private static string UniquePath(string path, bool isDir)
+    {
+        if (!(isDir ? Directory.Exists(path) : File.Exists(path))) return path;
+        string parent = Path.GetDirectoryName(path) ?? "";
+        string baseName = isDir ? Path.GetFileName(path) : Path.GetFileNameWithoutExtension(path);
+        string ext = isDir ? "" : Path.GetExtension(path);
+        for (int i = 1; ; i++)
+        {
+            string candidate = Path.Combine(parent, $"{baseName}_{i}{ext}");
+            if (!(isDir ? Directory.Exists(candidate) : File.Exists(candidate))) return candidate;
+        }
+    }
+
     public void Dispose()
     {
         _conn?.Dispose();

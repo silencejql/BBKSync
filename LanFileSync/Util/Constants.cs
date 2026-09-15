@@ -17,6 +17,7 @@ internal static class Constants
     internal const string RolePull = "pull";
     internal const string RoleProbe = "probe";
     internal const string RoleTransfer = "transfer";
+    internal const string RoleTransferPull = "transfer-pull";
     internal const string RoleUpdate = "update";
     internal const string RoleProcessClose = "process-close";
     internal const string RoleProcessOpen = "process-open";
