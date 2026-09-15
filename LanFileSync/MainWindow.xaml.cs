@@ -118,9 +118,9 @@ public partial class MainWindow : Window
         txtTransferPath.Text = _settings.Settings.Transfer.Path;
         cbTransferSameSkip.IsChecked = _settings.Settings.Transfer.SameSkip;
         FreeFormKiller.ProcessPrefix = _settings.Settings.Process.ProcessPrefix;
-        txtProcessPath.Text = _settings.Settings.Process.ProcessPath;
-        txtProcessKillNames.Text = _settings.Settings.Process.ProcessKillNames;
-        txtProcessFileSuffixes.Text = _settings.Settings.Process.ProcessFileSuffixes;
+        cboProcessPath.Text = _settings.Settings.Process.ProcessPath;
+        cboProcessKillNames.Text = _settings.Settings.Process.ProcessKillNames;
+        cboProcessFileSuffixes.Text = _settings.Settings.Process.ProcessFileSuffixes;
         chkAutoStart.IsChecked = _settings.Settings.Server.AutoStartAndListen;
         rbReceive.IsChecked = true;
         RbBackupSource_Changed(null, null!);
@@ -440,7 +440,7 @@ public partial class MainWindow : Window
         "rbBackupShare","txtShareIp","txtSharePath","txtShareUser","pwdSharePass","btnShareTest",
         "rbSyncShare","chkAutoStart","txtTransferPath","cbTransferSameSkip","cbTransferUpdate","rbTransferPush","rbTransferPull",
         "cbRunPreBackupBat","cbBinReplace","cbUpdateCompressZip",
-        "txtProcessPath","txtProcessKillNames","txtProcessFileSuffixes","btnProcessOpen","btnProcessClose","btnProcessFetchFiles",
+        "cboProcessPath","cboProcessKillNames","cboProcessFileSuffixes","btnProcessOpen","btnProcessClose","btnProcessFetchFiles",
     };
 
     private void BtnClearLog_Click(object sender, RoutedEventArgs e) { txtLog?.Document.Blocks.Clear(); }
@@ -587,9 +587,9 @@ public partial class MainWindow : Window
         _settings.Settings.Backup.AutoFetchComputerName = cbAutoFetchName.IsChecked == true;
         _settings.Settings.Transfer.Path = txtTransferPath.Text.Trim();
         _settings.Settings.Transfer.SameSkip = cbTransferSameSkip.IsChecked ?? true;
-        _settings.Settings.Process.ProcessPath = txtProcessPath.Text.Trim();
-        _settings.Settings.Process.ProcessKillNames = txtProcessKillNames.Text.Trim();
-        _settings.Settings.Process.ProcessFileSuffixes = txtProcessFileSuffixes.Text.Trim();
+        _settings.Settings.Process.ProcessPath = cboProcessPath.Text.Trim();
+        _settings.Settings.Process.ProcessKillNames = cboProcessKillNames.Text.Trim();
+        _settings.Settings.Process.ProcessFileSuffixes = cboProcessFileSuffixes.Text.Trim();
         _settings.Save();
     }
 
@@ -615,7 +615,7 @@ public partial class MainWindow : Window
             Filter = "可执行文件 (*.exe)|*.exe|所有文件 (*.*)|*.*",
         };
         if (dlg.ShowDialog() == true)
-            txtProcessPath.Text = dlg.FileName;
+            cboProcessPath.Text = dlg.FileName;
     }
 
     private async void BtnProcessFetchFiles_Click(object sender, RoutedEventArgs e)
@@ -626,8 +626,8 @@ public partial class MainWindow : Window
         catch (FormatException ex) { DarkMessageBox.Show(ex.Message, "错误", MessageBoxButton.OKCancel, MessageBoxImage.Warning); return; }
         if (hosts.Count == 0) { DarkMessageBox.Show("请输入远端 IP 或范围。", "提示", MessageBoxButton.OKCancel, MessageBoxImage.Information); return; }
 
-        string savedText = txtProcessPath.Text;
-        txtProcessPath.ItemsSource = null;
+        string savedText = cboProcessPath.Text;
+        cboProcessPath.ItemsSource = null;
             txtProcessStatus.Text = "正在获取文件列表...";
         StartBusy();
         var ct = _coordinator.Token; _opLabel = "获取文件列表";
@@ -642,7 +642,7 @@ public partial class MainWindow : Window
                     using var client = new PeerClient();
                     await client.ConnectAsync(host, port, Constants.RoleFileList, ct);
                     LogDivider(); LogLine($"连接 {host}:{port}，获取远端文件列表...");
-                    var paths = await client.FileListAsync(txtProcessFileSuffixes.Text, ct);
+                    var paths = await client.FileListAsync(cboProcessFileSuffixes.Text, ct);
                     allPaths.AddRange(paths);
                     okIps.Add(host);
                     txtProcessStatus.Text = $"{host}: 找到 {paths.Count} 个文件";
@@ -658,16 +658,16 @@ public partial class MainWindow : Window
         if (allPaths.Count > 0)
         {
             var distinct = allPaths.Distinct(StringComparer.OrdinalIgnoreCase).OrderBy(p => p, StringComparer.OrdinalIgnoreCase).ToList();
-            txtProcessPath.ItemsSource = distinct;
-            txtProcessPath.Text = savedText;
-            txtProcessPath.IsDropDownOpen = true;
+            cboProcessPath.ItemsSource = distinct;
+            cboProcessPath.Text = savedText;
+            cboProcessPath.IsDropDownOpen = true;
             txtProcessStatus.Text = $"共 {distinct.Count} 个文件，已在下拉列表中供选择";
             LogLine($"文件列表完成: {distinct.Count} 个文件");
         }
         else
         {
-            txtProcessPath.ItemsSource = null;
-            txtProcessPath.Text = savedText;
+            cboProcessPath.ItemsSource = null;
+            cboProcessPath.Text = savedText;
             txtProcessStatus.Text = "未找到匹配文件";
             LogLine("未找到匹配文件");
         }
@@ -683,8 +683,8 @@ public partial class MainWindow : Window
         catch (FormatException ex) { DarkMessageBox.Show(ex.Message, "错误", MessageBoxButton.OK, MessageBoxImage.Warning); return; }
         if (hosts.Count == 0) { DarkMessageBox.Show("请输入远端 IP 或范围。", "提示", MessageBoxButton.OK, MessageBoxImage.Information); return; }
         string deviceInfo = hosts.Count == 1 ? await GetDeviceInfo(hosts[0]) : "";
-        if (DarkMessageBox.Show("确认关闭指定电脑的应用程序？\n\n[" + cboPeerIp.Text + "]" + deviceInfo + "\n\n程序前缀名：" + txtProcessKillNames.Text + "。", "确认", MessageBoxButton.OKCancel, MessageBoxImage.Question) != MessageBoxResult.OK) return;
-        string[] killNames = txtProcessKillNames.Text
+        if (DarkMessageBox.Show("确认关闭指定电脑的应用程序？\n\n[" + cboPeerIp.Text + "]" + deviceInfo + "\n\n程序前缀名：" + cboProcessKillNames.Text + "。", "确认", MessageBoxButton.OKCancel, MessageBoxImage.Question) != MessageBoxResult.OK) return;
+        string[] killNames = cboProcessKillNames.Text
             .Split(new[] { ',', '，', ';', '；' }, StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries)
             .Where(s => s.Length > 0).ToArray();
         StartBusy();
@@ -747,7 +747,7 @@ public partial class MainWindow : Window
             DarkMessageBox.Show($"请等待 {sec} 秒后再试。", "提示", MessageBoxButton.OK, MessageBoxImage.Information);
             return;
         }
-        string exePath = txtProcessPath.Text.Trim();
+        string exePath = cboProcessPath.Text.Trim();
         if (string.IsNullOrWhiteSpace(exePath)) { DarkMessageBox.Show("请输入程序路径。", "提示", MessageBoxButton.OK, MessageBoxImage.Information); return; }
         if (!TryGetPeerPort(out int port)) { DarkMessageBox.Show("远端端口无效。", "错误", MessageBoxButton.OK, MessageBoxImage.Warning); return; }
         List<string> hosts;
