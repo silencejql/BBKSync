@@ -434,7 +434,7 @@ public partial class MainWindow : Window
         "txtBackupDest","cbAutoFetchName","cbBackupLogRule","cbBackupBeforeSync","cbCompressZip",
         "cbIgnoreEnabled","txtBackupIgnore","txtBackupLogDays","rbBackupLocal","rbBackupRemote",
         "rbBackupShare","txtShareIp","txtSharePath","txtShareUser","pwdSharePass","btnShareTest",
-        "rbSyncShare","chkAutoStart","txtTransferPath","cbTransferSameSkip",
+        "rbSyncShare","chkAutoStart","txtTransferPath","cbTransferSameSkip","cbTransferUpdate","rbTransferPush","rbTransferPull",
         "cbRunPreBackupBat","cbBinReplace","cbUpdateCompressZip",
         "txtProcessPath","txtProcessKillNames","txtProcessFileSuffixes","btnProcessOpen","btnProcessClose","btnProcessFetchFiles",
     };

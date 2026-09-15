@@ -235,16 +235,24 @@ public sealed class PeerServer : IDisposable
                     string itemPath = init.GetProperty("p").GetString()!;
                     bool isDir = init.GetProperty("isDir").GetBoolean();
                     bool sameSkip = init.GetProperty("sameSkip").GetBoolean();
-                    _log($"收到传输请求(本机为目标)：{itemPath}({(isDir ? "文件夹" : "文件")})...");
+                    bool updateMode = !init.TryGetProperty("update", out var upd) || upd.GetBoolean();
+                    string sourceDev = init.TryGetProperty("dev", out var dv) ? dv.GetString() ?? "" : "";
+                    // 更新模式备份的是本机(目标)文件，用本机设备名；拷贝模式保留来源设备名
+                    string ownName = DeviceConfig.ReadFromRoot(_root).Name;
+                    if (string.IsNullOrWhiteSpace(ownName)) ownName = Environment.MachineName;
+                    string deviceTag = updateMode ? ownName : (string.IsNullOrWhiteSpace(sourceDev) ? ownName : sourceDev);
+                    _log($"收到传输请求(本机为目标，{(updateMode ? "更新模式" : "拷贝模式")})：{itemPath}({(isDir ? "文件夹" : "文件")})...");
 
                     var list = new List<FileEntry>();
                     await TargetSide.ReceiveManifestAsync(conn, ct, list);
-                    _log($"已收到对方文件清单({list.Count} 项)，按本机电脑相同路径计算需要更新的文件...");
+                    _log(updateMode
+                        ? $"已收到对方文件清单({list.Count} 项)，按本机相同路径计算需要更新的文件..."
+                        : $"已收到对方文件清单({list.Count} 项)，拷贝模式全部保存为重命名副本...");
 
-                    var engine = new TransferEngine(itemPath, isDir, sameSkip);
+                    var engine = new TransferEngine(itemPath, isDir, sameSkip, updateMode, deviceTag);
                     engine.Plan(list);
 
-                    if (engine.NeedList.Count > 0)
+                    if (updateMode && engine.NeedList.Count > 0)
                     {
                         bool ok = engine.BackupItem(_log, m => _onError("备份: " + m));
                         if (!ok)
@@ -253,6 +261,9 @@ public sealed class PeerServer : IDisposable
                             throw new InvalidOperationException("更新前自动备份失败");
                         }
                     }
+
+                    if (!updateMode && engine.NeedList.Count > 0)
+                        _log($"拷贝文件将保存到: {engine.EffectiveTarget}");
 
                     _onTotal(engine.NeedList.Count);
                     await conn.SendJsonAsync(new { op = "need", paths = engine.NeedList }, ct);

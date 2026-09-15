@@ -7,14 +7,32 @@ public sealed class TransferEngine
     private readonly string _itemPath;
     private readonly bool _itemIsDir;
     private readonly bool _sameSkip;
+    private readonly bool _updateMode;
+    private readonly string _deviceTag;
+    private readonly string _date;
+    private readonly string? _copyRoot;
     private readonly List<string> _needed = new();
 
-    public TransferEngine(string itemPath, bool isDir, bool sameSkip)
+    public TransferEngine(string itemPath, bool isDir, bool sameSkip, bool updateMode, string deviceTag)
     {
         _itemPath = itemPath.Replace('/', Path.DirectorySeparatorChar);
         _itemIsDir = isDir;
         _sameSkip = sameSkip;
+        _updateMode = updateMode;
+        _deviceTag = SanitizeName(string.IsNullOrWhiteSpace(deviceTag) ? "远端" : deviceTag);
+        _date = DateTime.Now.ToString("yyyyMMdd");
+
+        // 拷贝模式的落盘根目录(与原项目同级，命名为 文件夹名_设备信息_日期)
+        if (!_updateMode && _itemIsDir)
+        {
+            string parent = Path.GetDirectoryName(_itemPath) ?? "";
+            string folder = Path.GetFileName(_itemPath.TrimEnd(Path.DirectorySeparatorChar));
+            _copyRoot = UniquePath(Path.Combine(parent, $"{folder}_{_deviceTag}_{_date}"), isDir: true);
+        }
     }
+
+    /// <summary>拷贝模式下实际保存位置(文件为目录，文件夹为新文件夹根)。</summary>
+    public string EffectiveTarget => _copyRoot ?? (Path.GetDirectoryName(_itemPath) ?? "");
 
     public IReadOnlyList<string> NeedList => _needed;
 
@@ -25,7 +43,8 @@ public sealed class TransferEngine
         _needed.Clear();
         foreach (var f in remote)
         {
-            if (_sameSkip && !NeedsUpdate(f))
+            // 拷贝模式不覆盖原文件，全部需要；更新模式按 sameSkip 判断
+            if (_updateMode && _sameSkip && !NeedsUpdate(f))
                 continue;
             _needed.Add(f.RelPath);
         }
@@ -45,16 +64,15 @@ public sealed class TransferEngine
 
     public bool BackupItem(Action<string> log, Action<string> onError)
     {
-        string date = DateTime.Now.ToString("yyyyMMdd");
         string backupPath;
         if (_itemIsDir)
-            backupPath = _itemPath + "-更新自动备份-" + date;
+            backupPath = _itemPath + "_" + _deviceTag + "_" + _date;
         else
         {
             string dirOf = Path.GetDirectoryName(_itemPath) ?? "";
             string nameOf = Path.GetFileNameWithoutExtension(_itemPath);
             string extOf = Path.GetExtension(_itemPath);
-            backupPath = Path.Combine(dirOf, nameOf + "-更新自动备份-" + date + extOf);
+            backupPath = Path.Combine(dirOf, nameOf + "_" + _deviceTag + "_" + _date + extOf);
         }
         if (File.Exists(backupPath) || Directory.Exists(backupPath))
         {
@@ -167,9 +185,56 @@ public sealed class TransferEngine
         try { onError(msg); } catch { }
     }
 
+    private void WriteOneAsyncTarget(string p, out string target)
+    {
+        string original = p.Replace('/', Path.DirectorySeparatorChar);
+        if (_updateMode)
+        {
+            target = original;
+            return;
+        }
+
+        if (_itemIsDir)
+        {
+            // 文件夹拷贝：保留相对结构，落到 文件夹名_设备信息_日期 新目录
+            string root = _itemPath.TrimEnd(Path.DirectorySeparatorChar);
+            string rel = original.StartsWith(root + Path.DirectorySeparatorChar, StringComparison.OrdinalIgnoreCase)
+                ? original[(root.Length + 1)..]
+                : Path.GetFileName(original);
+            target = Path.Combine(_copyRoot!, rel);
+        }
+        else
+        {
+            // 单文件拷贝：同目录，命名为 名称_设备信息_日期.扩展名(避免重名)
+            string dirOf = Path.GetDirectoryName(_itemPath) ?? "";
+            string nameOf = Path.GetFileNameWithoutExtension(original);
+            string extOf = Path.GetExtension(original);
+            target = UniquePath(Path.Combine(dirOf, $"{nameOf}_{_deviceTag}_{_date}{extOf}"), isDir: false);
+        }
+    }
+
+    private static string SanitizeName(string name)
+    {
+        foreach (char c in Path.GetInvalidFileNameChars()) name = name.Replace(c, '_');
+        return name;
+    }
+
+    private static string UniquePath(string path, bool isDir)
+    {
+        if (!(isDir ? Directory.Exists(path) : File.Exists(path))) return path;
+        string parent = Path.GetDirectoryName(path) ?? "";
+        string baseName = isDir ? Path.GetFileName(path) : Path.GetFileNameWithoutExtension(path);
+        string ext = isDir ? "" : Path.GetExtension(path);
+        for (int i = 1; ; i++)
+        {
+            string candidate = Path.Combine(parent, $"{baseName}_{i}{ext}");
+            if (!(isDir ? Directory.Exists(candidate) : File.Exists(candidate))) return candidate;
+        }
+    }
+
     private async Task WriteOneAsync(PeerConnection peer, string p, long size, long mtimeTicks, Action<string> log, Action<string> onError, CancellationToken ct)
     {
-        string target = p.Replace('/', Path.DirectorySeparatorChar);
+        WriteOneAsyncTarget(p, out string target);
         Directory.CreateDirectory(Path.GetDirectoryName(target)!);
         string tmp = target + "." + Guid.NewGuid().ToString("N") + ".tmp";
 

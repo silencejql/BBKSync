@@ -141,13 +141,15 @@ public sealed class PeerClient : IDisposable
         string itemPath,
         bool isDir,
         bool sameSkip,
+        bool updateMode,
+        string deviceTag,
         Action<string> log,
         Action<string, long> onFile,
         Action<int> onTotal,
         Action<string> onError,
         CancellationToken ct)
     {
-        await TransferSide.SendTransferManifestAsync(_conn!, itemPath, isDir, sameSkip, ct);
+        await TransferSide.SendTransferManifestAsync(_conn!, itemPath, isDir, sameSkip, updateMode, deviceTag, ct);
         log("传输文件清单已发送，等待对方按相同路径计算...");
 
         var frame = await _conn!.RecvJsonAsync(ct)
@@ -176,7 +178,9 @@ public sealed class PeerClient : IDisposable
 
     public async Task TransferFromRemoteAsync(
         string remotePath,
-        string deviceName,
+        bool updateMode,
+        string remoteDevice,
+        string localDevice,
         Action<string> log,
         Action<string, long> onFile,
         Action<int> onTotal,
@@ -196,30 +200,38 @@ public sealed class PeerClient : IDisposable
         onTotal(needPaths.Count);
         log(needPaths.Count == 0 ? "远端无匹配文件。" : $"准备拉取 {needPaths.Count} 个文件...");
 
-        // 发送请求列表
-        await _conn.SendJsonAsync(new { op = "req", paths = needPaths }, ct);
-
-        // 保存规则(直接复用 TextBox 中的路径结构，不修改本地原文件)：
-        //   单文件：保存到同目录，命名为 名称_设备信息_日期.扩展名
-        //   文件夹：保存到同级的 文件夹名_设备信息_日期 目录，保留相对目录结构
         string dateStr = DateTime.Now.ToString("yyyyMMdd");
-        string deviceTag = string.IsNullOrWhiteSpace(deviceName) ? "远端" : SanitizeFileName(deviceName);
         string normRemote = remotePath.Replace('/', Path.DirectorySeparatorChar).TrimEnd(Path.DirectorySeparatorChar);
         bool dirMode = list.Count != 1
             || !string.Equals(list[0].RelPath.Replace('/', Path.DirectorySeparatorChar), normRemote, StringComparison.OrdinalIgnoreCase);
 
+        // 更新模式：先把本地原文件/文件夹重命名为 名称_本地设备_日期，然后拉取到原路径
+        // 拷贝模式：不动原文件，另存为 名称_来源设备_日期
         string saveRoot;
-        if (dirMode)
+        if (updateMode)
         {
-            string parent = Path.GetDirectoryName(normRemote) ?? "";
-            string folder = Path.GetFileName(normRemote);
-            saveRoot = UniquePath(Path.Combine(parent, $"{folder}_{deviceTag}_{dateStr}"), isDir: true);
+            string localTag = SanitizeFileName(string.IsNullOrWhiteSpace(localDevice) ? Environment.MachineName : localDevice);
+            RenameLocalForUpdate(normRemote, dirMode, localTag, dateStr, log);
+            saveRoot = normRemote;
         }
         else
         {
-            saveRoot = Path.GetDirectoryName(normRemote) ?? "";
+            string sourceTag = SanitizeFileName(string.IsNullOrWhiteSpace(remoteDevice) ? "远端" : remoteDevice);
+            if (dirMode)
+            {
+                string parent = Path.GetDirectoryName(normRemote) ?? "";
+                string folder = Path.GetFileName(normRemote);
+                saveRoot = UniquePath(Path.Combine(parent, $"{folder}_{sourceTag}_{dateStr}"), isDir: true);
+            }
+            else
+            {
+                saveRoot = Path.GetDirectoryName(normRemote) ?? "";
+            }
         }
-        Directory.CreateDirectory(saveRoot);
+        Directory.CreateDirectory(dirMode ? saveRoot : (Path.GetDirectoryName(saveRoot) ?? saveRoot));
+
+        // 发送请求列表
+        await _conn.SendJsonAsync(new { op = "req", paths = needPaths }, ct);
 
         int received = 0;
         while (true)
@@ -248,11 +260,16 @@ public sealed class PeerClient : IDisposable
                     : Path.GetFileName(localPath);
                 savedPath = Path.Combine(saveRoot, rel);
             }
+            else if (updateMode)
+            {
+                savedPath = normRemote;
+            }
             else
             {
+                string sourceTag = SanitizeFileName(string.IsNullOrWhiteSpace(remoteDevice) ? "远端" : remoteDevice);
                 string baseName = Path.GetFileNameWithoutExtension(localPath);
                 string ext = Path.GetExtension(localPath);
-                savedPath = UniquePath(Path.Combine(saveRoot, $"{baseName}_{deviceTag}_{dateStr}{ext}"), isDir: false);
+                savedPath = UniquePath(Path.Combine(saveRoot, $"{baseName}_{sourceTag}_{dateStr}{ext}"), isDir: false);
             }
 
             string? savedDir = Path.GetDirectoryName(savedPath);
@@ -286,6 +303,30 @@ public sealed class PeerClient : IDisposable
             onError?.Invoke(m.GetString() ?? "");
 
         log($"从远端拉取完成({received} 个文件保存到 {saveRoot})");
+    }
+
+    /// <summary>更新模式拉取前，将本地已有文件/文件夹重命名为 名称_设备_日期。</summary>
+    private static void RenameLocalForUpdate(string itemPath, bool isDir, string deviceTag, string date, Action<string> log)
+    {
+        if (isDir)
+        {
+            if (!Directory.Exists(itemPath)) { log("本地文件夹不存在，无需重命名: " + itemPath); return; }
+            string parent = Path.GetDirectoryName(itemPath) ?? "";
+            string folder = Path.GetFileName(itemPath);
+            string renamed = UniquePath(Path.Combine(parent, $"{folder}_{deviceTag}_{date}"), isDir: true);
+            log($"更新前重命名本地文件夹: {itemPath} → {renamed}");
+            Directory.Move(itemPath, renamed);
+        }
+        else
+        {
+            if (!File.Exists(itemPath)) { log("本地文件不存在，无需重命名: " + itemPath); return; }
+            string dirOf = Path.GetDirectoryName(itemPath) ?? "";
+            string baseName = Path.GetFileNameWithoutExtension(itemPath);
+            string ext = Path.GetExtension(itemPath);
+            string renamed = UniquePath(Path.Combine(dirOf, $"{baseName}_{deviceTag}_{date}{ext}"), isDir: false);
+            log($"更新前重命名本地文件: {itemPath} → {renamed}");
+            File.Move(itemPath, renamed);
+        }
     }
 
     private static string SanitizeFileName(string name)

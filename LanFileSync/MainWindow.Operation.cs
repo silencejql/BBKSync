@@ -273,8 +273,14 @@ public partial class MainWindow
         if (hosts.Count == 0) { DarkMessageBox.Show("请输入对方 IP 或范围。", "提示", MessageBoxButton.OK, MessageBoxImage.Information); return; }
         if (!TryGetPeerPort(out int port)) { DarkMessageBox.Show("对方端口无效。", "错误", MessageBoxButton.OK, MessageBoxImage.Warning); return; }
         bool isDir = Directory.Exists(itemPath);
+        bool updateMode = cbTransferUpdate.IsChecked == true;
+        string localDevice = DeviceConfig.ReadFromRoot(txtRoot.Text.Trim()).Name;
+        if (string.IsNullOrWhiteSpace(localDevice)) localDevice = Environment.MachineName;
         string deviceInfo = hosts.Count == 1 ? await GetDeviceInfo(hosts[0]) : "";
-        if (DarkMessageBox.Show("确认开始传输？\n\n将把 [" + itemPath + "] 传输到[" + cboPeerIp.Text + "]" + deviceInfo + "电脑的相同路径(" + (isDir ? "文件夹" : "文件") + ")。\n\n传输前会自动备份对方相应的文件/文件夹。", "确认", MessageBoxButton.OKCancel, MessageBoxImage.Question) != MessageBoxResult.OK) return;
+        string modeDesc = updateMode
+            ? "更新模式：会先将对方原文件/文件夹重命名为 名称_设备信息_日期，再覆盖到相同路径。"
+            : "拷贝模式：不改动对方原文件，新文件以 名称_" + localDevice + "_日期 保存。";
+        if (DarkMessageBox.Show("确认开始同步？\n\n将对 [" + cboPeerIp.Text + "]" + deviceInfo + "电脑同步 [" + itemPath + "](" + (isDir ? "文件夹" : "文件") + ")。\n\n" + modeDesc, "确认", MessageBoxButton.OKCancel, MessageBoxImage.Question) != MessageBoxResult.OK) return;
         StartBusy();
         var ct = _coordinator.Token; _opLabel = "传输";
         var okIps = new List<string>(); var failed = new List<string>();
@@ -286,8 +292,8 @@ public partial class MainWindow
                 {
                     using var client = new PeerClient();
                     await client.ConnectAsync(host, port, Constants.RoleTransfer, ct);
-                    LogDivider(); LogLine($"传输到 {host}:{port}(目标路径不变，同名同大小同时跳过)...");
-                    await client.TransferAsync(itemPath, isDir, cbTransferSameSkip.IsChecked == true, LogLine, OnFileProgress, OnTotal, m => LogLineError("远端电脑: " + m), ct);
+                    LogDivider(); LogLine($"传输到 {host}:{port}({(updateMode ? "更新模式" : "拷贝模式")})...");
+                    await client.TransferAsync(itemPath, isDir, cbTransferSameSkip.IsChecked == true, updateMode, localDevice, LogLine, OnFileProgress, OnTotal, m => LogLineError("远端电脑: " + m), ct);
                     okIps.Add(host); LogLine($"传输完成: {host}");
                 }
                 catch (OperationCanceledException) { throw; }
@@ -316,8 +322,14 @@ public partial class MainWindow
 
         string deviceInfo = hosts.Count == 1 ? await GetDeviceInfo(hosts[0]) : "";
         string deviceName = hosts.Count == 1 ? (await ProbeDeviceNameAsync(hosts[0], port)) : "";
+        bool updateMode = cbTransferUpdate.IsChecked == true;
+        string localDevice = DeviceConfig.ReadFromRoot(txtRoot.Text.Trim()).Name;
+        if (string.IsNullOrWhiteSpace(localDevice)) localDevice = Environment.MachineName;
+        string modeDesc = updateMode
+            ? "更新模式：会先将本地原文件/文件夹重命名为 名称_" + localDevice + "_日期，再拉取到原路径。"
+            : "拷贝模式：不修改本地原文件，拉取的文件命名为 名称_" + (string.IsNullOrWhiteSpace(deviceName) ? "远端" : deviceName) + "_日期。";
 
-        if (DarkMessageBox.Show("确认从远端拉取文件？\n\n将从[" + cboPeerIp.Text + "]" + deviceInfo + "拉取 [" + itemPath + "]。\n拉取的文件按原路径结构保存到本地，命名为 名称_设备信息_日期，不修改本地原有文件。", "确认", MessageBoxButton.OKCancel, MessageBoxImage.Question) != MessageBoxResult.OK) return;
+        if (DarkMessageBox.Show("确认从远端同步？\n\n将从[" + cboPeerIp.Text + "]" + deviceInfo + "拉取 [" + itemPath + "]。\n" + modeDesc, "确认", MessageBoxButton.OKCancel, MessageBoxImage.Question) != MessageBoxResult.OK) return;
 
         StartBusy();
         var ct = _coordinator.Token; _opLabel = "拉取";
@@ -330,8 +342,8 @@ public partial class MainWindow
                 {
                     using var client = new PeerClient();
                     await client.ConnectAsync(host, port, Constants.RoleTransferPull, ct);
-                    LogDivider(); LogLine($"从 {host}:{port} 拉取文件(远端路径: {itemPath})...");
-                    await client.TransferFromRemoteAsync(itemPath, deviceName, LogLine, OnFileProgress, OnTotal, m => LogLineError("远端电脑: " + m), ct);
+                    LogDivider(); LogLine($"从 {host}:{port} 拉取文件(远端路径: {itemPath}，{(updateMode ? "更新模式" : "拷贝模式")})...");
+                    await client.TransferFromRemoteAsync(itemPath, updateMode, deviceName, localDevice, LogLine, OnFileProgress, OnTotal, m => LogLineError("远端电脑: " + m), ct);
                     okIps.Add(host); LogLine($"拉取完成: {host}");
                 }
                 catch (OperationCanceledException) { throw; }
@@ -375,13 +387,24 @@ public partial class MainWindow
         grpShare.Visibility = ((rbSyncShare.IsChecked == true) || (rbBackupShare.IsChecked == true)) ? Visibility.Visible : Visibility.Collapsed;
     }
 
+    private void CbTransferUpdate_Changed(object sender, RoutedEventArgs e)
+    {
+        if (!IsLoaded) return;
+        bool update = cbTransferUpdate.IsChecked == true;
+        if (cbTransferSameSkip != null) cbTransferSameSkip.IsEnabled = update;
+        if (txtTransferModeHint != null)
+            txtTransferModeHint.Text = update
+                ? "更新模式：同步给远端会先把远端原文件重命名为 名称_设备信息_日期 再覆盖；从远端同步会先把本地原文件重命名为 名称_设备信息_日期 再拉取到原路径。"
+                : "拷贝模式：不改动任何原文件。同步给远端的文件保存为 名称_本机设备_日期；从远端同步的文件保存为 名称_远端设备_日期。";
+    }
+
     private void RbTransferDir_Changed(object sender, RoutedEventArgs e)
     {
         if (!IsLoaded) return;
         bool isPull = rbTransferPull.IsChecked == true;
         txtTransferHint.Text = isPull
-            ? "从远端电脑拉取输入路径的文件/文件夹，按原路径结构保存到本地(文件命名为 名称_设备信息_日期，文件夹命名为 文件夹名_设备信息_日期)，不修改本地原有文件。"
-            : "将选中的文件/文件夹同步到对方电脑的相同路径(对方需先\u201c启动服务\u201d;)。同名同大小同修改时间的文件会跳过。";
+            ? "从远端电脑拉取输入路径的文件/文件夹。更新模式先重命名本地原文件再拉取到原路径；拷贝模式另存为 名称_设备信息_日期。"
+            : "将选中的文件/文件夹同步到对方电脑(对方需先\u201c启动服务\u201d;)。更新模式先重命名远端原文件再覆盖；拷贝模式另存为 名称_设备信息_日期。";
     }
 
     private void RbDir_Changed(object sender, RoutedEventArgs e)
