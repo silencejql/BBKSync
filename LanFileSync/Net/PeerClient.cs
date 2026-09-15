@@ -11,7 +11,9 @@ public sealed class PeerClient : IDisposable
     public async Task ConnectAsync(string host, int port, string role, CancellationToken ct, bool preBackupBat = false)
     {
         _tcp = new TcpClient();
-        await _tcp.ConnectAsync(host, port, ct);
+        using var connectCts = CancellationTokenSource.CreateLinkedTokenSource(ct);
+        connectCts.CancelAfter(TimeSpan.FromSeconds(Constants.ConnectTimeoutSeconds));
+        await _tcp.ConnectAsync(host, port, connectCts.Token);
         _conn = new PeerConnection(_tcp);
         await _conn.SendJsonAsync(new { hello = true, role, preBackupBat }, ct);
     }

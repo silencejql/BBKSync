@@ -12,6 +12,7 @@ internal static class Constants
     internal const int StreamBufferSize = 131_072;
     internal const int MaxRetryCount = 1;
     internal const int RetryDelayMs = 500;
+    internal const int ConnectTimeoutSeconds = 5;
     internal const long MaxFrameSize = 512_000_000;
     internal const string RolePush = "push";
     internal const string RolePull = "pull";
