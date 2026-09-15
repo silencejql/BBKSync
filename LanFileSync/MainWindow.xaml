@@ -172,10 +172,10 @@
                                                 <ColumnDefinition Width="Auto" />
                                                 <ColumnDefinition Width="Auto" />
                                             </Grid.ColumnDefinitions>
-                                            <TextBlock Text="BBK文件夹:" VerticalAlignment="Center" FontWeight="Bold" />
+                                            <TextBlock Text="BBK文件夹:" VerticalAlignment="Center" FontWeight="SemiBold" />
                                             <TextBox x:Name="txtRoot" Grid.Column="1" Margin="8,0,0,0" Height="30" HorizontalAlignment="Left" MinWidth="150" />
                                             <Button Grid.Column="2" Content="浏览..." Padding="12,6" Margin="8,0,0,0" Click="BtnBrowse_Click" />
-                                            <TextBlock Text="本机端口:" Grid.Column="3" Margin="8,0,0,0" VerticalAlignment="Center" HorizontalAlignment="Center" FontWeight="Bold" />
+                                            <TextBlock Text="本机端口:" Grid.Column="3" Margin="8,0,0,0" VerticalAlignment="Center" HorizontalAlignment="Center" FontWeight="SemiBold" />
                                             <TextBox x:Name="txtPort" Grid.Column="4" Margin="8,0,0,0" Height="30" Width="80" HorizontalAlignment="Right"
                                              ToolTip="本机服务监听端口" />
                                         </Grid>
@@ -196,7 +196,7 @@
                                     </StackPanel>
                                 </GroupBox>
 
-                                <GroupBox Grid.Column="1" Header="远端电脑(备份 / 更新)" Margin="14,0,0,0">
+                                <GroupBox Grid.Column="1" Header="远端电脑" Margin="14,0,0,0">
                                     <StackPanel>
                                         <Grid>
                                             <Grid.ColumnDefinitions>
@@ -206,10 +206,10 @@
                                                 <ColumnDefinition Width="Auto" />
                                                 <ColumnDefinition Width="Auto" />
                                             </Grid.ColumnDefinitions>
-                                            <TextBlock Text="IP/范围:" VerticalAlignment="Center" FontWeight="Bold" />
+                                            <TextBlock Text="IP/范围:" VerticalAlignment="Center" FontWeight="SemiBold" />
                                             <ComboBox x:Name="cboPeerIp" Grid.Column="1" Margin="8,0,0,0" Height="30" IsEditable="True"
                                           VerticalContentAlignment="Center"
-                                          ToolTip="可下拉选择历史记录或配置过的电脑，也可直接输入多个 IP(逗号分隔)或范围。例：192.168.1.5,192.168.1.8-10。">
+                                          ToolTip="可下拉选择历史记录，也可输入多个 IP（逗号分隔）或范围，如 192.168.1.5-8">
                                                 <ComboBox.ItemTemplate>
                                                     <DataTemplate>
                                                         <TextBlock Text="{Binding Label}" />
@@ -229,9 +229,9 @@
                                                 <ColumnDefinition Width="Auto" />
                                                 <ColumnDefinition Width="*" />
                                             </Grid.ColumnDefinitions>
-                                            <TextBlock Text="远端端口:" VerticalAlignment="Center" FontWeight="Bold" />
+                                            <TextBlock Text="远端端口:" VerticalAlignment="Center" FontWeight="SemiBold" />
                                             <TextBox x:Name="txtPeerPort" Grid.Column="1" Width="90" Margin="8,0,0,0" Height="30"
-                                             ToolTip="远端服务监听端口。软件打开后会自动启动服务，端口即以本机端口为准" />
+                                             ToolTip="远端服务监听端口，默认与本机端口一致" />
                                             <TextBlock Grid.Column="2" Margin="12,0,0,0" VerticalAlignment="Center"
                                                Foreground="{DynamicResource TextSubBrush}" TextWrapping="Wrap" FontSize="10"
                                                Text="多台依次处理：逗号分隔，或范围如 192.168.1.5-8、192.168.1.5-192.168.1.8" />
@@ -257,7 +257,7 @@
                                                 <RadioButton x:Name="rbBackupShare" GroupName="bsrc" Content="Windows共享" Margin="10,0,0,0" VerticalAlignment="Center" Checked="RbBackupSource_Changed" />
                                             </StackPanel>
                                             <TextBlock x:Name="txtBackupHint" Margin="0,7,0,0" Foreground="{DynamicResource TextSubBrush}" TextWrapping="Wrap" FontSize="10" FontWeight="Normal"
-                                               Text="局域网电脑备份用上方&#x201c;远端电脑&#x201d;的 IP/范围，逐台处理；Windows共享用下方连接。" />
+                                               Text="局域网电脑备份用上方「远端电脑」的 IP/范围，逐台处理；Windows共享用下方连接。" />
                                             <Grid Margin="0,10,0,0">
                                                 <Grid.ColumnDefinitions>
                                                     <ColumnDefinition Width="Auto" />
@@ -266,7 +266,7 @@
                                                 </Grid.ColumnDefinitions>
                                                 <TextBlock Text="备份到:" VerticalAlignment="Center" />
                                                 <TextBox x:Name="txtBackupDest" Grid.Column="1" Margin="8,0,0,0" Height="30" FontWeight="Normal"
-                                                 ToolTip="备份目标父目录，实际自动存入 备份目录\BBK_电脑名称_日期(可为本地盘或已映射的网络盘)" />
+                                                 ToolTip="备份目标父目录，自动存入 备份目录\BBK_电脑名称_日期" />
                                                 <Button Grid.Column="2" Content="浏览..." Padding="12,6" Margin="8,0,0,0" Click="BtnBackupBrowse_Click" />
                                             </Grid>
                                             <StackPanel Orientation="Horizontal" Margin="0,8,0,0">
@@ -280,10 +280,10 @@
                                                   Content="自动获取设备配置"
                                                   ToolTip="勾选后自动从备份电脑 BBK 文件夹子目录的 Config\SystemConfig.xml 解析 DeviceNo/LineNo 作为备份命名与存放。" />
                                             </StackPanel>
-                                            <CheckBox x:Name="cbCompressZip" Content="备份完成后自动压缩为 zip(删除备份文件夹)" IsChecked="True" Margin="0,8,0,0"
-                                              ToolTip="备份完成后将备份文件夹打包成同名 zip 文件并删除文件夹，节省空间。" />
-                                            <CheckBox x:Name="cbRunPreBackupBat" Content="备份前先执行PostgreSQL备份脚本" IsChecked="False" Margin="0,8,0,0"
-                                              ToolTip="勾选后开始备份前先执行目标电脑预设的脚本(PostgreSQL_Backup.bat，默认含 pg_dump 数据库备份命令)：局域网备份在远端电脑执行(成功后再拉取备份文件)。" />
+                                            <CheckBox x:Name="cbCompressZip" Content="备份完成后自动压缩为 zip（删除文件夹）" IsChecked="True" Margin="0,8,0,0"
+                                              ToolTip="备份完成后打包为同名 zip 并删除文件夹。" />
+                                            <CheckBox x:Name="cbRunPreBackupBat" Content="备份前先执行 PostgreSQL 备份脚本" IsChecked="False" Margin="0,8,0,0"
+                                              ToolTip="勾选后备份前先在目标电脑执行 PostgreSQL_Backup.bat（含 pg_dump 数据库备份）。局域网备份在远端执行后拉取。" />
                                         </StackPanel>
                                         <Rectangle Grid.Column="1" Width="1" Fill="{DynamicResource CardBorderBrush}" Margin="14,0" />
                                         <StackPanel Grid.Column="2" Margin="5,0,0,0">
@@ -293,7 +293,7 @@
                                                Text="忽略文件/文件夹(每行一条正则表达式，匹配相对路径)：" />
                                             <TextBox x:Name="txtBackupIgnore" Margin="0,4,0,0" Height="60" AcceptsReturn="True"
                                              TextWrapping="Wrap" VerticalScrollBarVisibility="Auto" HorizontalAlignment="Stretch"
-                                             ToolTip="每行一条合法正则表达式，大小写不敏感，匹配文件/文件夹相对源目录的路径，命中即忽略备份。&#x0a;&#x0a;忽略文件示例：&#x0a;&#x0a;  Log\.log$           结尾为 Log.log 的文件&#x0a;&#x0a;  \.bak$              所有 .bak 文件(注意 * 号无效，这是正则)&#x0a;&#x0a;  副本                 路径中含&#x201c;副本&#x201d;的文件&#x0a;&#x0a;忽略文件夹示例：&#x0a;&#x0a;  (^|/)\.git(/|$)      任何路径下的 .git 文件夹&#x0a;&#x0a;  (^|/)Temp(/|$)       顶层 Temp 文件夹&#x0a;&#x0a;  若要整条容错，可用 ^ 和 $ 锁定。" />
+                                             ToolTip="每行一条合法正则表达式，大小写不敏感，匹配文件/文件夹相对源目录的路径，命中即忽略备份。&#x0a;&#x0a;忽略文件示例：&#x0a;&#x0a;  Log\.log$           结尾为 Log.log 的文件&#x0a;&#x0a;  \.bak$              所有 .bak 文件(注意 * 号无效，这是正则)&#x0a;&#x0a;  副本                 路径中含「副本」的文件&#x0a;&#x0a;忽略文件夹示例：&#x0a;&#x0a;  (^|/)\.git(/|$)      任何路径下的 .git 文件夹&#x0a;&#x0a;  (^|/)Temp(/|$)       顶层 Temp 文件夹&#x0a;&#x0a;  若要整条容错，可用 ^ 和 $ 锁定。" />
                                             <TextBlock x:Name="txtIgnoreExample" Margin="0,6,0,0" Foreground="{DynamicResource TextSubBrush}" TextWrapping="Wrap" FontSize="10" FontWeight="Normal"
                                                Text="示例：忽略 .bak 文件：\.bak$；忽略全部副本文件：副本；忽略 .git 文件夹：(^|/)\.git(/|$)。" />
                                             <TextBlock Margin="0,4,0,0" Foreground="{DynamicResource TextSubBrush}" TextWrapping="Wrap" FontSize="10" FontWeight="Normal"
@@ -310,27 +310,27 @@
                                         </Grid.ColumnDefinitions>
                                         <StackPanel>
                                             <TextBlock Text="更新方式" FontWeight="SemiBold" Foreground="{DynamicResource TextSubBrush}" Margin="0,0,0,6" />
-                                            <RadioButton x:Name="rbReceive" GroupName="dir" Content="接收远端更新(远端为源)" Checked="RbDir_Changed" Margin="0,3,0,0" />
-                                            <RadioButton x:Name="rbPush" GroupName="dir" Content="推送本机给远端(本机为源)" Margin="0,6,0,0" Checked="RbDir_Changed" />
-                                            <RadioButton x:Name="rbSyncShare" GroupName="dir" Content="从共享文件夹更新本机(免安装)" Margin="0,6,0,0" Checked="RbDir_Changed" />
+                                            <RadioButton x:Name="rbReceive" GroupName="dir" Content="接收远端更新（远端为源）" Checked="RbDir_Changed" Margin="0,3,0,0" />
+                                            <RadioButton x:Name="rbPush" GroupName="dir" Content="推送本机到远端（本机为源）" Margin="0,6,0,0" Checked="RbDir_Changed" />
+                                            <RadioButton x:Name="rbSyncShare" GroupName="dir" Content="从共享文件夹更新本机（免安装）" Margin="0,6,0,0" Checked="RbDir_Changed" />
                                             <TextBlock x:Name="txtHint" Margin="0,8,0,0" Foreground="{DynamicResource TextSubBrush}" TextWrapping="Wrap" FontSize="10" FontWeight="Normal"
-                                               Text="接收远端更新：远端需先&#x201c;启动服务&#x201d;。更新规则按本机设置执行。" />
+                                               Text="接收远端更新：远端需先「启动服务」。更新规则按本机设置执行。" />
                                             <TextBlock Margin="0,6,0,0" Foreground="{DynamicResource TextSubBrush}" TextWrapping="Wrap" FontSize="10" FontWeight="Normal"
                                                Text="说明：更新BBK文件夹，自动跳过 Log 与 Config 文件夹。" />
                                         </StackPanel>
                                         <Rectangle Grid.Column="1" Width="1" Fill="{DynamicResource CardBorderBrush}" Margin="14,0" />
                                         <StackPanel Grid.Column="2" Margin="14,0,0,0">
-                                            <TextBlock Text="更新规则(接收 / 从共享时生效)" FontWeight="SemiBold"
+                                            <TextBlock Text="更新规则（接收 / 从共享时生效）" FontWeight="SemiBold"
                                                Foreground="{DynamicResource TextSubBrush}" Margin="0,0,0,6" />
-                                            <CheckBox x:Name="cbBinReplace" Content="Bin 整体替换(不勾则按日期增量)" Margin="0,3,0,0"
+                                            <CheckBox x:Name="cbBinReplace" Content="Bin 整体替换（不勾则按日期增量）" Margin="0,3,0,0"
                                               ToolTip="勾选：先删除本地 Bin 再整体拷贝。不勾选：按修改日期/大小只同步不同的文件。" />
 
                                             <CheckBox x:Name="cbBackupBeforeSync" Margin="0,10,0,0" IsChecked="True"
-                                              Content="同步更新前先备份被更新电脑的 BBK(规则同备份)"
-                                              ToolTip="TCP 接收更新、从共享更新本机、或远端推送更新时，都会先把被更新那台电脑的 BBK 备份到&#x201c;备份目录&#x201d;再开始同步。" />
+                                              Content="同步前先备份被更新电脑的 BBK"
+                                              ToolTip="TCP 接收更新、从共享更新本机、或远端推送更新时，都会先把被更新那台电脑的 BBK 备份到「备份目录」再开始同步。" />
                                             <CheckBox x:Name="cbUpdateCompressZip" Margin="0,6,0,0" IsChecked="True"
-                                              Content="备份完成后自动压缩为 zip(删除备份文件夹)"
-                                              ToolTip="勾选后，同步更新前的备份(本机或远端电脑)完成后自动打包成同名 zip 并删除备份文件夹。" />
+                                              Content="备份完成后自动压缩为 zip（删除文件夹）"
+                                              ToolTip="同步前备份完成后自动打包为 zip 并删除文件夹。" />
                                         </StackPanel>
                                         <!-- 半透明玻璃遮罩(密码保护) -->
                                         <Border x:Name="updateOverlay" Grid.ColumnSpan="3"
@@ -395,7 +395,7 @@
                                             <ColumnDefinition Width="*" />
                                         </Grid.ColumnDefinitions>
                                         <StackPanel>
-                                            <TextBlock Text="文件同步(LAN 远程同步)" FontWeight="SemiBold"
+                                            <TextBlock Text="文件同步" FontWeight="SemiBold"
                                                Foreground="{DynamicResource TextSubBrush}" Margin="0,0,0,6" />
                                             <StackPanel Orientation="Horizontal" Margin="0,0,0,8">
                                                 <RadioButton x:Name="rbTransferPush" GroupName="transferDir" Content="同步给远端" IsChecked="True" Checked="RbTransferDir_Changed" />
@@ -412,14 +412,14 @@
                                                 </Grid.ColumnDefinitions>
                                                 <TextBlock Text="路径:" VerticalAlignment="Center" />
                                                 <TextBox x:Name="txtTransferPath" Grid.Column="1" Margin="8,0,0,0" Height="30"
-                                                 ToolTip="文件或文件夹完整路径(两端路径结构一致，如 D:\BBK\bin\app.exe)。&#x0a;同步给远端：本机源文件路径，传到远端相同路径；&#x0a;从远端同步：远端文件路径，拉取到本地指定目录。" />
+                                                 ToolTip="文件或文件夹完整路径（两端路径结构一致）。同步给远端：本机源路径；从远端同步：远端文件路径。" />
                                                 <Button x:Name="btnTransferFile" Grid.Column="2" Content="选择文件..." Padding="10,6" Margin="8,0,0,0" Click="BtnTransferFile_Click" />
                                                 <Button x:Name="btnTransferDir" Grid.Column="3" Content="选择文件夹..." Padding="10,6" Margin="8,0,0,0" Click="BtnTransferDir_Click" />
                                             </Grid>
                                             <TextBlock x:Name="txtTransferHint" Margin="0,10,0,0" Foreground="{DynamicResource TextSubBrush}" TextWrapping="Wrap" FontSize="10" FontWeight="Normal"
-                                               Text="将选中的文件/文件夹同步给远端(远端需先&#x201c;启动服务&#x201d;)。具体规则见右侧&#x201c;同步设置&#x201d;。" />
+                                               Text="将选中的文件/文件夹同步到远端（远端需先启动服务）。具体规则见右侧「同步设置」。" />
                                             <TextBlock Margin="0,8,0,0" Foreground="{DynamicResource TextSubBrush}" TextWrapping="Wrap" FontSize="10" FontWeight="Normal"
-                                               Text="更新模式先重命名原文件再覆盖同步；拷贝模式不改动原文件，新文件以 名称_设备信息_日期 保存。" />
+                                               Text="更新模式：先备份原文件再覆盖同步；拷贝模式不改动原文件，另存为 名称_设备信息_日期。" />
                                         </StackPanel>
                                         <Rectangle Grid.Column="1" Width="1" Fill="{DynamicResource CardBorderBrush}" Margin="14,0" />
                                         <StackPanel Grid.Column="2" Margin="14,0,0,0">
@@ -427,7 +427,7 @@
                                                Foreground="{DynamicResource TextSubBrush}" Margin="0,0,0,6" />
                                             <CheckBox x:Name="cbTransferUpdate" Content="是否更新文件" IsChecked="True" Margin="0,3,0,0"
                                                       Checked="CbTransferUpdate_Changed" Unchecked="CbTransferUpdate_Changed"
-                                              ToolTip="勾选=更新模式：先将原文件/文件夹重命名备份为 名称_设备信息_日期，再同步到原路径；&#x0a;取消=拷贝模式：不改动原文件，新文件直接以 名称_设备信息_日期 保存。" />
+                                              ToolTip="勾选=更新模式：先备份原文件再覆盖；取消=拷贝模式：另存为 名称_设备信息_日期。" />
                                             <CheckBox x:Name="cbTransferSameSkip" Content="修改时间与大小都相同则跳过同步" IsChecked="True" Margin="0,6,0,0"
                                               ToolTip="仅更新模式生效：目标上已存在且大小、修改时间相同的文件不再重复同步。" />
 
@@ -444,7 +444,7 @@
                                             <ColumnDefinition Width="*" />
                                         </Grid.ColumnDefinitions>
                                         <StackPanel x:Name="processContent" IsEnabled="False">
-                                            <TextBlock Text="远程管理进程" FontWeight="SemiBold"
+                                            <TextBlock Text="远端进程管理" FontWeight="SemiBold"
                                                        Foreground="{DynamicResource TextSubBrush}" Margin="0,0,0,6" />
                                             <Grid Margin="0,0,0,0">
                                                 <Grid.ColumnDefinitions>
@@ -455,7 +455,7 @@
                                                 <TextBlock Text="程序路径:" VerticalAlignment="Center" />
                                                 <ComboBox x:Name="txtProcessPath" Grid.Column="1" Margin="8,0,0,0" Height="30" IsEditable="True"
                                                           VerticalContentAlignment="Center"
-                                                          ToolTip="要启动的程序完整路径(如 D:\BBK\bin\FreeFormsAlways.exe)。点击&#x201c;获取xmlFreeForm文件列表&#x201d;后可下拉选择远端文件。" />
+                                                          ToolTip="要启动的程序完整路径。点击「获取文件列表」后可下拉选择远端文件。" />
                                                 <Button Grid.Column="2" Content="浏览..." Padding="12,6" Margin="8,0,0,0" Click="BtnProcessBrowse_Click" />
                                             </Grid>
                                             <Grid Margin="0,8,0,0">
@@ -477,7 +477,7 @@
                                             <TextBlock x:Name="txtProcessStatus" Margin="0,8,0,0" Foreground="{DynamicResource TextMainBrush}" TextWrapping="Wrap" FontSize="11"
                                                        FontWeight="SemiBold" HorizontalAlignment="Right" />
                                             <TextBlock Margin="0,8,0,0" Foreground="{DynamicResource TextSubBrush}" TextWrapping="Wrap" FontSize="10"
-                                                       Text="获取：从对端 D:\BBK 列出匹配后缀的文件，写入启动路径下拉框供选择。" />
+                                                       Text="获取：从远端 D:\BBK 列出匹配后缀的文件，写入启动路径下拉框供选择。" />
                                             <Button x:Name="btnProcessOpen" Margin="0,8,0,0" Padding="14,6"
                                                     Content="启动远端应用程序" Click="BtnProcessOpen_Click" />
                                         </StackPanel>
@@ -620,8 +620,8 @@
                                 </StackPanel>
                             </GroupBox>
 
-                            <!-- Windows 共享连接(仅在勾选“从共享更新”时显示) -->
-                            <GroupBox x:Name="grpShare" Header="Windows 共享连接(远端免安装)" Margin="0,14,0,0" Visibility="Collapsed">
+                            <!-- Windows 共享连接 -->
+                            <GroupBox x:Name="grpShare" Header="Windows 共享连接" Margin="0,14,0,0" Visibility="Collapsed">
                                 <StackPanel>
                                     <Grid>
                                         <Grid.ColumnDefinitions>
@@ -645,7 +645,7 @@
                                              ToolTip="共享密码(可留空)" />
                                         <TextBlock Grid.Column="6" Text="共享路径:" Margin="16,0,0,0" VerticalAlignment="Center" />
                                         <TextBox x:Name="txtSharePath" Grid.Column="7" Margin="8,0,0,0" Height="30" Text="c$\BBK"
-                                         ToolTip="远端共享的 BBK 路径。默认 c$\BBK 即远端 C 盘下的 BBK；若远端把 BBK 文件夹直接共享为&quot;BBK&quot;则填 BBK" />
+                                         ToolTip="远端共享的 BBK 路径。默认 c$\BBK 即远端 C 盘 BBK；若共享名为 BBK 则填 BBK" />
                                     </Grid>
                                     <Grid Margin="0,12,0,0">
                                         <Grid.ColumnDefinitions>
