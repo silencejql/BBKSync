@@ -284,13 +284,13 @@ public partial class MainWindow : Window
         using var tcp = new TcpClient();
         try
         {
-            using var cts = new CancellationTokenSource(TimeSpan.FromSeconds(4));
+            using var cts = new CancellationTokenSource(TimeSpan.FromSeconds(1));
             await tcp.ConnectAsync(host, port, cts.Token);
             LogLine($"已连上 {host}:{port}，正在校验远端协议应答...");
         }
         catch (OperationCanceledException)
         {
-            var msg = $"连接超时：{host}:{port}\n4 秒内未建立连接(10060 超时：远端不可达，或防火墙静默丢弃)。";
+            var msg = $"连接超时：{host}:{port}\n1 秒内未建立连接(10060 超时：远端不可达，或防火墙静默丢弃)。";
             LogLineError(msg); DarkMessageBox.Show(msg, "测试结果", MessageBoxButton.OK, MessageBoxImage.Warning); return;
         }
         catch (SocketException ex)
@@ -308,7 +308,7 @@ public partial class MainWindow : Window
         try
         {
             using var client = new PeerClient();
-            using var cts = new CancellationTokenSource(TimeSpan.FromSeconds(5));
+            using var cts = new CancellationTokenSource(TimeSpan.FromSeconds(1));
             await client.ConnectAsync(host, port, Constants.RoleProbe, cts.Token);
             var (name, line) = await client.ProbeDeviceAsync(cts.Token);
             string info = string.IsNullOrWhiteSpace(name) ? "" : $"[设备 {name}{(string.IsNullOrWhiteSpace(line) ? "" : "/Line" + line)}]";
@@ -317,7 +317,7 @@ public partial class MainWindow : Window
         }
         catch (OperationCanceledException)
         {
-            var msg = $"已连上 {host}:{port}，但远端 5 秒内无协议应答：多为远端 BBKSync 进程僵死、重复实例占用端口，或远端跑的不是本程序。\n\n建议到远端机器：tasklist | findstr /i BBKSync 核对实例数，必要时 taskkill /f /im BBKSync 后重启。";
+            var msg = $"已连上 {host}:{port}，但远端 1 秒内无协议应答：多为远端 BBKSync 进程僵死、重复实例占用端口，或远端跑的不是本程序。\n\n建议到远端机器：tasklist | findstr /i BBKSync 核对实例数，必要时 taskkill /f /im BBKSync 后重启。";
             LogLineError(msg); DarkMessageBox.Show(msg, "测试结果", MessageBoxButton.OK, MessageBoxImage.Warning);
         }
         catch (IOException ex)
@@ -714,7 +714,7 @@ public partial class MainWindow : Window
         try
         {
             var client = new PeerClient();
-            using var cts = new CancellationTokenSource(TimeSpan.FromSeconds(5));
+            using var cts = new CancellationTokenSource(TimeSpan.FromSeconds(1));
             await client.ConnectAsync(host, port, Constants.RoleProbe, cts.Token);
             var (name, line) = await client.ProbeDeviceAsync(cts.Token);
             client.Dispose();
