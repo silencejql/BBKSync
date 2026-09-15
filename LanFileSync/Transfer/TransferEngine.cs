@@ -27,7 +27,7 @@ public sealed class TransferEngine
         {
             string parent = Path.GetDirectoryName(_itemPath) ?? "";
             string folder = Path.GetFileName(_itemPath.TrimEnd(Path.DirectorySeparatorChar));
-            _copyRoot = UniquePath(Path.Combine(parent, $"{folder}_{_deviceTag}_{_date}"), isDir: true);
+            _copyRoot = UniquePath(Path.Combine(parent, $"{folder}_AutoBackupFrom_{_deviceTag}_{_date}"), isDir: true);
         }
     }
 
@@ -64,15 +64,16 @@ public sealed class TransferEngine
 
     public bool BackupItem(Action<string> log, Action<string> onError)
     {
+        // 备份远端文件/文件夹，命名为 文件名_AutoBackupFrom_远端设备信息_日期
         string backupPath;
         if (_itemIsDir)
-            backupPath = _itemPath + "_" + _deviceTag + "_" + _date;
+            backupPath = _itemPath + "_AutoBackupFrom_" + _deviceTag + "_" + _date;
         else
         {
             string dirOf = Path.GetDirectoryName(_itemPath) ?? "";
             string nameOf = Path.GetFileNameWithoutExtension(_itemPath);
             string extOf = Path.GetExtension(_itemPath);
-            backupPath = Path.Combine(dirOf, nameOf + "_" + _deviceTag + "_" + _date + extOf);
+            backupPath = Path.Combine(dirOf, nameOf + "_AutoBackupFrom_" + _deviceTag + "_" + _date + extOf);
         }
         if (File.Exists(backupPath) || Directory.Exists(backupPath))
         {
@@ -205,11 +206,11 @@ public sealed class TransferEngine
         }
         else
         {
-            // 单文件拷贝：同目录，命名为 名称_设备信息_日期.扩展名(避免重名)
+            // 单文件拷贝：同目录，命名为 名称_AutoBackupFrom_设备信息_日期.扩展名(避免重名)
             string dirOf = Path.GetDirectoryName(_itemPath) ?? "";
             string nameOf = Path.GetFileNameWithoutExtension(original);
             string extOf = Path.GetExtension(original);
-            target = UniquePath(Path.Combine(dirOf, $"{nameOf}_{_deviceTag}_{_date}{extOf}"), isDir: false);
+            target = UniquePath(Path.Combine(dirOf, $"{nameOf}_AutoBackupFrom_{_deviceTag}_{_date}{extOf}"), isDir: false);
         }
     }
 

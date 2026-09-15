@@ -123,7 +123,7 @@ public partial class MainWindow
         catch (OperationCanceledException) { LogLine("备份已取消"); }
         finally
         {
-            if (okIps.Count > 0) { foreach (var ip in okIps) _history.Upsert(ip, port); ReloadHistoryCombo(); }
+            if (okIps.Count > 0) { _history.Upsert(cboPeerIp.Text.Trim(), port); ReloadHistoryCombo(); }
             EndBusy();
         }
         if (okIps.Count > 0) txtStatus.Text = hosts.Count > 1 ? $"远程备份完成({okIps.Count}/{hosts.Count} 台)" : "远程备份完成";
@@ -256,7 +256,7 @@ public partial class MainWindow
         catch (OperationCanceledException) { LogLine("已取消"); }
         finally
         {
-            if (okIps.Count > 0) { foreach (var ip in okIps) _history.Upsert(ip, port); ReloadHistoryCombo(); }
+            if (okIps.Count > 0) { _history.Upsert(cboPeerIp.Text.Trim(), port); ReloadHistoryCombo(); }
             EndBusy();
         }
         if (okIps.Count > 0) txtStatus.Text = hosts.Count > 1 ? $"同步完成({okIps.Count}/{hosts.Count} 台)" : "同步完成";
@@ -331,7 +331,7 @@ public partial class MainWindow
         catch (OperationCanceledException) { LogLine("已取消"); }
         finally
         {
-            if (okIps.Count > 0) { foreach (var ip in okIps) _history.Upsert(ip, port); ReloadHistoryCombo(); }
+            if (okIps.Count > 0) { _history.Upsert(cboPeerIp.Text.Trim(), port); ReloadHistoryCombo(); }
             EndBusy();
         }
         if (okIps.Count > 0) txtStatus.Text = hosts.Count > 1 ? $"传输完成({okIps.Count}/{hosts.Count} 台)" : "传输完成";
@@ -383,7 +383,7 @@ public partial class MainWindow
         catch (OperationCanceledException) { LogLine("已取消"); }
         finally
         {
-            if (okIps.Count > 0) { foreach (var ip in okIps) _history.Upsert(ip, port); ReloadHistoryCombo(); }
+            if (okIps.Count > 0) { _history.Upsert(cboPeerIp.Text.Trim(), port); ReloadHistoryCombo(); }
             EndBusy();
         }
         if (okIps.Count > 0) txtStatus.Text = hosts.Count > 1 ? $"拉取完成({okIps.Count}/{hosts.Count} 台)" : "拉取完成";
@@ -503,7 +503,7 @@ public partial class MainWindow
         catch (OperationCanceledException) { LogLine("操作已取消"); }
         finally
         {
-            if (okIps.Count > 0) { foreach (var ip in okIps) _history.Upsert(ip, port); ReloadHistoryCombo(); }
+            if (okIps.Count > 0) { _history.Upsert(cboPeerIp.Text.Trim(), port); ReloadHistoryCombo(); }
             EndBusy();
         }
         if (okIps.Count > 0) txtStatus.Text = hosts.Count > 1 ? $"更新完成({okIps.Count}/{hosts.Count} 台)" : "更新完成";

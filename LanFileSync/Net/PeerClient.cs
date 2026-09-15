@@ -221,7 +221,7 @@ public sealed class PeerClient : IDisposable
             {
                 string parent = Path.GetDirectoryName(normRemote) ?? "";
                 string folder = Path.GetFileName(normRemote);
-                saveRoot = UniquePath(Path.Combine(parent, $"{folder}_{sourceTag}_{dateStr}"), isDir: true);
+                saveRoot = UniquePath(Path.Combine(parent, $"{folder}_AutoBackupFrom_{sourceTag}_{dateStr}"), isDir: true);
             }
             else
             {
@@ -269,7 +269,7 @@ public sealed class PeerClient : IDisposable
                 string sourceTag = SanitizeFileName(string.IsNullOrWhiteSpace(remoteDevice) ? "远端" : remoteDevice);
                 string baseName = Path.GetFileNameWithoutExtension(localPath);
                 string ext = Path.GetExtension(localPath);
-                savedPath = UniquePath(Path.Combine(saveRoot, $"{baseName}_{sourceTag}_{dateStr}{ext}"), isDir: false);
+                savedPath = UniquePath(Path.Combine(saveRoot, $"{baseName}_AutoBackupFrom_{sourceTag}_{dateStr}{ext}"), isDir: false);
             }
 
             string? savedDir = Path.GetDirectoryName(savedPath);
@@ -313,7 +313,7 @@ public sealed class PeerClient : IDisposable
             if (!Directory.Exists(itemPath)) { log("本地文件夹不存在，无需重命名: " + itemPath); return; }
             string parent = Path.GetDirectoryName(itemPath) ?? "";
             string folder = Path.GetFileName(itemPath);
-            string renamed = UniquePath(Path.Combine(parent, $"{folder}_{deviceTag}_{date}"), isDir: true);
+            string renamed = UniquePath(Path.Combine(parent, $"{folder}_AutoBackup_{date}"), isDir: true);
             log($"更新前重命名本地文件夹: {itemPath} → {renamed}");
             Directory.Move(itemPath, renamed);
         }
@@ -323,7 +323,7 @@ public sealed class PeerClient : IDisposable
             string dirOf = Path.GetDirectoryName(itemPath) ?? "";
             string baseName = Path.GetFileNameWithoutExtension(itemPath);
             string ext = Path.GetExtension(itemPath);
-            string renamed = UniquePath(Path.Combine(dirOf, $"{baseName}_{deviceTag}_{date}{ext}"), isDir: false);
+            string renamed = UniquePath(Path.Combine(dirOf, $"{baseName}_AutoBackup_{date}{ext}"), isDir: false);
             log($"更新前重命名本地文件: {itemPath} → {renamed}");
             File.Move(itemPath, renamed);
         }

@@ -1,5 +1,6 @@
 using System.Diagnostics;
 using System.IO;
+using System.IO.Compression;
 using System.Net.NetworkInformation;
 using System.Net.Sockets;
 using System.Windows;
@@ -26,6 +27,18 @@ public partial class MainWindow : Window
 
     public MainWindow()
     {
+        // CheckBox 仅双击勾选：阻止单击 toggle，双击时主动勾选
+        EventManager.RegisterClassHandler(typeof(CheckBox),
+            UIElement.PreviewMouseLeftButtonDownEvent,
+            new MouseButtonEventHandler((s, e) =>
+            {
+                if (s is CheckBox cb)
+                {
+                    if (e.ClickCount >= 2)
+                        cb.IsChecked = !cb.IsChecked;
+                    e.Handled = true; // 阻止默认 toggle(单击不勾选)
+                }
+            }));
         _startMinimized = Environment.GetCommandLineArgs().Any(a =>
             a.Equals("--minimized", StringComparison.OrdinalIgnoreCase) ||
             a.Equals("--autostart", StringComparison.OrdinalIgnoreCase));
@@ -161,9 +174,7 @@ public partial class MainWindow : Window
     }
 
     private string AutoDetectedName() => DeviceConfig.ReadFromRoot(txtRoot.Text.Trim()).Name;
-
     private string AutoDetectedLine() => DeviceConfig.ReadFromRoot(txtRoot.Text.Trim()).Line;
-
     private static string SanitizeName(string s)
     {
         char[] invalids = Path.GetInvalidFileNameChars();
@@ -176,9 +187,7 @@ public partial class MainWindow : Window
     private static Brush s_logErrorBrush = new SolidColorBrush(Color.FromRgb(0xDC, 0x26, 0x26));
 
     private void LogLine(string msg) => LogLine(msg, s_logBrush);
-
     private void LogLineError(string msg) => LogLine(msg, s_logErrorBrush);
-
     private void LogDivider() => LogLine("------------------------------------------------");
 
     private void LogLine(string msg, Brush brush)
@@ -208,7 +217,6 @@ public partial class MainWindow : Window
     {
         Dispatcher.Invoke(() => { _doneCount = 0; _totalCount = total; progressBar.Maximum = Math.Max(1, total); progressBar.Value = 0; if (total == 0) { progressBar.Value = 1; txtCur.Text = $"无需{_opLabel}文件"; } });
     }
-
     private void OnFileProgress(string rel, long size)
     {
         Dispatcher.Invoke(() => { _doneCount++; progressBar.Value = _doneCount; txtCur.Text = $"文件 {_doneCount}/{_totalCount}: {rel} ({FormatSize(size)})"; });
@@ -219,32 +227,26 @@ public partial class MainWindow : Window
         var dlg = new OpenFolderDialog { Title = "选择文件夹" };
         if (dlg.ShowDialog() == true) txtRoot.Text = dlg.FolderName;
     }
-
     private void BtnBackupBrowse_Click(object sender, RoutedEventArgs e)
     {
         var dlg = new OpenFolderDialog { Title = "选择备份目标文件夹" };
         if (dlg.ShowDialog() == true) txtBackupDest.Text = dlg.FolderName;
     }
-
     private void BtnTransferFile_Click(object sender, RoutedEventArgs e)
     {
         var dlg = new Microsoft.Win32.OpenFileDialog { Title = "选择要传输的文件", CheckFileExists = true, Multiselect = false };
         if (dlg.ShowDialog() == true) txtTransferPath.Text = dlg.FileName;
     }
-
     private void BtnTransferDir_Click(object sender, RoutedEventArgs e)
     {
         var dlg = new OpenFolderDialog { Title = "选择要传输的文件夹" };
         if (dlg.ShowDialog() == true) txtTransferPath.Text = dlg.FolderName;
     }
-
     private void BtnHistory_Click(object sender, RoutedEventArgs e)
     {
         new HistoryWindow(_history) { Owner = this }.ShowDialog(); ReloadHistoryCombo();
     }
-
     private void BtnStartServer_Click(object sender, RoutedEventArgs e) => StartServer(showErrors: true);
-
     private void BtnStopServer_Click(object sender, RoutedEventArgs e) => StopServer();
 
     private void StartServer(bool showErrors)
@@ -352,9 +354,7 @@ public partial class MainWindow : Window
             .Where(s => s.Length > 0).ToArray();
         return new BackupOptions { ApplyLogRule = cbBackupLogRule.IsChecked ?? true, LogRetentionDays = days, IgnoreRegexes = ignoreEnabled ? ignores : Array.Empty<string>() };
     }
-
     private SyncOptions ReadOptions() => new() { FullReplaceBin = cbBinReplace.IsChecked == true };
-
     private bool ShouldCompress => cbCompressZip.IsChecked == true;
 
     private async Task CompressAndRemoveFolderAsync(string folderPath, bool compress)
@@ -389,14 +389,9 @@ public partial class MainWindow : Window
         return fallback;
     }
 
-    private void StartBusy()
-    { _coordinator.StartBusy(); _doneCount = 0; _totalCount = 0; SetBusy(true); }
-
-    private void EndBusy()
-    { _coordinator.EndBusy(); SetBusy(false); txtStatus.Text = "就绪"; }
-
+    private void StartBusy() { _coordinator.StartBusy(); _doneCount = 0; _totalCount = 0; SetBusy(true); }
+    private void EndBusy() { _coordinator.EndBusy(); SetBusy(false); txtStatus.Text = "就绪"; }
     private void BtnCancel_Click(object sender, RoutedEventArgs e) => _coordinator.Cancel();
-
     private void Tabs_SelectionChanged(object sender, SelectionChangedEventArgs e)
     {
         if (!IsLoaded) return;
@@ -424,7 +419,6 @@ public partial class MainWindow : Window
         }
         RefreshOpButtons();
     }
-
     private void RefreshOpButtons()
     {
         if (btnSync == null || btnBackup == null || btnUpdateProgram == null || tabs == null) return;
@@ -438,7 +432,6 @@ public partial class MainWindow : Window
         btnSync.IsEnabled = !_coordinator.Busy && ((isBbkUpdate && pwdOk) || isFileTransfer);
         btnUpdateProgram.IsEnabled = !_coordinator.Busy && isUpdateProgram;
     }
-
     private void SetBusy(bool busy)
     {
         foreach (var ctrl in BusyControls) if (FindName(ctrl) is FrameworkElement fe) fe.IsEnabled = !busy;
@@ -458,21 +451,16 @@ public partial class MainWindow : Window
         "txtProcessPath","txtProcessKillNames","txtProcessFileSuffixes","btnProcessOpen","btnProcessClose","btnProcessFetchFiles",
     };
 
-    private void BtnClearLog_Click(object sender, RoutedEventArgs e)
-    { txtLog?.Document.Blocks.Clear(); }
-
+    private void BtnClearLog_Click(object sender, RoutedEventArgs e) { txtLog?.Document.Blocks.Clear(); }
     private void BtnCopyLog_Click(object sender, RoutedEventArgs e)
     {
         if (txtLog == null) return;
         var textRange = new TextRange(txtLog.Document.ContentStart, txtLog.Document.ContentEnd);
         if (!string.IsNullOrEmpty(textRange.Text)) { Clipboard.SetText(textRange.Text); }
     }
+    private void Window_StateChanged(object sender, EventArgs e) { if (WindowState == WindowState.Minimized && _tray != null) Hide(); }
 
-    private void Window_StateChanged(object sender, EventArgs e)
-    { if (WindowState == WindowState.Minimized && _tray != null) Hide(); }
-
-    private void TitleMin_Click(object sender, RoutedEventArgs e)
-    { WindowState = WindowState.Minimized; }
+    private void TitleMin_Click(object sender, RoutedEventArgs e) { WindowState = WindowState.Minimized; }
 
     private void TitleMax_Click(object sender, RoutedEventArgs e)
     {
@@ -488,8 +476,7 @@ public partial class MainWindow : Window
         }
     }
 
-    private void TitleClose_Click(object sender, RoutedEventArgs e)
-    { Close(); }
+    private void TitleClose_Click(object sender, RoutedEventArgs e) { Close(); }
 
     private void BtnThemeToggle_Click(object sender, RoutedEventArgs e) => ThemeManager.Toggle();
 
@@ -571,11 +558,8 @@ public partial class MainWindow : Window
         }
     }
 
-    private void ShowMainWindow()
-    { Dispatcher.Invoke(() => { ShowInTaskbar = true; Show(); if (WindowState == WindowState.Minimized) WindowState = WindowState.Normal; Activate(); }); }
-
-    private void ExitApp()
-    { Dispatcher.Invoke(() => { _allowExit = true; Close(); }); }
+    private void ShowMainWindow() { Dispatcher.Invoke(() => { ShowInTaskbar = true; Show(); if (WindowState == WindowState.Minimized) WindowState = WindowState.Normal; Activate(); }); }
+    private void ExitApp() { Dispatcher.Invoke(() => { _allowExit = true; Close(); }); }
 
     private void ChkAutoStart_Changed(object sender, RoutedEventArgs e)
     {
@@ -629,7 +613,6 @@ public partial class MainWindow : Window
     }
 
     #region 进程管理
-
     private DateTime _processOpenCooldownUntil = DateTime.MinValue;
 
     private void BtnProcessBrowse_Click(object sender, RoutedEventArgs e)
@@ -653,7 +636,7 @@ public partial class MainWindow : Window
 
         string savedText = txtProcessPath.Text;
         txtProcessPath.ItemsSource = null;
-        txtProcessStatus.Text = "正在获取文件列表...";
+            txtProcessStatus.Text = "正在获取文件列表...";
         StartBusy();
         var ct = _coordinator.Token; _opLabel = "获取文件列表";
         var okIps = new List<string>(); var failed = new List<string>();
@@ -735,7 +718,7 @@ public partial class MainWindow : Window
         catch (OperationCanceledException) { LogLine("已取消"); }
         finally
         {
-            if (okIps.Count > 0) { foreach (var ip in okIps) _history.Upsert(ip, port); ReloadHistoryCombo(); }
+            if (okIps.Count > 0) { _history.Upsert(cboPeerIp.Text.Trim(), port); ReloadHistoryCombo(); }
             EndBusy();
         }
         if (okIps.Count > 0) txtStatus.Text = hosts.Count > 1 ? $"关闭完成({okIps.Count}/{hosts.Count} 台)" : "关闭完成";
@@ -794,7 +777,7 @@ public partial class MainWindow : Window
         catch (OperationCanceledException) { LogLine("已取消"); }
         finally
         {
-            if (okIps.Count > 0) { foreach (var ip in okIps) _history.Upsert(ip, port); ReloadHistoryCombo(); }
+            if (okIps.Count > 0) { _history.Upsert(cboPeerIp.Text.Trim(), port); ReloadHistoryCombo(); }
             EndBusy();
         }
         if (okIps.Count > 0) txtStatus.Text = hosts.Count > 1 ? $"启动完成({okIps.Count}/{hosts.Count} 台)" : "启动完成";
@@ -837,8 +820,7 @@ public partial class MainWindow : Window
             txtProcessError.Visibility = Visibility.Visible;
         }
     }
-
-    #endregion 进程管理
+    #endregion
 
     private static List<string> GetLocalIPs()
     {
@@ -857,6 +839,5 @@ public sealed class IpComboItem
 {
     public string Ip { get; init; } = "";
     public string Label { get; init; } = "";
-
     public override string ToString() => Ip;
 }
