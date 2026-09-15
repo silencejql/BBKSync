@@ -8,6 +8,31 @@ namespace LanFileSync;
 
 public partial class MainWindow
 {
+    /// <summary>
+    /// 从目标 IP 列表中剔除本机地址(含回环地址)。
+    /// 存在本机地址时弹窗+日志提示；全部为本机时返回 null(调用方应中止后续操作)。
+    /// </summary>
+    private List<string>? ExcludeLocalHosts(List<string> hosts)
+    {
+        var local = new HashSet<string>(GetLocalIPs(), StringComparer.OrdinalIgnoreCase) { "127.0.0.1", "::1", "localhost" };
+        try
+        {
+            foreach (var a in System.Net.Dns.GetHostAddresses(System.Net.Dns.GetHostName()))
+                if (a.AddressFamily == AddressFamily.InterNetwork) local.Add(a.ToString());
+        }
+        catch { }
+
+        var skipped = hosts.Where(h => local.Contains(h)).Distinct(StringComparer.OrdinalIgnoreCase).ToList();
+        var remote = hosts.Where(h => !local.Contains(h)).ToList();
+        if (skipped.Count > 0)
+        {
+            LogLine("目标 IP 为本机地址，已跳过: " + string.Join(", ", skipped));
+            DarkMessageBox.Show("以下 IP 为本机地址，已跳过：\n" + string.Join("\n", skipped) +
+                                (remote.Count > 0 ? "\n\n将继续对其余远端电脑执行操作。" : ""),
+                "提示", MessageBoxButton.OK, MessageBoxImage.Information);
+        }
+        return remote.Count == 0 ? null : remote;
+    }
     private async void BtnBackup_Click(object sender, RoutedEventArgs e)
     {
         string dest = txtBackupDest.Text.Trim();
@@ -177,6 +202,8 @@ public partial class MainWindow
         if (hosts.Count == 0) { DarkMessageBox.Show("请输入对方 IP 或范围。", "提示", MessageBoxButton.OK, MessageBoxImage.Information); return; }
         if (!TryGetPeerPort(out int port)) { DarkMessageBox.Show("对方端口无效。", "错误", MessageBoxButton.OK, MessageBoxImage.Warning); return; }
         if (rbReceive.IsChecked == true && hosts.Count > 1) { DarkMessageBox.Show("拉取对方更新时只能选择一个IP地址", "错误", MessageBoxButton.OK, MessageBoxImage.Warning); return; }
+        hosts = ExcludeLocalHosts(hosts);
+        if (hosts == null) return;
         bool push = rbPush.IsChecked == true;
         string deviceInfo = hosts.Count == 1 ? await GetDeviceInfo(hosts[0]) : "";
         string msgPush = $"将本机BBK按规则推送更新至远端电脑[{cboPeerIp.Text}]{deviceInfo}";
@@ -272,6 +299,8 @@ public partial class MainWindow
         catch (FormatException ex) { DarkMessageBox.Show(ex.Message, "错误", MessageBoxButton.OK, MessageBoxImage.Warning); return; }
         if (hosts.Count == 0) { DarkMessageBox.Show("请输入对方 IP 或范围。", "提示", MessageBoxButton.OK, MessageBoxImage.Information); return; }
         if (!TryGetPeerPort(out int port)) { DarkMessageBox.Show("对方端口无效。", "错误", MessageBoxButton.OK, MessageBoxImage.Warning); return; }
+        hosts = ExcludeLocalHosts(hosts);
+        if (hosts == null) return;
         bool isDir = Directory.Exists(itemPath);
         bool updateMode = cbTransferUpdate.IsChecked == true;
         string localDevice = DeviceConfig.ReadFromRoot(txtRoot.Text.Trim()).Name;
@@ -319,6 +348,8 @@ public partial class MainWindow
         catch (FormatException ex) { DarkMessageBox.Show(ex.Message, "错误", MessageBoxButton.OK, MessageBoxImage.Warning); return; }
         if (hosts.Count == 0) { DarkMessageBox.Show("请输入对方 IP 或范围。", "提示", MessageBoxButton.OK, MessageBoxImage.Information); return; }
         if (!TryGetPeerPort(out int port)) { DarkMessageBox.Show("对方端口无效。", "错误", MessageBoxButton.OK, MessageBoxImage.Warning); return; }
+        hosts = ExcludeLocalHosts(hosts);
+        if (hosts == null) return;
 
         string deviceInfo = hosts.Count == 1 ? await GetDeviceInfo(hosts[0]) : "";
         string deviceName = hosts.Count == 1 ? (await ProbeDeviceNameAsync(hosts[0], port)) : "";
@@ -434,8 +465,13 @@ public partial class MainWindow
         if (string.IsNullOrEmpty(exePath) || !File.Exists(exePath))
         { DarkMessageBox.Show("无法获取当前程序路径。", "错误", MessageBoxButton.OK, MessageBoxImage.Error); return; }
 
+        List<string> hosts;
+        try { hosts = IpHelper.ExpandIps(host); }
+        catch (FormatException ex) { DarkMessageBox.Show(ex.Message, "错误", MessageBoxButton.OK, MessageBoxImage.Warning); return; }
+        hosts = ExcludeLocalHosts(hosts);
+        if (hosts == null) return;
+
         if (DarkMessageBox.Show("确认开始升级远端BBKSync程序？\n\n目标电脑：" + host + "。", "确认", MessageBoxButton.OKCancel, MessageBoxImage.Question) != MessageBoxResult.OK) return;
-        List<string> hosts = IpHelper.ExpandIps(host);
         var failed = new List<string>();
         var okIps = new List<string>();
 
