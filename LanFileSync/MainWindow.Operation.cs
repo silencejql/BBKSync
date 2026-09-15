@@ -1,6 +1,4 @@
-using System.Collections.Generic;
 using System.IO;
-using System.Linq;
 using System.Net.Sockets;
 using System.Windows;
 
@@ -33,6 +31,7 @@ public partial class MainWindow
         }
         return remote.Count == 0 ? null : remote;
     }
+
     private async void BtnBackup_Click(object sender, RoutedEventArgs e)
     {
         string dest = txtBackupDest.Text.Trim();

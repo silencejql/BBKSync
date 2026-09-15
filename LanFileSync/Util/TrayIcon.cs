@@ -28,7 +28,8 @@ public sealed class TrayIcon : IDisposable
         _icon.DoubleClickCommand = new RelayCommand(() => show());
     }
 
-    public void Show() { }
+    public void Show()
+    { }
 
     public void Notify(string text)
         => _icon.ShowBalloonTip("BBK 同步与备份工具", text, BalloonIcon.Info);
@@ -42,8 +43,12 @@ public sealed class TrayIcon : IDisposable
 internal sealed class RelayCommand : System.Windows.Input.ICommand
 {
     private readonly Action _execute;
+
     public RelayCommand(Action execute) => _execute = execute;
+
     public event EventHandler? CanExecuteChanged;
+
     public bool CanExecute(object? parameter) => true;
+
     public void Execute(object? parameter) => _execute();
 }

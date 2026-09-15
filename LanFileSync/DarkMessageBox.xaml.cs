@@ -6,7 +6,8 @@ namespace LanFileSync;
 
 public partial class DarkMessageBox : Window
 {
-    private DarkMessageBox() { InitializeComponent(); }
+    private DarkMessageBox()
+    { InitializeComponent(); }
 
     public static MessageBoxResult Show(string messageBoxText, string caption = "提示",
         MessageBoxButton button = MessageBoxButton.OK, MessageBoxImage icon = MessageBoxImage.None)
@@ -54,14 +55,17 @@ public partial class DarkMessageBox : Window
             case MessageBoxButton.OK:
                 AddBtn("确定", MessageBoxResult.OK, true);
                 break;
+
             case MessageBoxButton.OKCancel:
                 AddBtn("取消", MessageBoxResult.Cancel, false);
                 AddBtn("确定", MessageBoxResult.OK, true);
                 break;
+
             case MessageBoxButton.YesNo:
                 AddBtn("否", MessageBoxResult.No, false);
                 AddBtn("是", MessageBoxResult.Yes, true);
                 break;
+
             case MessageBoxButton.YesNoCancel:
                 AddBtn("取消", MessageBoxResult.Cancel, false);
                 AddBtn("否", MessageBoxResult.No, false);
