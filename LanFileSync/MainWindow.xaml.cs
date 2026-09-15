@@ -60,11 +60,6 @@ public partial class MainWindow : Window
     private static void EnsureUpdateBat()
     {
         string batPath = Path.Combine(AppPaths.ExeDir(), "Update_BBKSync.bat");
-        //if (File.Exists(batPath))
-        //{
-        //    string existing = File.ReadAllText(batPath);
-        //    if (!string.IsNullOrWhiteSpace(existing)) return;
-        //}
         string exeDir = AppPaths.ExeDir();
         string exeName = Path.GetFileName(Environment.ProcessPath ?? "BBKSync.exe");
         string content =
@@ -327,8 +322,8 @@ public partial class MainWindow : Window
         }
         catch (IOException ex)
         {
-            var msg = $"已连上 {host}:{port}，但连接被对端立刻关闭：{ex.Message}\n\n多为远端服务未就绪或端口被其他程序占用。";
-            LogLineError($"已连上 {host}:{port}，但连接被对端立刻关闭：{ex.Message}"); DarkMessageBox.Show(msg, "测试结果", MessageBoxButton.OK, MessageBoxImage.Warning);
+            var msg = $"已连上 {host}:{port}，但连接被远端立刻关闭：{ex.Message}\n\n多为远端服务未就绪或端口被其他程序占用。";
+            LogLineError($"已连上 {host}:{port}，但连接被远端立刻关闭：{ex.Message}"); DarkMessageBox.Show(msg, "测试结果", MessageBoxButton.OK, MessageBoxImage.Warning);
         }
         catch (Exception ex)
         {
@@ -390,26 +385,27 @@ public partial class MainWindow : Window
         if (tabs.SelectedIndex != 1)
         {
             updateOverlay.Visibility = Visibility.Visible;
-            pwdUpdate.Clear();
-            txtUpdatePwd.Clear();
+            ResetPasswordFields(pwdUpdate, txtUpdatePwd, eyeLine);
             txtUpdateError.Visibility = Visibility.Collapsed;
-            _pwdVisible = false;
-            pwdUpdate.Visibility = Visibility.Visible;
-            txtUpdatePwd.Visibility = Visibility.Collapsed;
-            eyeLine.Visibility = Visibility.Visible;
         }
         if (tabs.SelectedIndex != 3)
         {
             processOverlay.Visibility = Visibility.Visible;
             processContent.IsEnabled = false;
-            pwdProcess.Clear();
-            txtProcessPwd.Clear();
+            ResetPasswordFields(pwdProcess, txtProcessPwd, eyeLineProcess);
             txtProcessError.Visibility = Visibility.Collapsed;
-            pwdProcess.Visibility = Visibility.Visible;
-            txtProcessPwd.Visibility = Visibility.Collapsed;
-            eyeLineProcess.Visibility = Visibility.Visible;
         }
         RefreshOpButtons();
+    }
+
+    /// <summary>清空密码/明文内容并恢复到密码框可见状态。</summary>
+    private static void ResetPasswordFields(PasswordBox pwd, TextBox txt, System.Windows.Shapes.Line eyeLine)
+    {
+        pwd.Clear();
+        txt.Clear();
+        pwd.Visibility = Visibility.Visible;
+        txt.Visibility = Visibility.Collapsed;
+        eyeLine.Visibility = Visibility.Visible;
     }
     private void RefreshOpButtons()
     {
@@ -488,29 +484,32 @@ public partial class MainWindow : Window
         if (e.Key == Key.Enter) BtnUpdateUnlock_Click(sender, e);
     }
 
-    private bool _pwdVisible;
-
-    private void BtnTogglePwd_Click(object sender, RoutedEventArgs e)
+    /// <summary>
+    /// 切换密码框/明文框可见性并同步内容。txt.Visibility 为 Visible 时切回密码框，否则切到明文框。
+    /// </summary>
+    private static void TogglePasswordVisibility(PasswordBox pwd, TextBox txt, System.Windows.Shapes.Line eyeLine)
     {
-        _pwdVisible = !_pwdVisible;
-        if (_pwdVisible)
+        if (txt.Visibility == Visibility.Visible)
         {
-            txtUpdatePwd.Text = pwdUpdate.Password;
-            txtUpdatePwd.Visibility = Visibility.Visible;
-            pwdUpdate.Visibility = Visibility.Collapsed;
-            eyeLine.Visibility = Visibility.Collapsed;
-            txtUpdatePwd.Focus();
-            txtUpdatePwd.CaretIndex = txtUpdatePwd.Text.Length;
+            pwd.Password = txt.Text;
+            pwd.Visibility = Visibility.Visible;
+            txt.Visibility = Visibility.Collapsed;
+            eyeLine.Visibility = Visibility.Visible;
+            pwd.Focus();
         }
         else
         {
-            pwdUpdate.Password = txtUpdatePwd.Text;
-            pwdUpdate.Visibility = Visibility.Visible;
-            txtUpdatePwd.Visibility = Visibility.Collapsed;
-            eyeLine.Visibility = Visibility.Visible;
-            pwdUpdate.Focus();
+            txt.Text = pwd.Password;
+            txt.Visibility = Visibility.Visible;
+            pwd.Visibility = Visibility.Collapsed;
+            eyeLine.Visibility = Visibility.Collapsed;
+            txt.Focus();
+            txt.CaretIndex = txt.Text.Length;
         }
     }
+
+    private void BtnTogglePwd_Click(object sender, RoutedEventArgs e)
+        => TogglePasswordVisibility(pwdUpdate, txtUpdatePwd, eyeLine);
 
     private void BtnUpdateUnlock_Click(object sender, RoutedEventArgs e)
     {
@@ -520,7 +519,7 @@ public partial class MainWindow : Window
             updateOverlay.Visibility = Visibility.Collapsed;
             return;
         }
-        string input = _pwdVisible ? txtUpdatePwd.Text : pwdUpdate.Password;
+        string input = txtUpdatePwd.Visibility == Visibility.Visible ? txtUpdatePwd.Text : pwdUpdate.Password;
         if (input == stored)
         {
             updateOverlay.Visibility = Visibility.Collapsed;
@@ -620,11 +619,7 @@ public partial class MainWindow : Window
 
     private async void BtnProcessFetchFiles_Click(object sender, RoutedEventArgs e)
     {
-        if (!TryGetPeerPort(out int port)) { DarkMessageBox.Show("远端端口无效。", "错误", MessageBoxButton.OKCancel, MessageBoxImage.Warning); return; }
-        List<string> hosts;
-        try { hosts = IpHelper.ExpandIps(cboPeerIp.Text ?? ""); }
-        catch (FormatException ex) { DarkMessageBox.Show(ex.Message, "错误", MessageBoxButton.OKCancel, MessageBoxImage.Warning); return; }
-        if (hosts.Count == 0) { DarkMessageBox.Show("请输入远端 IP 或范围。", "提示", MessageBoxButton.OKCancel, MessageBoxImage.Information); return; }
+        if (!TryGetHostsAndPort(out var hosts, out int port)) return;
 
         string savedText = cboProcessPath.Text;
         cboProcessPath.ItemsSource = null;
@@ -677,11 +672,7 @@ public partial class MainWindow : Window
 
     private async void BtnProcessClose_Click(object sender, RoutedEventArgs e)
     {
-        if (!TryGetPeerPort(out int port)) { DarkMessageBox.Show("远端端口无效。", "错误", MessageBoxButton.OK, MessageBoxImage.Warning); return; }
-        List<string> hosts;
-        try { hosts = IpHelper.ExpandIps(cboPeerIp.Text ?? ""); }
-        catch (FormatException ex) { DarkMessageBox.Show(ex.Message, "错误", MessageBoxButton.OK, MessageBoxImage.Warning); return; }
-        if (hosts.Count == 0) { DarkMessageBox.Show("请输入远端 IP 或范围。", "提示", MessageBoxButton.OK, MessageBoxImage.Information); return; }
+        if (!TryGetHostsAndPort(out var hosts, out int port)) return;
         string deviceInfo = hosts.Count == 1 ? await GetDeviceInfo(hosts[0]) : "";
         if (DarkMessageBox.Show("确认关闭指定电脑的应用程序？\n\n[" + cboPeerIp.Text + "]" + deviceInfo + "\n\n程序前缀名：" + cboProcessKillNames.Text + "。", "确认", MessageBoxButton.OKCancel, MessageBoxImage.Question) != MessageBoxResult.OK) return;
         string[] killNames = cboProcessKillNames.Text
@@ -749,11 +740,7 @@ public partial class MainWindow : Window
         }
         string exePath = cboProcessPath.Text.Trim();
         if (string.IsNullOrWhiteSpace(exePath)) { DarkMessageBox.Show("请输入程序路径。", "提示", MessageBoxButton.OK, MessageBoxImage.Information); return; }
-        if (!TryGetPeerPort(out int port)) { DarkMessageBox.Show("远端端口无效。", "错误", MessageBoxButton.OK, MessageBoxImage.Warning); return; }
-        List<string> hosts;
-        try { hosts = IpHelper.ExpandIps(cboPeerIp.Text ?? ""); }
-        catch (FormatException ex) { DarkMessageBox.Show(ex.Message, "错误", MessageBoxButton.OK, MessageBoxImage.Warning); return; }
-        if (hosts.Count == 0) { DarkMessageBox.Show("请输入远端 IP 或范围。", "提示", MessageBoxButton.OK, MessageBoxImage.Information); return; }
+        if (!TryGetHostsAndPort(out var hosts, out int port)) return;
         string deviceInfo = hosts.Count == 1 ? await GetDeviceInfo(hosts[0]) : "";
         if (DarkMessageBox.Show("确认启动指定电脑的应用程序？\n\n[" + cboPeerIp.Text + "]" + deviceInfo + "\n\n程序路径：" + exePath + "。", "确认", MessageBoxButton.OKCancel, MessageBoxImage.Question) != MessageBoxResult.OK) return;
         _processOpenCooldownUntil = DateTime.Now.AddSeconds(5);
@@ -793,22 +780,7 @@ public partial class MainWindow : Window
     }
 
     private void BtnToggleProcessPwd_Click(object sender, RoutedEventArgs e)
-    {
-        if (pwdProcess.Visibility == Visibility.Visible)
-        {
-            txtProcessPwd.Text = pwdProcess.Password;
-            pwdProcess.Visibility = Visibility.Collapsed;
-            txtProcessPwd.Visibility = Visibility.Visible;
-            eyeLineProcess.Visibility = Visibility.Collapsed;
-        }
-        else
-        {
-            pwdProcess.Password = txtProcessPwd.Text;
-            txtProcessPwd.Visibility = Visibility.Collapsed;
-            pwdProcess.Visibility = Visibility.Visible;
-            eyeLineProcess.Visibility = Visibility.Visible;
-        }
-    }
+        => TogglePasswordVisibility(pwdProcess, txtProcessPwd, eyeLineProcess);
 
     private void BtnProcessUnlock_Click(object sender, RoutedEventArgs e)
     {

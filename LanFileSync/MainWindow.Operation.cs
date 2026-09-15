@@ -30,6 +30,20 @@ public partial class MainWindow
         ReloadHistoryCombo();
     }
 
+    /// <summary>
+    /// 统一解析 IP 输入和端口校验。失败时弹窗提示并返回 false。
+    /// </summary>
+    private bool TryGetHostsAndPort(out List<string> hosts, out int port)
+    {
+        hosts = new List<string>();
+        port = 0;
+        try { hosts = IpHelper.ExpandIps(cboPeerIp.Text ?? ""); }
+        catch (FormatException ex) { DarkMessageBox.Show(ex.Message, "错误", MessageBoxButton.OK, MessageBoxImage.Warning); return false; }
+        if (hosts.Count == 0) { DarkMessageBox.Show("请输入远端 IP 或范围。", "提示", MessageBoxButton.OK, MessageBoxImage.Information); return false; }
+        if (!TryGetPeerPort(out port)) { DarkMessageBox.Show("远端端口无效。", "错误", MessageBoxButton.OK, MessageBoxImage.Warning); return false; }
+        return true;
+    }
+
     private async void BtnBackup_Click(object sender, RoutedEventArgs e)
     {
         string dest = txtBackupDest.Text.Trim();
@@ -73,11 +87,7 @@ public partial class MainWindow
 
     private async Task BackupFromRemoteAsync(string dest)
     {
-        List<string> hosts;
-        try { hosts = IpHelper.ExpandIps(cboPeerIp.Text ?? ""); }
-        catch (FormatException ex) { DarkMessageBox.Show(ex.Message, "错误", MessageBoxButton.OK, MessageBoxImage.Warning); return; }
-        if (hosts.Count == 0) { DarkMessageBox.Show("请输入远端 IP 或范围。", "提示", MessageBoxButton.OK, MessageBoxImage.Information); return; }
-        if (!TryGetPeerPort(out int port)) { DarkMessageBox.Show("远端端口无效。", "错误", MessageBoxButton.OK, MessageBoxImage.Warning); return; }
+        if (!TryGetHostsAndPort(out var hosts, out int port)) return;
         string deviceInfo = hosts.Count == 1 ? await GetDeviceInfo(hosts[0]) : "";
         if (DarkMessageBox.Show("确认开始备份远端 BBK 程序？\n\n远端电脑：" + string.Join("、", hosts) + deviceInfo + "\n备份到：" + dest + "。", "确认", MessageBoxButton.OKCancel, MessageBoxImage.Question) != MessageBoxResult.OK) return;
         StartBusy();
@@ -193,11 +203,7 @@ public partial class MainWindow
             await TransferToRemoteAsync(); return;
         }
         if (rbSyncShare.IsChecked == true) { await SyncFromShareAsync(); return; }
-        List<string> hosts;
-        try { hosts = IpHelper.ExpandIps(cboPeerIp.Text ?? ""); }
-        catch (FormatException ex) { DarkMessageBox.Show(ex.Message, "错误", MessageBoxButton.OK, MessageBoxImage.Warning); return; }
-        if (hosts.Count == 0) { DarkMessageBox.Show("请输入远端 IP 或范围。", "提示", MessageBoxButton.OK, MessageBoxImage.Information); return; }
-        if (!TryGetPeerPort(out int port)) { DarkMessageBox.Show("远端端口无效。", "错误", MessageBoxButton.OK, MessageBoxImage.Warning); return; }
+        if (!TryGetHostsAndPort(out var hosts, out int port)) return;
         if (rbReceive.IsChecked == true && hosts.Count > 1) { DarkMessageBox.Show("拉取更新时只能选择一个远端 IP。", "错误", MessageBoxButton.OK, MessageBoxImage.Warning); return; }
         hosts = ExcludeLocalHosts(hosts);
         if (hosts == null) return;
@@ -291,11 +297,7 @@ public partial class MainWindow
         string itemPath = txtTransferPath.Text.Trim();
         if (string.IsNullOrWhiteSpace(itemPath)) { DarkMessageBox.Show("请先选择要同步的文件或文件夹。", "提示", MessageBoxButton.OK, MessageBoxImage.Information); return; }
         if (!Directory.Exists(itemPath) && !File.Exists(itemPath)) { DarkMessageBox.Show("路径无效或不存在：" + itemPath, "错误", MessageBoxButton.OK, MessageBoxImage.Warning); return; }
-        List<string> hosts;
-        try { hosts = IpHelper.ExpandIps(cboPeerIp.Text ?? ""); }
-        catch (FormatException ex) { DarkMessageBox.Show(ex.Message, "错误", MessageBoxButton.OK, MessageBoxImage.Warning); return; }
-        if (hosts.Count == 0) { DarkMessageBox.Show("请输入远端 IP 或范围。", "提示", MessageBoxButton.OK, MessageBoxImage.Information); return; }
-        if (!TryGetPeerPort(out int port)) { DarkMessageBox.Show("远端端口无效。", "错误", MessageBoxButton.OK, MessageBoxImage.Warning); return; }
+        if (!TryGetHostsAndPort(out var hosts, out int port)) return;
         hosts = ExcludeLocalHosts(hosts);
         if (hosts == null) return;
         bool isDir = Directory.Exists(itemPath);
@@ -340,11 +342,7 @@ public partial class MainWindow
     {
         string itemPath = txtTransferPath.Text.Trim();
         if (string.IsNullOrWhiteSpace(itemPath)) { DarkMessageBox.Show("请先输入要拉取的远端文件或文件夹路径。", "提示", MessageBoxButton.OK, MessageBoxImage.Information); return; }
-        List<string> hosts;
-        try { hosts = IpHelper.ExpandIps(cboPeerIp.Text ?? ""); }
-        catch (FormatException ex) { DarkMessageBox.Show(ex.Message, "错误", MessageBoxButton.OK, MessageBoxImage.Warning); return; }
-        if (hosts.Count == 0) { DarkMessageBox.Show("请输入远端 IP 或范围。", "提示", MessageBoxButton.OK, MessageBoxImage.Information); return; }
-        if (!TryGetPeerPort(out int port)) { DarkMessageBox.Show("远端端口无效。", "错误", MessageBoxButton.OK, MessageBoxImage.Warning); return; }
+        if (!TryGetHostsAndPort(out var hosts, out int port)) return;
         hosts = ExcludeLocalHosts(hosts);
         if (hosts == null) return;
 
