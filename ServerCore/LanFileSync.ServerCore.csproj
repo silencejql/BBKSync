@@ -1,0 +1,45 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>net10.0-windows</TargetFramework>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <RootNamespace>LanFileSync</RootNamespace>
+    <AssemblyName>LanFileSync.ServerCore</AssemblyName>
+    <SatelliteResourceLanguages>zh-Hans</SatelliteResourceLanguages>
+  </PropertyGroup>
+
+  <!-- 服务端共享代码：物理文件保留在 LanFileSync 主项目目录，此处以链接方式编译进本类库 -->
+  <ItemGroup>
+    <Compile Include="..\LanFileSync\Net\PeerServer.cs" Link="Net\PeerServer.cs" />
+    <Compile Include="..\LanFileSync\Net\PeerConnection.cs" Link="Net\PeerConnection.cs" />
+    <Compile Include="..\LanFileSync\Net\SourceSide.cs" Link="Net\SourceSide.cs" />
+    <Compile Include="..\LanFileSync\Net\TargetSide.cs" Link="Net\TargetSide.cs" />
+    <Compile Include="..\LanFileSync\Net\TransferSide.cs" Link="Net\TransferSide.cs" />
+    <Compile Include="..\LanFileSync\Net\FileLister.cs" Link="Net\FileLister.cs" />
+    <Compile Include="..\LanFileSync\Sync\SyncEngine.cs" Link="Sync\SyncEngine.cs" />
+    <Compile Include="..\LanFileSync\Backup\BackupEngine.cs" Link="Backup\BackupEngine.cs" />
+    <Compile Include="..\LanFileSync\Backup\BackupSyncEngine.cs" Link="Backup\BackupSyncEngine.cs" />
+    <Compile Include="..\LanFileSync\Transfer\TransferEngine.cs" Link="Transfer\TransferEngine.cs" />
+    <Compile Include="..\LanFileSync\Models\SyncOptions.cs" Link="Models\SyncOptions.cs" />
+    <Compile Include="..\LanFileSync\Models\BackupOptions.cs" Link="Models\BackupOptions.cs" />
+    <Compile Include="..\LanFileSync\Models\FileEntry.cs" Link="Models\FileEntry.cs" />
+    <Compile Include="..\LanFileSync\Rules\UploadRules.cs" Link="Rules\UploadRules.cs" />
+    <Compile Include="..\LanFileSync\Util\Constants.cs" Link="Util\Constants.cs" />
+    <Compile Include="..\LanFileSync\Util\AppPaths.cs" Link="Util\AppPaths.cs" />
+    <Compile Include="..\LanFileSync\Util\DeviceConfig.cs" Link="Util\DeviceConfig.cs" />
+    <Compile Include="..\LanFileSync\Util\FreeFormKiller.cs" Link="Util\FreeFormKiller.cs" />
+    <Compile Include="..\LanFileSync\Util\ScriptRunner.cs" Link="Util\ScriptRunner.cs" />
+    <Compile Include="..\LanFileSync\Util\ZipHelper.cs" Link="Util\ZipHelper.cs" />
+    <Compile Include="..\LanFileSync\Util\FileHelper.cs" Link="Util\FileHelper.cs" />
+    <Compile Include="..\LanFileSync\Util\SettingsStore.cs" Link="Util\SettingsStore.cs" />
+  </ItemGroup>
+
+  <!-- 共享代码大量使用 internal，三个消费方程序集需要可见 -->
+  <ItemGroup>
+    <InternalsVisibleTo Include="BBKSync" />
+    <InternalsVisibleTo Include="BBKSyncServer" />
+    <InternalsVisibleTo Include="BBKSyncService" />
+  </ItemGroup>
+
+</Project>

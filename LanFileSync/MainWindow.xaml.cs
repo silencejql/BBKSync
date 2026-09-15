@@ -50,49 +50,11 @@ public partial class MainWindow : Window
         Icon = AppIcons.WindowIcon() ?? Icon;
         BindSettingsToControls();
         ReloadHistoryCombo();
-        EnsureUpdateBat();
-        EnsurePostBackupBat();
+        ServerSelfUpdater.EnsureBat("--minimized");
+        PreBackupScript.Ensure();
         var localIp = GetLocalIPs().FirstOrDefault(ip => !ip.StartsWith("127.", StringComparison.Ordinal)) ?? "";
         if (!string.IsNullOrEmpty(localIp)) cboPeerIp.Text = localIp;
         LogLine("工具已启动，使用目录: " + txtRoot.Text);
-    }
-
-    private static void EnsureUpdateBat()
-    {
-        string batPath = Path.Combine(AppPaths.ExeDir(), "Update_BBKSync.bat");
-        string exeDir = AppPaths.ExeDir();
-        string exeName = Path.GetFileName(Environment.ProcessPath ?? "BBKSync.exe");
-        string content =
-            "@echo off\r\n" +
-            "chcp 65001 >nul 2>&1\r\n" +
-            "cd /d \"" + exeDir + "\"\r\n" +
-            "if not exist BBKSync_New.exe exit\r\n" +
-            "echo 等待关闭 " + exeName + " ...\r\n" +
-            "timeout /t 3 /nobreak >nul\r\n" +
-            "taskkill /f /im " + exeName + " >nul 2>&1\r\n" +
-            "timeout /t 2 /nobreak >nul\r\n" +
-            "del /f /q \"" + exeName + "\" >nul 2>&1\r\n" +
-            "ren BBKSync_New.exe " + exeName + "\r\n" +
-            "start \" \" \"" + exeDir + "\\" + exeName + "\" --minimized\r\n";
-        File.WriteAllText(batPath, content);
-    }
-
-    private static void EnsurePostBackupBat()
-    {
-        string batPath = Path.Combine(AppPaths.ExeDir(), "PostgreSQL_Backup.bat");
-        if (File.Exists(batPath))
-        {
-            string existing = File.ReadAllText(batPath);
-            if (!string.IsNullOrWhiteSpace(existing)) return;
-        }
-        string content =
-            "@echo off\r\n" +
-            "set DBName=LocalDB\r\n" +
-            "set FileName=%DBName%_AutoBackup_%date:~0,4%%date:~5,2%%date:~8,2%.backup\r\n" +
-            "set BACKUP_DIR=D:\\BBK\\DataBase\r\n" +
-            "if not exist \"D:\\BBK\\DataBase\" (md D:\\BBK\\DataBase)\r\n" +
-            "C:/\"Program Files (x86)\"/PostgreSQL/9.5/bin/pg_dump.exe --host localhost --port 5432 --username \"postgres\" --no-password --format custom --verbose --file \"%BACKUP_DIR%\\%FileName%\" \"%DBName%\"";
-        File.WriteAllText(batPath, content);
     }
 
     private void BindSettingsToControls()

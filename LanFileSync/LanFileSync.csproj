@@ -1,4 +1,4 @@
-﻿<Project Sdk="Microsoft.NET.Sdk">
+<Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
     <OutputType>WinExe</OutputType>
@@ -8,7 +8,7 @@
     <ImplicitUsings>enable</ImplicitUsings>
     <RootNamespace>LanFileSync</RootNamespace>
     <AssemblyName>BBKSync</AssemblyName>
-    <Version>1.2.5</Version>
+    <Version>1.3.0</Version>
     <ApplicationManifest>app.manifest</ApplicationManifest>
     <ApplicationIcon>app.ico</ApplicationIcon>
     <PublishSingleFile>true</PublishSingleFile>
@@ -34,8 +34,38 @@
     <Resource Include="app.ico" />
   </ItemGroup>
 
+  <!-- 以下文件已提取到 ServerCore 共享类库，避免重复定义 -->
+  <ItemGroup>
+    <Compile Remove="Net\PeerServer.cs" />
+    <Compile Remove="Net\PeerConnection.cs" />
+    <Compile Remove="Net\SourceSide.cs" />
+    <Compile Remove="Net\TargetSide.cs" />
+    <Compile Remove="Net\TransferSide.cs" />
+    <Compile Remove="Net\FileLister.cs" />
+    <Compile Remove="Sync\SyncEngine.cs" />
+    <Compile Remove="Backup\BackupEngine.cs" />
+    <Compile Remove="Backup\BackupSyncEngine.cs" />
+    <Compile Remove="Transfer\TransferEngine.cs" />
+    <Compile Remove="Models\SyncOptions.cs" />
+    <Compile Remove="Models\BackupOptions.cs" />
+    <Compile Remove="Models\FileEntry.cs" />
+    <Compile Remove="Rules\UploadRules.cs" />
+    <Compile Remove="Util\Constants.cs" />
+    <Compile Remove="Util\AppPaths.cs" />
+    <Compile Remove="Util\DeviceConfig.cs" />
+    <Compile Remove="Util\FreeFormKiller.cs" />
+    <Compile Remove="Util\ScriptRunner.cs" />
+    <Compile Remove="Util\ZipHelper.cs" />
+    <Compile Remove="Util\FileHelper.cs" />
+    <Compile Remove="Util\SettingsStore.cs" />
+  </ItemGroup>
+
   <ItemGroup>
     <PackageReference Include="Hardcodet.NotifyIcon.Wpf" Version="2.0.1" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\ServerCore\LanFileSync.ServerCore.csproj" />
   </ItemGroup>
 
 </Project>
