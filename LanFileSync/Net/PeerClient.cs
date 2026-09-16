@@ -223,7 +223,7 @@ public sealed class PeerClient : IDisposable
             {
                 string parent = Path.GetDirectoryName(normRemote) ?? "";
                 string folder = Path.GetFileName(normRemote);
-                saveRoot = FileHelper.UniquePath(Path.Combine(parent, $"{folder}_AutoBackupFrom_{sourceTag}_{dateStr}"), isDir: true);
+                saveRoot = FileHelper.UniquePath(Path.Combine(parent, $"{folder}_AutoUpdateFrom_{sourceTag}_{dateStr}"), isDir: true);
             }
             else
             {
@@ -271,7 +271,7 @@ public sealed class PeerClient : IDisposable
                 string sourceTag = FileHelper.SanitizeName(string.IsNullOrWhiteSpace(remoteDevice) ? "远端" : remoteDevice);
                 string baseName = Path.GetFileNameWithoutExtension(localPath);
                 string ext = Path.GetExtension(localPath);
-                savedPath = FileHelper.UniquePath(Path.Combine(saveRoot, $"{baseName}_AutoBackupFrom_{sourceTag}_{dateStr}{ext}"), isDir: false);
+                savedPath = FileHelper.UniquePath(Path.Combine(saveRoot, $"{baseName}_AutoUpdateFrom_{sourceTag}_{dateStr}{ext}"), isDir: false);
             }
 
             string? savedDir = Path.GetDirectoryName(savedPath);
