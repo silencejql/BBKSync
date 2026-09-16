@@ -109,11 +109,37 @@ public sealed class PeerServer : IDisposable
         }
     }
 
-    /// <summary>将本机备份过程日志回传给主控端（备份完成后、继续更新前发送）。</summary>
-    private static async Task SendBackupLogAsync(PeerConnection conn, List<string> backupLogs, CancellationToken ct)
+    /// <summary>
+    /// 创建一对日志方法，用于备份等需要向主控端回报进度的流程：
+    /// <list type="bullet">
+    /// <item>logLocal：仅写本机日志，不回传主控端；</item>
+    /// <item>logSync：写本机日志并实时回传主控端显示。</item>
+    /// </list>
+    /// 后续如需调整某条日志是否回传，在 logLocal(...) 与 logSync(...) 之间切换即可。
+    /// </summary>
+    private (Action<string> LogLocal, Action<string> LogSync) CreateLogRelay(PeerConnection conn, CancellationToken ct)
     {
-        if (backupLogs.Count > 0)
-            await conn.SendJsonAsync(new { op = "blog", msgs = backupLogs }, ct);
+        void LogLocal(string m) => _log(m);
+
+        void LogSync(string m)
+        {
+            _log(m);
+            // 同步阻塞写入，保证多条日志按产生顺序到达主控端
+            try
+            {
+                conn.SendJsonAsync(new { op = "blog", msgs = new[] { m } }, ct).GetAwaiter().GetResult();
+            }
+            catch (OperationCanceledException) when (ct.IsCancellationRequested)
+            {
+                throw;
+            }
+            catch (Exception ex)
+            {
+                _log("回传主控端日志失败: " + ex.Message);
+            }
+        }
+
+        return (LogLocal, LogSync);
     }
 
     private async Task HandleClientAsync(TcpClient tcp, CancellationToken ct)
@@ -197,11 +223,10 @@ public sealed class PeerServer : IDisposable
 
                     if (engine.NeedList.Count > 0 && _backupBeforeSync && !string.IsNullOrWhiteSpace(_backupDest))
                     {
+                        // 备份阶段日志：logSync 实时回传主控端，logLocal 仅写本机
+                        var (logLocal, logSync) = CreateLogRelay(conn, ct);
                         string dest = Path.Combine(_backupDest, $"BBK_AutoBackup_{DateTime.Now:yyyyMMdd}");
-                        var backupLogs = new List<string>();
-                        // 备份日志同时写本机日志并收集，备份完成后回传给主控端
-                        void BLog(string m) { _log(m); backupLogs.Add(m); }
-                        BLog($"远端需要 {engine.NeedList.Count} 个文件，先备份本机 BBK 到 {dest}");
+                        logSync($"远端需要 {engine.NeedList.Count} 个文件，先备份本机 BBK 到 {dest}");
                         try
                         {
                             var be = new BackupEngine(_root, dest, _backupOptions);
@@ -210,21 +235,21 @@ public sealed class PeerServer : IDisposable
                             {
                                 string msg = "同步前备份跳过: " + m;
                                 _onError(msg);
-                                backupLogs.Add(msg);
+                                logSync(msg);
                             }, ct);
-                            BLog($"同步前备份完成({files.Count} 项)");
-                            await CompressAndRemoveFolderAsync(dest, _compressUpdateZip, BLog);
+                            logSync($"同步前备份完成({files.Count} 项)");
+                            await CompressAndRemoveFolderAsync(dest, _compressUpdateZip, logSync);
                         }
                         catch (ArgumentException)
                         {
-                            BLog(_backupDest + " 为空或与同步目录相同/位于其内部，跳过同步前备份。");
+                            logSync(_backupDest + " 为空或与同步目录相同/位于其内部，跳过同步前备份。");
                         }
                         catch (Exception ex)
                         {
+                            logLocal("同步前备份失败: " + ex.Message);
                             await conn.SendJsonAsync(new { op = "err", msg = "目标电脑同步前备份失败: " + ex.Message }, CancellationToken.None);
                             throw;
                         }
-                        await SendBackupLogAsync(conn, backupLogs, ct);
                     }
 
                     _onTotal(engine.NeedList.Count);
@@ -271,21 +296,20 @@ public sealed class PeerServer : IDisposable
 
                     if (updateMode && engine.NeedList.Count > 0)
                     {
-                        var backupLogs = new List<string>();
-                        // 备份日志同时写本机日志并收集，备份完成后回传给主控端
-                        void BLog(string m) { _log(m); backupLogs.Add(m); }
+                        // 备份阶段日志：logSync 实时回传主控端，logLocal 仅写本机
+                        var (logLocal, logSync) = CreateLogRelay(conn, ct);
                         string? backupErr = null;
-                        bool ok = engine.BackupItem(BLog, m =>
+                        bool ok = engine.BackupItem(logSync, m =>
                         {
                             _onError("备份: " + m);
                             backupErr = m;
                         });
                         if (!ok)
                         {
+                            logLocal("更新前自动备份失败: " + backupErr);
                             await conn.SendJsonAsync(new { op = "err", msg = "目标电脑更新前自动备份失败: " + backupErr }, CancellationToken.None);
                             throw new InvalidOperationException("更新前自动备份失败");
                         }
-                        await SendBackupLogAsync(conn, backupLogs, ct);
                     }
 
                     if (!updateMode && engine.NeedList.Count > 0)
