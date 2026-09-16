@@ -680,18 +680,24 @@
 
                     <!-- 日志 -->
                     <GroupBox Grid.Row="2" Header="日志" Margin="0,2,0,0">
-                        <DockPanel>
-                            <StackPanel DockPanel.Dock="Bottom" Orientation="Horizontal" HorizontalAlignment="Right" Margin="0,0,0,0">
-                                <Button Content="复制日志" Padding="12,5" Click="BtnCopyLog_Click" Margin="0,0,8,0" />
-                                <Button Content="清空日志" Padding="12,5" Click="BtnClearLog_Click" />
-                            </StackPanel>
+                        <Grid>
                             <RichTextBox x:Name="txtLog" FontFamily="Consolas" FontSize="12"
+                                 Padding="4,2,4,36"
                                  Background="{DynamicResource WindowBgBrush}" BorderBrush="{DynamicResource CardBorderBrush}" BorderThickness="1"
                                  IsReadOnly="True"
                                  VerticalScrollBarVisibility="Auto"
                                  HorizontalScrollBarVisibility="Auto"
                                  ContextMenu="{x:Null}" />
-                        </DockPanel>
+                            <!-- 悬浮按钮：叠加在日志框右下角，右侧避开垂直滚动条，有水平滚动条时自动上移 -->
+                            <Border x:Name="btnLogPanel" HorizontalAlignment="Right" VerticalAlignment="Bottom"
+                                    Margin="0,0,24,4"
+                                    Background="{DynamicResource WindowBgBrush}" CornerRadius="4" Padding="2">
+                                <StackPanel Orientation="Horizontal">
+                                    <Button Content="复制日志" Padding="12,5" Click="BtnCopyLog_Click" Margin="0,0,8,0" />
+                                    <Button Content="清空日志" Padding="12,5" Click="BtnClearLog_Click" />
+                                </StackPanel>
+                            </Border>
+                        </Grid>
                     </GroupBox>
                 </Grid>
             </DockPanel>

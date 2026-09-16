@@ -42,6 +42,8 @@ public partial class MainWindow : Window
             a.Equals("--minimized", StringComparison.OrdinalIgnoreCase) ||
             a.Equals("--autostart", StringComparison.OrdinalIgnoreCase));
         InitializeComponent();
+        // RichTextBox 的 ScrollChanged 为路由事件，代码订阅以联动悬浮按钮位置
+        txtLog.AddHandler(ScrollViewer.ScrollChangedEvent, new ScrollChangedEventHandler(TxtLog_ScrollChanged));
         var ver = System.Reflection.Assembly.GetEntryAssembly()?.GetName().Version;
         string verStr = ver != null ? $"v{ver.Major}.{ver.Minor}.{ver.Build}" : "";
         Title = $"BBK文件同步与备份工具 {verStr}";
@@ -482,6 +484,21 @@ public partial class MainWindow : Window
         if (txtLog == null) return;
         var textRange = new TextRange(txtLog.Document.ContentStart, txtLog.Document.ContentEnd);
         if (!string.IsNullOrEmpty(textRange.Text)) { Clipboard.SetText(textRange.Text); }
+    }
+
+    private bool _logHBarVisible;
+
+    /// <summary>日志出现水平滚动条时，悬浮按钮自动上移避开；无水平滚动条时贴底。</summary>
+    private void TxtLog_ScrollChanged(object sender, ScrollChangedEventArgs e)
+    {
+        if (btnLogPanel == null) return;
+        // 垂直滚动条占位会收窄可视宽度，1px 容差避免边界抖动
+        bool visible = e.ExtentWidth > e.ViewportWidth + 1;
+        if (visible == _logHBarVisible) return;
+        _logHBarVisible = visible;
+        btnLogPanel.Margin = visible
+            ? new Thickness(0, 0, 24, 22)
+            : new Thickness(0, 0, 24, 4);
     }
     private void Window_StateChanged(object sender, EventArgs e) { if (WindowState == WindowState.Minimized && _tray != null) Hide(); }
 
