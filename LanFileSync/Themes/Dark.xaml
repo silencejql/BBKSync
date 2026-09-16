@@ -11,8 +11,7 @@
     <SolidColorBrush x:Key="CardBgBrush2" Color="#151B24" />
     <SolidColorBrush x:Key="OverlayBgBrush" Color="#CC0B0F16" />
 
-    <!-- 柔和投影（卡片 / 浮层） -->
-    <DropShadowEffect x:Key="CardShadow" Color="#000000" ShadowDepth="2" BlurRadius="16" Opacity="0.4" />
+    <!--  仅弹层使用投影（下拉框/工具提示），常驻界面不使用 Effect 以保证交互流畅  -->
     <DropShadowEffect x:Key="PopShadow" Color="#000000" ShadowDepth="4" BlurRadius="20" Opacity="0.55" />
 
     <!-- 文字默认前景 -->
@@ -57,7 +56,7 @@
                                     <Storyboard>
                                         <DoubleAnimation Storyboard.TargetName="hoverLayer"
                                                          Storyboard.TargetProperty="Opacity"
-                                                         To="1" Duration="0:0:0.12" />
+                                                         To="1" Duration="0:0:0.08" />
                                     </Storyboard>
                                 </BeginStoryboard>
                             </Trigger.EnterActions>
@@ -66,7 +65,7 @@
                                     <Storyboard>
                                         <DoubleAnimation Storyboard.TargetName="hoverLayer"
                                                          Storyboard.TargetProperty="Opacity"
-                                                         To="0" Duration="0:0:0.12" />
+                                                         To="0" Duration="0:0:0.1" />
                                     </Storyboard>
                                 </BeginStoryboard>
                             </Trigger.ExitActions>
@@ -77,13 +76,13 @@
                                     <Storyboard>
                                         <DoubleAnimation Storyboard.TargetName="pressLayer"
                                                          Storyboard.TargetProperty="Opacity"
-                                                         To="1" Duration="0:0:0.06" />
+                                                         To="1" Duration="0:0:0.05" />
                                         <DoubleAnimation Storyboard.TargetName="pressScale"
                                                          Storyboard.TargetProperty="ScaleX"
-                                                         To="0.985" Duration="0:0:0.08" />
+                                                         To="0.985" Duration="0:0:0.06" />
                                         <DoubleAnimation Storyboard.TargetName="pressScale"
                                                          Storyboard.TargetProperty="ScaleY"
-                                                         To="0.985" Duration="0:0:0.08" />
+                                                         To="0.985" Duration="0:0:0.06" />
                                     </Storyboard>
                                 </BeginStoryboard>
                             </Trigger.EnterActions>
@@ -92,13 +91,13 @@
                                     <Storyboard>
                                         <DoubleAnimation Storyboard.TargetName="pressLayer"
                                                          Storyboard.TargetProperty="Opacity"
-                                                         To="0" Duration="0:0:0.12" />
+                                                         To="0" Duration="0:0:0.1" />
                                         <DoubleAnimation Storyboard.TargetName="pressScale"
                                                          Storyboard.TargetProperty="ScaleX"
-                                                         To="1" Duration="0:0:0.12" />
+                                                         To="1" Duration="0:0:0.08" />
                                         <DoubleAnimation Storyboard.TargetName="pressScale"
                                                          Storyboard.TargetProperty="ScaleY"
-                                                         To="1" Duration="0:0:0.12" />
+                                                         To="1" Duration="0:0:0.08" />
                                     </Storyboard>
                                 </BeginStoryboard>
                             </Trigger.ExitActions>
@@ -139,9 +138,6 @@
                                 <GradientStop Color="#00B8D9" Offset="1" />
                             </LinearGradientBrush>
                         </Border.Background>
-                        <Border.Effect>
-                            <DropShadowEffect ShadowDepth="0" BlurRadius="12" Color="#00D4FF" Opacity="0.4" />
-                        </Border.Effect>
                         <Border.RenderTransform>
                             <ScaleTransform x:Name="pressScale" ScaleX="1" ScaleY="1" />
                         </Border.RenderTransform>
@@ -167,7 +163,7 @@
                                     <Storyboard>
                                         <DoubleAnimation Storyboard.TargetName="hoverLayer"
                                                          Storyboard.TargetProperty="Opacity"
-                                                         To="1" Duration="0:0:0.12" />
+                                                         To="1" Duration="0:0:0.08" />
                                     </Storyboard>
                                 </BeginStoryboard>
                             </Trigger.EnterActions>
@@ -176,7 +172,7 @@
                                     <Storyboard>
                                         <DoubleAnimation Storyboard.TargetName="hoverLayer"
                                                          Storyboard.TargetProperty="Opacity"
-                                                         To="0" Duration="0:0:0.12" />
+                                                         To="0" Duration="0:0:0.1" />
                                     </Storyboard>
                                 </BeginStoryboard>
                             </Trigger.ExitActions>
@@ -187,13 +183,13 @@
                                     <Storyboard>
                                         <DoubleAnimation Storyboard.TargetName="pressLayer"
                                                          Storyboard.TargetProperty="Opacity"
-                                                         To="1" Duration="0:0:0.06" />
+                                                         To="1" Duration="0:0:0.05" />
                                         <DoubleAnimation Storyboard.TargetName="pressScale"
                                                          Storyboard.TargetProperty="ScaleX"
-                                                         To="0.985" Duration="0:0:0.08" />
+                                                         To="0.985" Duration="0:0:0.06" />
                                         <DoubleAnimation Storyboard.TargetName="pressScale"
                                                          Storyboard.TargetProperty="ScaleY"
-                                                         To="0.985" Duration="0:0:0.08" />
+                                                         To="0.985" Duration="0:0:0.06" />
                                     </Storyboard>
                                 </BeginStoryboard>
                             </Trigger.EnterActions>
@@ -202,13 +198,13 @@
                                     <Storyboard>
                                         <DoubleAnimation Storyboard.TargetName="pressLayer"
                                                          Storyboard.TargetProperty="Opacity"
-                                                         To="0" Duration="0:0:0.12" />
+                                                         To="0" Duration="0:0:0.1" />
                                         <DoubleAnimation Storyboard.TargetName="pressScale"
                                                          Storyboard.TargetProperty="ScaleX"
-                                                         To="1" Duration="0:0:0.12" />
+                                                         To="1" Duration="0:0:0.08" />
                                         <DoubleAnimation Storyboard.TargetName="pressScale"
                                                          Storyboard.TargetProperty="ScaleY"
-                                                         To="1" Duration="0:0:0.12" />
+                                                         To="1" Duration="0:0:0.08" />
                                     </Storyboard>
                                 </BeginStoryboard>
                             </Trigger.ExitActions>
@@ -242,39 +238,11 @@
                             BorderBrush="{TemplateBinding BorderBrush}"
                             BorderThickness="{TemplateBinding BorderThickness}"
                             Padding="{TemplateBinding Padding}">
-                        <Border.Effect>
-                            <DropShadowEffect x:Name="glow" ShadowDepth="0" BlurRadius="0"
-                                              Color="#00D4FF" Opacity="0" />
-                        </Border.Effect>
                         <ScrollViewer x:Name="PART_ContentHost" Margin="1,0" />
                     </Border>
                     <ControlTemplate.Triggers>
                         <Trigger Property="IsKeyboardFocused" Value="True">
                             <Setter TargetName="bd" Property="BorderBrush" Value="#00D4FF" />
-                            <Trigger.EnterActions>
-                                <BeginStoryboard>
-                                    <Storyboard>
-                                        <DoubleAnimation Storyboard.TargetName="bd"
-                                                         Storyboard.TargetProperty="(UIElement.Effect).(DropShadowEffect.BlurRadius)"
-                                                         To="8" Duration="0:0:0.12" />
-                                        <DoubleAnimation Storyboard.TargetName="bd"
-                                                         Storyboard.TargetProperty="(UIElement.Effect).(DropShadowEffect.Opacity)"
-                                                         To="0.25" Duration="0:0:0.12" />
-                                    </Storyboard>
-                                </BeginStoryboard>
-                            </Trigger.EnterActions>
-                            <Trigger.ExitActions>
-                                <BeginStoryboard>
-                                    <Storyboard>
-                                        <DoubleAnimation Storyboard.TargetName="bd"
-                                                         Storyboard.TargetProperty="(UIElement.Effect).(DropShadowEffect.BlurRadius)"
-                                                         To="0" Duration="0:0:0.15" />
-                                        <DoubleAnimation Storyboard.TargetName="bd"
-                                                         Storyboard.TargetProperty="(UIElement.Effect).(DropShadowEffect.Opacity)"
-                                                         To="0" Duration="0:0:0.15" />
-                                    </Storyboard>
-                                </BeginStoryboard>
-                            </Trigger.ExitActions>
                         </Trigger>
                         <Trigger Property="IsEnabled" Value="False">
                             <Setter TargetName="bd" Property="Opacity" Value="0.50" />
@@ -340,39 +308,11 @@
                             BorderBrush="{TemplateBinding BorderBrush}"
                             BorderThickness="{TemplateBinding BorderThickness}"
                             Padding="{TemplateBinding Padding}">
-                        <Border.Effect>
-                            <DropShadowEffect x:Name="glow" ShadowDepth="0" BlurRadius="0"
-                                              Color="#00D4FF" Opacity="0" />
-                        </Border.Effect>
                         <ScrollViewer x:Name="PART_ContentHost" Margin="1,0" />
                     </Border>
                     <ControlTemplate.Triggers>
                         <Trigger Property="IsKeyboardFocused" Value="True">
                             <Setter TargetName="bd" Property="BorderBrush" Value="#00D4FF" />
-                            <Trigger.EnterActions>
-                                <BeginStoryboard>
-                                    <Storyboard>
-                                        <DoubleAnimation Storyboard.TargetName="bd"
-                                                         Storyboard.TargetProperty="(UIElement.Effect).(DropShadowEffect.BlurRadius)"
-                                                         To="8" Duration="0:0:0.12" />
-                                        <DoubleAnimation Storyboard.TargetName="bd"
-                                                         Storyboard.TargetProperty="(UIElement.Effect).(DropShadowEffect.Opacity)"
-                                                         To="0.25" Duration="0:0:0.12" />
-                                    </Storyboard>
-                                </BeginStoryboard>
-                            </Trigger.EnterActions>
-                            <Trigger.ExitActions>
-                                <BeginStoryboard>
-                                    <Storyboard>
-                                        <DoubleAnimation Storyboard.TargetName="bd"
-                                                         Storyboard.TargetProperty="(UIElement.Effect).(DropShadowEffect.BlurRadius)"
-                                                         To="0" Duration="0:0:0.15" />
-                                        <DoubleAnimation Storyboard.TargetName="bd"
-                                                         Storyboard.TargetProperty="(UIElement.Effect).(DropShadowEffect.Opacity)"
-                                                         To="0" Duration="0:0:0.15" />
-                                    </Storyboard>
-                                </BeginStoryboard>
-                            </Trigger.ExitActions>
                         </Trigger>
                         <Trigger Property="IsEnabled" Value="False">
                             <Setter TargetName="bd" Property="Opacity" Value="0.50" />
@@ -515,8 +455,7 @@
                         </StackPanel>
                         <Border Background="#151B24" CornerRadius="12"
                                 BorderBrush="{DynamicResource CardBorderBrush}"
-                                BorderThickness="1" Padding="14" SnapsToDevicePixels="True"
-                                Effect="{StaticResource CardShadow}">
+                                BorderThickness="1" Padding="14" SnapsToDevicePixels="True">
                             <ContentPresenter />
                         </Border>
                     </DockPanel>
@@ -541,9 +480,6 @@
                                         <GradientStop Color="#7AE7FF" Offset="1" />
                                     </LinearGradientBrush>
                                 </Border.Background>
-                                <Border.Effect>
-                                    <DropShadowEffect ShadowDepth="0" BlurRadius="6" Color="#00D4FF" Opacity="0.45" />
-                                </Border.Effect>
                             </Border>
                         </Grid>
                     </Border>
@@ -576,11 +512,6 @@
                             <Setter TargetName="bd" Property="Background" Value="#151B24" />
                             <Setter TargetName="bd" Property="BorderBrush" Value="{DynamicResource CardBorderBrush}" />
                             <Setter Property="Foreground" Value="{DynamicResource TextMainBrush}" />
-                            <Setter TargetName="bd" Property="Effect">
-                                <Setter.Value>
-                                    <DropShadowEffect Color="#000000" ShadowDepth="2" BlurRadius="10" Opacity="0.5" />
-                                </Setter.Value>
-                            </Setter>
                         </Trigger>
                         <Trigger Property="IsEnabled" Value="False">
                             <Setter TargetName="bd" Property="Opacity" Value="0.5" />
@@ -627,7 +558,7 @@
                                     <Storyboard>
                                         <DoubleAnimation Storyboard.TargetName="check"
                                                          Storyboard.TargetProperty="Opacity"
-                                                         To="1" Duration="0:0:0.12" />
+                                                         To="1" Duration="0:0:0.08" />
                                         <DoubleAnimation Storyboard.TargetName="checkScale"
                                                          Storyboard.TargetProperty="ScaleX"
                                                          To="1" Duration="0:0:0.18" />
@@ -949,8 +880,7 @@
                                   HorizontalAlignment="Left" />
                         <Border Grid.Row="1" Background="#151B24" CornerRadius="12"
                                 BorderBrush="{DynamicResource CardBorderBrush}"
-                                BorderThickness="1" SnapsToDevicePixels="True"
-                                Effect="{StaticResource CardShadow}" />
+                                BorderThickness="1" SnapsToDevicePixels="True" />
                         <ContentPresenter Grid.Row="1" Margin="16,14"
                                           ContentSource="SelectedContent" />
                     </Grid>

@@ -20,14 +20,9 @@
                             GlassFrameThickness="0" CornerRadius="0"
                             UseAeroCaptionButtons="False" />
     </shell:WindowChrome.WindowChrome>
-    <!-- 外层留白用于渲染柔和阴影 -->
-    <Grid x:Name="rootHost" Margin="10">
+    <Grid x:Name="rootHost">
     <Border x:Name="rootBorder" BorderThickness="1" CornerRadius="12"
             BorderBrush="{DynamicResource WindowFrameBrush}">
-        <Border.Effect>
-            <DropShadowEffect x:Name="windowShadow" Color="#0F172A" ShadowDepth="0"
-                              BlurRadius="28" Opacity="0.22" />
-        </Border.Effect>
         <Grid x:Name="rootContent" Background="{DynamicResource WindowBgBrush}"
               local:CornerClip.Radius="11">
             <Grid.RowDefinitions>

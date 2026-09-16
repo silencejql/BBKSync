@@ -14,14 +14,10 @@
         <shell:WindowChrome CaptionHeight="32" GlassFrameThickness="0" CornerRadius="0"
                             ResizeBorderThickness="8" UseAeroCaptionButtons="False" />
     </WindowChrome.WindowChrome>
-    <!-- 外层留白用于渲染柔和阴影 -->
-    <Grid x:Name="rootHost" Margin="10">
+    <Grid x:Name="rootHost">
         <Border x:Name="rootBorder" CornerRadius="12"
                 Background="{DynamicResource WindowBgBrush}"
                 BorderBrush="{DynamicResource WindowFrameBrush}" BorderThickness="1">
-            <Border.Effect>
-                <DropShadowEffect Color="Black" BlurRadius="20" ShadowDepth="0" Opacity="0.25" />
-            </Border.Effect>
             <Grid x:Name="rootContent" local:CornerClip.Radius="11">
                 <Grid.RowDefinitions>
                     <RowDefinition Height="32" />

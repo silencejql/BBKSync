@@ -71,13 +71,9 @@
         </Style>
     </Window.Resources>
 
-    <!-- 外层留白用于渲染柔和阴影 -->
-    <Grid Margin="14">
+    <Grid>
         <Border CornerRadius="12" Background="{DynamicResource WindowBgBrush}"
-                BorderBrush="{DynamicResource CardBorderBrush}" BorderThickness="1">
-            <Border.Effect>
-                <DropShadowEffect Color="Black" BlurRadius="26" ShadowDepth="0" Opacity="0.30" />
-            </Border.Effect>
+                BorderBrush="{DynamicResource WindowFrameBrush}" BorderThickness="1">
 
             <Grid>
                 <Grid.RowDefinitions>
