@@ -9,11 +9,11 @@
             </ResourceDictionary.MergedDictionaries>
 
             <!-- 基础画刷(主题切换时动态更新) -->
-            <SolidColorBrush x:Key="WindowBgBrush" Color="#F3F5F9" />
-            <SolidColorBrush x:Key="CardBorderBrush" Color="#E1E6EE" />
+            <SolidColorBrush x:Key="WindowBgBrush" Color="#F2F4F8" />
+            <SolidColorBrush x:Key="CardBorderBrush" Color="#E3E8F0" />
             <SolidColorBrush x:Key="AccentBrush" Color="#2563EB" />
-            <SolidColorBrush x:Key="InputBorderBrush" Color="#C9D2E0" />
-            <SolidColorBrush x:Key="TextMainBrush" Color="#20242E" />
+            <SolidColorBrush x:Key="InputBorderBrush" Color="#CBD4E1" />
+            <SolidColorBrush x:Key="TextMainBrush" Color="#1F2430" />
             <SolidColorBrush x:Key="TextSubBrush" Color="#6B7280" />
         </ResourceDictionary>
     </Application.Resources>

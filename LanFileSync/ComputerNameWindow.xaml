@@ -18,7 +18,7 @@
     <Grid x:Name="rootHost" Margin="10">
         <Border x:Name="rootBorder" CornerRadius="12"
                 Background="{DynamicResource WindowBgBrush}"
-                BorderBrush="{DynamicResource CardBorderBrush}" BorderThickness="1">
+                BorderBrush="{DynamicResource WindowFrameBrush}" BorderThickness="1">
             <Border.Effect>
                 <DropShadowEffect Color="Black" BlurRadius="20" ShadowDepth="0" Opacity="0.25" />
             </Border.Effect>

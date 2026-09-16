@@ -20,32 +20,16 @@
                             GlassFrameThickness="0" CornerRadius="0"
                             UseAeroCaptionButtons="False" />
     </shell:WindowChrome.WindowChrome>
-    <Border x:Name="rootBorder" BorderThickness="2" CornerRadius="12">
-        <Border.BorderBrush>
-            <!--  渐变边框：深蓝→白→深蓝，加载后持续旋转（线性插值自然平滑）  -->
-            <LinearGradientBrush StartPoint="0,0" EndPoint="1,1">
-                <LinearGradientBrush.RelativeTransform>
-                    <RotateTransform CenterX="0.5" CenterY="0.5" Angle="0" />
-                </LinearGradientBrush.RelativeTransform>
-                <GradientStop Color="#1E40AF" Offset="0" />
-                <GradientStop Color="#93B4F5" Offset="0.25" />
-                <GradientStop Color="#FFFFFF" Offset="0.5" />
-                <GradientStop Color="#93B4F5" Offset="0.75" />
-                <GradientStop Color="#1E40AF" Offset="1" />
-            </LinearGradientBrush>
-        </Border.BorderBrush>
-        <Border.Triggers>
-            <EventTrigger RoutedEvent="Loaded">
-                <BeginStoryboard>
-                    <Storyboard>
-                        <DoubleAnimation Storyboard.TargetProperty="(Border.BorderBrush).(LinearGradientBrush.RelativeTransform).(RotateTransform.Angle)"
-                                         From="0" To="360" Duration="0:0:3" RepeatBehavior="Forever" />
-                    </Storyboard>
-                </BeginStoryboard>
-            </EventTrigger>
-        </Border.Triggers>
+    <!-- 外层留白用于渲染柔和阴影 -->
+    <Grid x:Name="rootHost" Margin="10">
+    <Border x:Name="rootBorder" BorderThickness="1" CornerRadius="12"
+            BorderBrush="{DynamicResource WindowFrameBrush}">
+        <Border.Effect>
+            <DropShadowEffect x:Name="windowShadow" Color="#0F172A" ShadowDepth="0"
+                              BlurRadius="28" Opacity="0.22" />
+        </Border.Effect>
         <Grid x:Name="rootContent" Background="{DynamicResource WindowBgBrush}"
-              local:CornerClip.Radius="10">
+              local:CornerClip.Radius="11">
             <Grid.RowDefinitions>
                 <RowDefinition Height="32" />
                 <RowDefinition Height="*" />
@@ -94,7 +78,7 @@
                     </DockPanel>
                 </Border>
 
-                <Grid Margin="14">
+                <Grid Margin="16">
                     <Grid.RowDefinitions>
                         <RowDefinition Height="*" />
                         <RowDefinition Height="Auto" />
@@ -190,9 +174,9 @@
                             </Grid>
 
                             <!-- 选项卡：备份 / 更新(横跨整个界面) -->
-                            <TabControl x:Name="tabs" Margin="-2,10,0,0" SelectionChanged="Tabs_SelectionChanged">
+                            <TabControl x:Name="tabs" Margin="0,16,0,0" SelectionChanged="Tabs_SelectionChanged">
                                 <TabItem Header="BBK备份" Width="100">
-                                    <Grid Margin="6,10,6,06">
+                                    <Grid Margin="0">
                                         <Grid.ColumnDefinitions>
                                             <ColumnDefinition Width="*" />
                                             <ColumnDefinition Width="Auto" />
@@ -251,7 +235,7 @@
                                     </Grid>
                                 </TabItem>
                                 <TabItem Header="BBK更新" Width="100">
-                                    <Grid Margin="6,10,6,6">
+                                    <Grid Margin="0">
                                         <Grid.ColumnDefinitions>
                                             <ColumnDefinition Width="*" />
                                             <ColumnDefinition Width="Auto" />
@@ -337,7 +321,7 @@
                                     </Grid>
                                 </TabItem>
                                 <TabItem Header="文件同步" Width="100">
-                                    <Grid Margin="6,10,6,6">
+                                    <Grid Margin="0">
                                         <Grid.ColumnDefinitions>
                                             <ColumnDefinition Width="*" />
                                             <ColumnDefinition Width="Auto" />
@@ -382,7 +366,7 @@
                                     </Grid>
                                 </TabItem>
                                 <TabItem Header="进程管理" Width="100">
-                                    <Grid Margin="6,10,6,6">
+                                    <Grid Margin="0">
                                         <Grid.ColumnDefinitions>
                                             <ColumnDefinition Width="*" />
                                             <ColumnDefinition Width="Auto" />
@@ -518,7 +502,7 @@
                                     </Grid>
                                 </TabItem>
                                 <TabItem Header="程序升级" Width="100">
-                                    <Grid Margin="6,10,6,6">
+                                    <Grid Margin="0">
                                         <Grid.ColumnDefinitions>
                                             <ColumnDefinition Width="*" />
                                             <ColumnDefinition Width="Auto" />
@@ -554,7 +538,7 @@
                             </TabControl>
 
                             <!-- 同步与进度 -->
-                            <GroupBox Header="同步与进度" Margin="0,14,0,0">
+                            <GroupBox Header="同步与进度" Margin="0,16,0,0">
                                 <StackPanel>
                                     <Grid>
                                         <Grid.ColumnDefinitions>
@@ -578,7 +562,7 @@
                             </GroupBox>
 
                             <!-- Windows 共享连接 -->
-                            <GroupBox x:Name="grpShare" Header="Windows 共享连接" Margin="0,14,0,0" Visibility="Collapsed">
+                            <GroupBox x:Name="grpShare" Header="Windows 共享连接" Margin="0,16,0,0" Visibility="Collapsed">
                                 <StackPanel>
                                     <Grid>
                                         <Grid.ColumnDefinitions>
@@ -651,4 +635,5 @@
             </DockPanel>
         </Grid>
     </Border>
+    </Grid>
 </Window>

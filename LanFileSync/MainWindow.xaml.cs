@@ -506,8 +506,11 @@ public partial class MainWindow : Window
         // 避免 WindowChrome 的 ResizeBorderThickness 使窗口向屏幕四周溢出；
         // 还原后恢复圆角并清除约束（覆盖按钮 / 双击标题栏 / Win+↑ 等所有路径）。
         bool maximized = WindowState == WindowState.Maximized;
+        rootHost.Margin = new Thickness(maximized ? 0 : 10);
         rootBorder.CornerRadius = new CornerRadius(maximized ? 0 : 12);
-        CornerClip.SetRadius(rootContent, maximized ? 0 : 10);
+        CornerClip.SetRadius(rootContent, maximized ? 0 : 11);
+        // 最大化时去掉窗口外阴影，避免屏边残留辉光
+        rootBorder.Effect = maximized ? null : windowShadow;
         if (maximized)
         {
             MaxWidth = SystemParameters.MaximizedPrimaryScreenWidth;
