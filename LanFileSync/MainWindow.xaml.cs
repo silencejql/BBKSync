@@ -42,8 +42,6 @@ public partial class MainWindow : Window
             a.Equals("--minimized", StringComparison.OrdinalIgnoreCase) ||
             a.Equals("--autostart", StringComparison.OrdinalIgnoreCase));
         InitializeComponent();
-        // RichTextBox 的 ScrollChanged 为路由事件，代码订阅以联动悬浮按钮位置
-        txtLog.AddHandler(ScrollViewer.ScrollChangedEvent, new ScrollChangedEventHandler(TxtLog_ScrollChanged));
         var ver = System.Reflection.Assembly.GetEntryAssembly()?.GetName().Version;
         string verStr = ver != null ? $"v{ver.Major}.{ver.Minor}.{ver.Build}" : "";
         Title = $"BBK文件同步与备份工具 {verStr}";
@@ -186,8 +184,10 @@ public partial class MainWindow : Window
         {
             if (txtLog == null) return;
             var para = new Paragraph(new Run(line) { Foreground = brush }) { Margin = new Thickness(0) };
-            txtLog.Document.Blocks.Add(para);
-            if (txtLog.Document.Blocks.Count > Constants.MaxLogEntries)
+            // 插到尾部占位块之前，保证占位块始终是文档最后一个元素
+            txtLog.Document.Blocks.InsertBefore(logBottomSpacer, para);
+            // -1 因占位块也占一个 Block 名额
+            if (txtLog.Document.Blocks.Count - 1 > Constants.MaxLogEntries)
                 txtLog.Document.Blocks.Remove(txtLog.Document.Blocks.FirstBlock);
             txtLog.ScrollToEnd();
         });
@@ -478,7 +478,13 @@ public partial class MainWindow : Window
         "cboProcessPath","cboProcessKillNames","cboProcessFileSuffixes","btnProcessOpen","btnProcessClose","btnProcessFetchFiles",
     };
 
-    private void BtnClearLog_Click(object sender, RoutedEventArgs e) { txtLog?.Document.Blocks.Clear(); }
+    private void BtnClearLog_Click(object sender, RoutedEventArgs e)
+    {
+        if (txtLog == null) return;
+        txtLog.Document.Blocks.Clear();
+        // Clear 会连占位块一起移除，需重新添加，否则后续日志无法定位插入锚点
+        txtLog.Document.Blocks.Add(logBottomSpacer);
+    }
     private void BtnCopyLog_Click(object sender, RoutedEventArgs e)
     {
         if (txtLog == null) return;
@@ -486,20 +492,6 @@ public partial class MainWindow : Window
         if (!string.IsNullOrEmpty(textRange.Text)) { Clipboard.SetText(textRange.Text); }
     }
 
-    private bool _logHBarVisible;
-
-    /// <summary>日志出现水平滚动条时，悬浮按钮自动上移避开；无水平滚动条时贴底。</summary>
-    private void TxtLog_ScrollChanged(object sender, ScrollChangedEventArgs e)
-    {
-        if (btnLogPanel == null) return;
-        // 垂直滚动条占位会收窄可视宽度，1px 容差避免边界抖动
-        bool visible = e.ExtentWidth > e.ViewportWidth + 1;
-        if (visible == _logHBarVisible) return;
-        _logHBarVisible = visible;
-        btnLogPanel.Margin = visible
-            ? new Thickness(0, 0, 24, 22)
-            : new Thickness(0, 0, 24, 4);
-    }
     private void Window_StateChanged(object sender, EventArgs e)
     {
         // 最大化时展平圆角避免屏幕四角露出桌面，并用主屏尺寸约束窗口，

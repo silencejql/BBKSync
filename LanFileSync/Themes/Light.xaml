@@ -268,10 +268,9 @@
                     <Border x:Name="bd" CornerRadius="8" SnapsToDevicePixels="True"
                             Background="{TemplateBinding Background}"
                             BorderBrush="{TemplateBinding BorderBrush}"
-                            BorderThickness="{TemplateBinding BorderThickness}">
-                        <ScrollViewer x:Name="PART_ContentHost"
-                                      Padding="{TemplateBinding Padding}"
-                                      Focusable="False"
+                            BorderThickness="{TemplateBinding BorderThickness}"
+                            Padding="{TemplateBinding Padding}">
+                        <ScrollViewer x:Name="PART_ContentHost" Focusable="False"
                                       HorizontalScrollBarVisibility="{TemplateBinding HorizontalScrollBarVisibility}"
                                       VerticalScrollBarVisibility="{TemplateBinding VerticalScrollBarVisibility}" />
                     </Border>
@@ -655,6 +654,9 @@
     </Style>
 
     <Style x:Key="ScrollBarThumb" TargetType="Thumb">
+        <!--  内容极多时保证滑块仍有可拖拽的最小长度  -->
+        <Setter Property="MinHeight" Value="32" />
+        <Setter Property="MinWidth" Value="32" />
         <Setter Property="Template">
             <Setter.Value>
                 <ControlTemplate TargetType="Thumb">
@@ -673,8 +675,8 @@
     </Style>
 
     <Style TargetType="ScrollBar">
+        <!--  垂直为默认方向：只定宽度，高度由容器拉伸  -->
         <Setter Property="Width" Value="10" />
-        <Setter Property="Height" Value="10" />
         <Setter Property="Background" Value="Transparent" />
         <Setter Property="Template">
             <Setter.Value>
@@ -696,6 +698,9 @@
                     </Grid>
                     <ControlTemplate.Triggers>
                         <Trigger Property="Orientation" Value="Horizontal">
+                            <!--  水平方向：只定高度，宽度由容器拉伸  -->
+                            <Setter Property="Width" Value="Auto" />
+                            <Setter Property="Height" Value="10" />
                             <Setter TargetName="PART_Track" Property="Orientation" Value="Horizontal" />
                             <Setter TargetName="PART_Track" Property="IsDirectionReversed" Value="False" />
                         </Trigger>

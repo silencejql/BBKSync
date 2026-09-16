@@ -605,19 +605,28 @@
                     <Border Grid.Row="1" Height="1" HorizontalAlignment="Stretch" VerticalAlignment="Center"
                     Background="{DynamicResource CardBorderBrush}" />
 
-                    <!-- 日志 -->
+                    <!-- 日志：日志框铺满到底，工具按钮悬浮框内右下；
+                         文档尾部占位块保证滚到底时最后一行不被按钮遮挡 -->
                     <GroupBox Grid.Row="2" Header="日志" Margin="0,2,0,0">
                         <Grid>
                             <RichTextBox x:Name="txtLog" FontFamily="Consolas" FontSize="12"
-                                 Padding="4,2,4,36"
+                                 Padding="4,2,4,0"
                                  Background="{DynamicResource WindowBgBrush}" BorderBrush="{DynamicResource CardBorderBrush}" BorderThickness="1"
                                  IsReadOnly="True"
                                  VerticalScrollBarVisibility="Auto"
                                  HorizontalScrollBarVisibility="Auto"
-                                 ContextMenu="{x:Null}" />
-                            <!-- 悬浮按钮：叠加在日志框右下角，右侧避开垂直滚动条，有水平滚动条时自动上移 -->
+                                 ContextMenu="{x:Null}">
+                                <!--  文档尾部占位块：作为可滚动内容的一部分，保证滚到底时
+                                      最后一条日志停在悬浮按钮上方，而日志框背景边框依旧铺满到底  -->
+                                <FlowDocument PagePadding="0">
+                                    <BlockUIContainer x:Name="logBottomSpacer">
+                                        <Border Height="40" IsHitTestVisible="False" />
+                                    </BlockUIContainer>
+                                </FlowDocument>
+                            </RichTextBox>
+                            <!--  右距 20 = 垂直滚动条 10 + 边框内边距 4 + 间隙 6，面板不遮挡滚动条  -->
                             <Border x:Name="btnLogPanel" HorizontalAlignment="Right" VerticalAlignment="Bottom"
-                                    Margin="0,0,24,4"
+                                    Margin="0,0,20,10"
                                     Background="{DynamicResource WindowBgBrush}" CornerRadius="8" Padding="2">
                                 <StackPanel Orientation="Horizontal">
                                     <Button Content="复制日志" Padding="12,5" Click="BtnCopyLog_Click" Margin="0,0,8,0" />
