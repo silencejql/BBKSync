@@ -46,4 +46,25 @@ public partial class ComputerNameWindow : Window
     }
 
     private void TitleClose_Click(object sender, RoutedEventArgs e) => Close();
+
+    private void Window_StateChanged(object? sender, EventArgs e)
+    {
+        // 最大化时去掉阴影留白、展平圆角；同时用主屏尺寸约束窗口，
+        // 避免 WindowChrome 的 ResizeBorderThickness 使窗口向屏幕四周溢出。
+        // 还原时恢复圆角并清除尺寸约束（覆盖双击标题栏 / Win+↑ 等所有最大化路径）。
+        bool maximized = WindowState == WindowState.Maximized;
+        rootHost.Margin = new Thickness(maximized ? 0 : 10);
+        rootBorder.CornerRadius = new CornerRadius(maximized ? 0 : 12);
+        CornerClip.SetRadius(rootContent, maximized ? 0 : 11);
+        if (maximized)
+        {
+            MaxWidth = SystemParameters.MaximizedPrimaryScreenWidth;
+            MaxHeight = SystemParameters.MaximizedPrimaryScreenHeight;
+        }
+        else
+        {
+            MaxWidth = double.PositiveInfinity;
+            MaxHeight = double.PositiveInfinity;
+        }
+    }
 }

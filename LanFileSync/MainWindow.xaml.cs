@@ -500,22 +500,34 @@ public partial class MainWindow : Window
             ? new Thickness(0, 0, 24, 22)
             : new Thickness(0, 0, 24, 4);
     }
-    private void Window_StateChanged(object sender, EventArgs e) { if (WindowState == WindowState.Minimized && _tray != null) Hide(); }
+    private void Window_StateChanged(object sender, EventArgs e)
+    {
+        // 最大化时展平圆角避免屏幕四角露出桌面，并用主屏尺寸约束窗口，
+        // 避免 WindowChrome 的 ResizeBorderThickness 使窗口向屏幕四周溢出；
+        // 还原后恢复圆角并清除约束（覆盖按钮 / 双击标题栏 / Win+↑ 等所有路径）。
+        bool maximized = WindowState == WindowState.Maximized;
+        rootBorder.CornerRadius = new CornerRadius(maximized ? 0 : 12);
+        CornerClip.SetRadius(rootContent, maximized ? 0 : 10);
+        if (maximized)
+        {
+            MaxWidth = SystemParameters.MaximizedPrimaryScreenWidth;
+            MaxHeight = SystemParameters.MaximizedPrimaryScreenHeight;
+        }
+        else
+        {
+            MaxWidth = double.PositiveInfinity;
+            MaxHeight = double.PositiveInfinity;
+        }
+        if (WindowState == WindowState.Minimized && _tray != null) Hide();
+    }
 
     private void TitleMin_Click(object sender, RoutedEventArgs e) { WindowState = WindowState.Minimized; }
 
     private void TitleMax_Click(object sender, RoutedEventArgs e)
     {
-        if (WindowState == WindowState.Maximized)
-        {
-            WindowState = WindowState.Normal;
-        }
-        else
-        {
-            MaxHeight = SystemParameters.MaximizedPrimaryScreenHeight;
-            MaxWidth = SystemParameters.MaximizedPrimaryScreenWidth;
-            WindowState = WindowState.Maximized;
-        }
+        WindowState = WindowState == WindowState.Maximized
+            ? WindowState.Normal
+            : WindowState.Maximized;
     }
 
     private void TitleClose_Click(object sender, RoutedEventArgs e) { Close(); }
