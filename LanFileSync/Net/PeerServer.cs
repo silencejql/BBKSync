@@ -189,7 +189,7 @@ public sealed class PeerServer : IDisposable
 
                     if (engine.NeedList.Count > 0 && _backupBeforeSync && !string.IsNullOrWhiteSpace(_backupDest))
                     {
-                        string dest = Path.Combine(_backupDest, $"BBK_推送更新备份_{DateTime.Now:yyyyMMdd}");
+                        string dest = Path.Combine(_backupDest, $"BBK_AutoBackup_{DateTime.Now:yyyyMMdd}");
                         _log($"远端需要 {engine.NeedList.Count} 个文件，先备份本机 BBK 到 {dest}");
                         try
                         {

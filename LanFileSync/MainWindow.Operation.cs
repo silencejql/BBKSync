@@ -236,7 +236,7 @@ public partial class MainWindow
                         LogDivider(); LogLine($"以远端为源连接远端 {host}:{port} 成功，更新到本机 {root} ...");
                         if (cbBackupBeforeSync.IsChecked == true && !string.IsNullOrWhiteSpace(txtBackupDest.Text.Trim()))
                         {
-                            string dest = Path.Combine(txtBackupDest.Text.Trim(), $"BBK_接收更新备份_{DateTime.Now:yyyyMMdd}");
+                            string dest = Path.Combine(txtBackupDest.Text.Trim(), $"BBK_AutoBackup_{DateTime.Now:yyyyMMdd}");
                             LogLine($"先备份本机 BBK 到 {dest}");
                             try
                             {
