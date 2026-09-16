@@ -18,6 +18,29 @@ public sealed class PeerClient : IDisposable
         await _conn.SendJsonAsync(new { hello = true, role, preBackupBat }, ct);
     }
 
+    /// <summary>
+    /// 读取远端帧直到「需要文件清单(need)」：
+    /// 期间收到的 blog（远端备份完成日志）逐条显示，err 直接抛出。
+    /// </summary>
+    private async Task<System.Text.Json.JsonElement> RecvNeedFrameAsync(CancellationToken ct, Action<string> log)
+    {
+        while (true)
+        {
+            var frame = await _conn!.RecvJsonAsync(ct)
+                ?? throw new EndOfStreamException("连接已断开");
+            string op = frame.GetProperty("op").GetString()!;
+            if (op == "blog")
+            {
+                foreach (var m in frame.GetProperty("msgs").EnumerateArray())
+                    log("[远端备份] " + (m.GetString() ?? ""));
+                continue;
+            }
+            if (op == "err")
+                throw new InvalidOperationException(frame.GetProperty("msg").GetString());
+            return frame;
+        }
+    }
+
     public async Task PullAsync(
         string root,
         SyncOptions options,
@@ -57,11 +80,7 @@ public sealed class PeerClient : IDisposable
         await SourceSide.SendManifestAsync(_conn!, root, ct);
         log("本机文件清单已发送，等待远端按远端界面的规则计算...");
 
-        var frame = await _conn!.RecvJsonAsync(ct)
-            ?? throw new EndOfStreamException("连接已断开");
-        string op = frame.GetProperty("op").GetString()!;
-        if (op == "err")
-            throw new InvalidOperationException(frame.GetProperty("msg").GetString());
+        var frame = await RecvNeedFrameAsync(ct, log);
 
         var paths = frame.GetProperty("paths").EnumerateArray().Select(x => x.GetString()!).ToList();
         onTotal(paths.Count);
@@ -154,11 +173,7 @@ public sealed class PeerClient : IDisposable
         await TransferSide.SendTransferManifestAsync(_conn!, itemPath, isDir, sameSkip, updateMode, deviceTag, ct);
         log("传输文件清单已发送，等待远端按相同路径计算...");
 
-        var frame = await _conn!.RecvJsonAsync(ct)
-            ?? throw new EndOfStreamException("连接已断开");
-        string op = frame.GetProperty("op").GetString()!;
-        if (op == "err")
-            throw new InvalidOperationException(frame.GetProperty("msg").GetString());
+        var frame = await RecvNeedFrameAsync(ct, log);
 
         var paths = frame.GetProperty("paths").EnumerateArray().Select(x => x.GetString()!).ToList();
         onTotal(paths.Count);
