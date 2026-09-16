@@ -1,11 +1,15 @@
 using System.Windows;
 using System.Windows.Controls;
+using System.Windows.Input;
 using System.Windows.Media;
 
 namespace LanFileSync;
 
 public partial class DarkMessageBox : Window
 {
+    private MessageBoxResult _result = MessageBoxResult.Cancel;
+    private MessageBoxButton _buttons = MessageBoxButton.OK;
+
     private DarkMessageBox()
     { InitializeComponent(); }
 
@@ -13,40 +17,75 @@ public partial class DarkMessageBox : Window
         MessageBoxButton button = MessageBoxButton.OK, MessageBoxImage icon = MessageBoxImage.None)
     {
         var owner = Application.Current.MainWindow;
-        var dlg = new DarkMessageBox();
+        var dlg = new DarkMessageBox { _buttons = button };
         dlg.txtTitle.Text = caption;
         dlg.txtMessage.Text = messageBoxText;
 
-        dlg.txtIcon.Text = icon switch
-        {
-            MessageBoxImage.Information => "\u2139",
-            MessageBoxImage.Warning => "\u26A0",
-            MessageBoxImage.Error => "\u2716",
-            MessageBoxImage.Question => "\u2753",
-            _ => ""
-        };
-        dlg.txtIcon.Foreground = icon switch
-        {
-            MessageBoxImage.Error => new SolidColorBrush(Color.FromRgb(0xFF, 0x6B, 0x6B)),
-            MessageBoxImage.Warning => new SolidColorBrush(Color.FromRgb(0xFF, 0xD4, 0x3B)),
-            _ => (Brush)Application.Current.FindResource("AccentBrush")
-        };
+        ApplyIcon(dlg, icon);
+        BuildButtons(dlg, button);
 
+        if (owner != null && owner != dlg)
+            dlg.Owner = owner;
+        else
+            dlg.WindowStartupLocation = WindowStartupLocation.CenterScreen;
+
+        dlg.ShowDialog();
+        return dlg._result;
+    }
+
+    private static void ApplyIcon(DarkMessageBox dlg, MessageBoxImage icon)
+    {
+        Color color;
+        string glyph;
+        switch (icon)
+        {
+            case MessageBoxImage.Information:
+                color = ((SolidColorBrush)Application.Current.FindResource("AccentBrush")).Color;
+                glyph = "\u2139"; // ℹ
+                break;
+            case MessageBoxImage.Warning:
+                color = Color.FromRgb(0xF5, 0xA6, 0x23);
+                glyph = "\u26A0"; // ⚠
+                break;
+            case MessageBoxImage.Error:
+                color = Color.FromRgb(0xE5, 0x48, 0x4D);
+                glyph = "\u2715"; // ✕
+                break;
+            case MessageBoxImage.Question:
+                color = ((SolidColorBrush)Application.Current.FindResource("AccentBrush")).Color;
+                glyph = "?";
+                break;
+            default:
+                dlg.badgeIcon.Visibility = Visibility.Collapsed;
+                return;
+        }
+
+        dlg.txtIcon.Text = glyph;
+        dlg.txtIcon.Foreground = new SolidColorBrush(color);
+        // 徽章底色为图标色 14% 透明度
+        dlg.badgeIcon.Background = new SolidColorBrush(Color.FromArgb(0x24, color.R, color.G, color.B));
+    }
+
+    private static void BuildButtons(DarkMessageBox dlg, MessageBoxButton button)
+    {
         void AddBtn(string content, MessageBoxResult result, bool isAccent)
         {
             var btn = new Button
             {
                 Content = content,
-                Padding = new Thickness(16, 6, 16, 6),
-                MinHeight = 30,
-                Margin = new Thickness(6, 0, 0, 0),
-                Cursor = System.Windows.Input.Cursors.Hand,
-                Tag = result
+                MinHeight = 34,
+                Margin = new Thickness(10, 0, 0, 0),
+                Tag = result,
             };
             btn.Style = isAccent
                 ? (Style)Application.Current.FindResource("AccentButton")
-                : (Style)Application.Current.TryFindResource(typeof(Button)) ?? new Style(typeof(Button));
-            btn.Click += (_, _) => { dlg.DialogResult = result == MessageBoxResult.OK || result == MessageBoxResult.Yes; dlg.Close(); };
+                : (Style)dlg.FindResource("DlgSecondaryButton");
+            btn.Click += (_, _) =>
+            {
+                dlg._result = result;
+                dlg.DialogResult = result is MessageBoxResult.OK or MessageBoxResult.Yes;
+                dlg.Close();
+            };
             dlg.panelButtons.Children.Add(btn);
         }
 
@@ -55,36 +94,52 @@ public partial class DarkMessageBox : Window
             case MessageBoxButton.OK:
                 AddBtn("确定", MessageBoxResult.OK, true);
                 break;
-
             case MessageBoxButton.OKCancel:
                 AddBtn("取消", MessageBoxResult.Cancel, false);
                 AddBtn("确定", MessageBoxResult.OK, true);
                 break;
-
             case MessageBoxButton.YesNo:
                 AddBtn("否", MessageBoxResult.No, false);
                 AddBtn("是", MessageBoxResult.Yes, true);
                 break;
-
             case MessageBoxButton.YesNoCancel:
                 AddBtn("取消", MessageBoxResult.Cancel, false);
                 AddBtn("否", MessageBoxResult.No, false);
                 AddBtn("是", MessageBoxResult.Yes, true);
                 break;
         }
+    }
 
-        if (owner != null && owner != dlg)
-        {
-            dlg.Owner = owner;
-        }
-        else
-        {
-            dlg.WindowStartupLocation = WindowStartupLocation.CenterScreen;
-        }
+    private void BtnClose_Click(object sender, RoutedEventArgs e)
+    {
+        // 关闭按钮等同于取消/否
+        _result = _buttons is MessageBoxButton.YesNo or MessageBoxButton.YesNoCancel
+            ? MessageBoxResult.No : MessageBoxResult.Cancel;
+        DialogResult = false;
+        Close();
+    }
 
-        dlg.ShowDialog();
-        return dlg.DialogResult == true
-            ? (button == MessageBoxButton.YesNo || button == MessageBoxButton.YesNoCancel ? MessageBoxResult.Yes : MessageBoxResult.OK)
-            : (button == MessageBoxButton.YesNo || button == MessageBoxButton.YesNoCancel ? MessageBoxResult.No : MessageBoxResult.Cancel);
+    private void Window_MouseLeftButtonDown(object sender, MouseButtonEventArgs e)
+    {
+        if (e.ButtonState == MouseButtonState.Pressed) DragMove();
+    }
+
+    private void Window_KeyDown(object sender, KeyEventArgs e)
+    {
+        if (e.Key == Key.Escape)
+        {
+            BtnClose_Click(sender, e);
+            e.Handled = true;
+        }
+        else if (e.Key == Key.Enter)
+        {
+            // 回车触发主按钮(确定/是)
+            if (panelButtons.Children.Count > 0 &&
+                panelButtons.Children[^1] is Button primary)
+            {
+                primary.RaiseEvent(new RoutedEventArgs(Button.ClickEvent));
+                e.Handled = true;
+            }
+        }
     }
 }
