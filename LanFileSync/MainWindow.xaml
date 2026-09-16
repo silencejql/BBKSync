@@ -218,7 +218,7 @@
                                                 </ComboBox.ItemTemplate>
                                             </ComboBox>
                                             <Button x:Name="btnTestConnect" Grid.Column="2" Content="测试连接" Margin="8,0,0,0" Padding="10,6"
-                                            Click="BtnTestConnect_Click" ToolTip="验证与远端 IP 和端口的 TCP 连接是否可达" />
+                                            Click="BtnTestConnect_Click" ToolTip="对输入的所有 IP/范围逐一验证 TCP 连接与远端协议应答，并输出成功/失败结果" />
                                             <Button x:Name="btnHistory" Grid.Column="3" Content="历史" Margin="8,0,0,0" Padding="10,6"
                                             Click="BtnHistory_Click" ToolTip="管理历史连接的 IP 与备注" />
                                             <Button x:Name="btnComputers" Grid.Column="4" Content="IP配置" Margin="8,0,0,0" Padding="10,6"

@@ -278,33 +278,74 @@ public partial class MainWindow : Window
 
     private async void BtnTestConnect_Click(object sender, RoutedEventArgs e)
     {
-        string host = cboPeerIp.Text.Trim();
-        if (string.IsNullOrEmpty(host)) { DarkMessageBox.Show("请输入远端 IP 地址。", "提示", MessageBoxButton.OK, MessageBoxImage.Information); return; }
+        List<string> hosts;
+        try { hosts = IpHelper.ExpandIps(cboPeerIp.Text ?? ""); }
+        catch (FormatException ex) { DarkMessageBox.Show(ex.Message, "错误", MessageBoxButton.OK, MessageBoxImage.Warning); return; }
+        if (hosts.Count == 0) { DarkMessageBox.Show("请输入远端 IP 或范围。", "提示", MessageBoxButton.OK, MessageBoxImage.Information); return; }
         if (!TryGetPeerPort(out int port)) { DarkMessageBox.Show("端口无效，请输入 1~65535 之间的数字。", "错误", MessageBoxButton.OK, MessageBoxImage.Warning); return; }
-        using var tcp = new TcpClient();
+
+        btnTestConnect.IsEnabled = false;
+        var okList = new List<string>();
+        var failList = new List<string>();
         try
         {
-            using var cts = new CancellationTokenSource(TimeSpan.FromSeconds(1));
-            await tcp.ConnectAsync(host, port, cts.Token);
-            LogLine($"已连上 {host}:{port}，正在校验远端协议应答...");
-        }
-        catch (OperationCanceledException)
-        {
-            var msg = $"连接超时：{host}:{port}\n1 秒内未建立连接(10060 超时：远端不可达，或防火墙静默丢弃)。";
-            LogLineError(msg); DarkMessageBox.Show(msg, "测试结果", MessageBoxButton.OK, MessageBoxImage.Warning); return;
-        }
-        catch (SocketException ex)
-        {
-            string hint = ex.SocketErrorCode switch
+            LogDivider();
+            LogLine($"开始测试 {hosts.Count} 个远端地址（端口 {port}）...");
+            foreach (string host in hosts)
             {
-                SocketError.AccessDenied => "(10013 权限访问：本机安全软件/防火墙拦截本程序外发连接；若程序放在桌面/深层局部目录运行，请改用纯英文目录如 C:\\BBKApp 再试)",
-                SocketError.ConnectionRefused => "(10061 积极拒绝：远端端口未监听，服务没启动)",
-                SocketError.TimedOut => "(10060 超时：远端不可达，或防火墙静默丢弃)",
-                _ => $"(错误码 {(int)ex.SocketErrorCode})",
-            };
-            var msg = $"连接失败：{host}:{port}\n{ex.Message} {hint}";
-            LogLineError(msg); DarkMessageBox.Show(msg, "测试结果", MessageBoxButton.OK, MessageBoxImage.Warning); return;
+                (bool ok, string detail) = await TestOneHostAsync(host, port);
+                if (ok)
+                {
+                    okList.Add(host);
+                    LogLine($"[成功] {host}:{port} {detail}");
+                }
+                else
+                {
+                    failList.Add(host);
+                    LogLineError($"[失败] {host}:{port} {detail}");
+                }
+            }
+            LogLine($"测试完成：成功 {okList.Count} 个，失败 {failList.Count} 个。");
         }
+        finally
+        {
+            btnTestConnect.IsEnabled = true;
+        }
+
+        string summary = failList.Count == 0
+            ? $"全部 {okList.Count} 个地址连接正常，远端协议应答正确。"
+            : $"成功 {okList.Count} 个，失败 {failList.Count} 个：\n" + string.Join("\n", failList.Select(h => h + ":" + port));
+        DarkMessageBox.Show(summary, "测试结果", MessageBoxButton.OK,
+            failList.Count == 0 ? MessageBoxImage.Information : MessageBoxImage.Warning);
+    }
+
+    /// <summary>测试单个远端地址：先测 TCP 连通性(1 秒)，再校验协议应答(1 秒)。返回是否成功及详情。</summary>
+    private static async Task<(bool Ok, string Detail)> TestOneHostAsync(string host, int port)
+    {
+        using (var tcp = new TcpClient())
+        {
+            try
+            {
+                using var cts = new CancellationTokenSource(TimeSpan.FromSeconds(1));
+                await tcp.ConnectAsync(host, port, cts.Token);
+            }
+            catch (OperationCanceledException)
+            {
+                return (false, "连接超时（1 秒内未建立连接：远端不可达，或防火墙静默丢弃）");
+            }
+            catch (SocketException ex)
+            {
+                string hint = ex.SocketErrorCode switch
+                {
+                    SocketError.AccessDenied => "10013 权限访问：本机安全软件/防火墙拦截，建议改用纯英文目录运行",
+                    SocketError.ConnectionRefused => "10061 积极拒绝：远端端口未监听，服务没启动",
+                    SocketError.TimedOut => "10060 超时：远端不可达，或防火墙静默丢弃",
+                    _ => "错误码 " + (int)ex.SocketErrorCode,
+                };
+                return (false, $"TCP 连接失败：{ex.Message}（{hint}）");
+            }
+        }
+
         try
         {
             using var client = new PeerClient();
@@ -312,23 +353,19 @@ public partial class MainWindow : Window
             await client.ConnectAsync(host, port, Constants.RoleProbe, cts.Token);
             var (name, line) = await client.ProbeDeviceAsync(cts.Token);
             string info = string.IsNullOrWhiteSpace(name) ? "" : $"[设备 {name}{(string.IsNullOrWhiteSpace(line) ? "" : "/Line" + line)}]";
-            LogLine($"连接正常：{host}:{port}，远端协议应答正确 {info}");
-            DarkMessageBox.Show($"连接正常：{host}:{port}，远端协议应答正确\n {info}: {host}:{port}", "测试结果", MessageBoxButton.OK, MessageBoxImage.Information);
+            return (true, "远端协议应答正确 " + info);
         }
         catch (OperationCanceledException)
         {
-            var msg = $"已连上 {host}:{port}，但远端 1 秒内无协议应答：多为远端 BBKSync 进程僵死、重复实例占用端口，或远端跑的不是本程序。\n\n建议到远端机器：tasklist | findstr /i BBKSync 核对实例数，必要时 taskkill /f /im BBKSync 后重启。";
-            LogLineError(msg); DarkMessageBox.Show(msg, "测试结果", MessageBoxButton.OK, MessageBoxImage.Warning);
+            return (false, "已连上但远端 1 秒内无协议应答：服务僵死、重复实例占用端口，或远端不是本程序");
         }
         catch (IOException ex)
         {
-            var msg = $"已连上 {host}:{port}，但连接被远端立刻关闭：{ex.Message}\n\n多为远端服务未就绪或端口被其他程序占用。";
-            LogLineError($"已连上 {host}:{port}，但连接被远端立刻关闭：{ex.Message}"); DarkMessageBox.Show(msg, "测试结果", MessageBoxButton.OK, MessageBoxImage.Warning);
+            return (false, $"已连上但连接被远端立刻关闭：{ex.Message}（服务未就绪或端口被其他程序占用）");
         }
         catch (Exception ex)
         {
-            var msg = $"连接失败：{host}:{port} - {ex.Message}";
-            LogLineError(msg); DarkMessageBox.Show(msg, "测试结果", MessageBoxButton.OK, MessageBoxImage.Warning);
+            return (false, ex.Message);
         }
     }
 
