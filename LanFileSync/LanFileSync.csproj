@@ -1,4 +1,4 @@
-﻿<Project Sdk="Microsoft.NET.Sdk">
+<Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
     <OutputType>WinExe</OutputType>
@@ -8,7 +8,6 @@
     <ImplicitUsings>enable</ImplicitUsings>
     <RootNamespace>LanFileSync</RootNamespace>
     <AssemblyName>BBKSync</AssemblyName>
-    <Version></Version>
     <ApplicationManifest>app.manifest</ApplicationManifest>
     <ApplicationIcon>app.ico</ApplicationIcon>
     <PublishSingleFile>true</PublishSingleFile>
@@ -36,6 +35,11 @@
     <Resource Include="app.ico" />
   </ItemGroup>
 
+  <!-- README 作为嵌入资源打进 exe，发布时不产生单独文件；标题栏“?”按钮读取该资源 -->
+  <ItemGroup>
+    <EmbeddedResource Include="..\README.md" Link="README.md" />
+  </ItemGroup>
+
   <ItemGroup>
     <PackageReference Include="Hardcodet.NotifyIcon.Wpf" Version="2.0.1" />
   </ItemGroup>
@@ -43,5 +47,17 @@
   <ItemGroup>
     <PackageReference Include="MinVer" Version="8.0.0" PrivateAssets="All" />
   </ItemGroup>
+
+  <!--
+    MinVer 默认将 AssemblyVersion 固定为 major.0.0.0（程序集名版本，即
+    Assembly.GetName().Version，窗口标题读取它），只有 FileVersion/ProductVersion 跟随 tag。
+    这里在 MinVer 计算完成后把 AssemblyVersion 改写为完整的 major.minor.patch.0，
+    使发布程序的所有版本号都跟随 git tag（如 tag v1.3.5 -> 1.3.5.0）。
+  -->
+  <Target Name="UseFullTagAssemblyVersion" AfterTargets="MinVer">
+    <PropertyGroup>
+      <AssemblyVersion>$(MinVerMajor).$(MinVerMinor).$(MinVerPatch).0</AssemblyVersion>
+    </PropertyGroup>
+  </Target>
 
 </Project>
