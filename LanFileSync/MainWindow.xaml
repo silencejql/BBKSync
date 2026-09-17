@@ -623,7 +623,7 @@
                             </RichTextBox>
                             <!--  右距 20 = 垂直滚动条 10 + 边框内边距 4 + 间隙 6，面板不遮挡滚动条  -->
                             <Border x:Name="btnLogPanel" HorizontalAlignment="Right" VerticalAlignment="Bottom"
-                                    Margin="0,0,20,10"
+                                    Margin="0,0,20,1"
                                     Background="{DynamicResource WindowBgBrush}" CornerRadius="8" Padding="2">
                                 <StackPanel Orientation="Horizontal">
                                     <Button Content="复制日志" Padding="12,5" Click="BtnCopyLog_Click" Margin="0,0,8,0" />

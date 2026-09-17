@@ -7,6 +7,7 @@ using System.Windows.Controls;
 using System.Windows.Documents;
 using System.Windows.Input;
 using System.Windows.Media;
+using System.Windows.Threading;
 using Microsoft.Win32;
 
 namespace LanFileSync;
@@ -184,12 +185,17 @@ public partial class MainWindow : Window
         {
             if (txtLog == null) return;
             var para = new Paragraph(new Run(line) { Foreground = brush }) { Margin = new Thickness(0) };
-            // 插到尾部占位块之前，保证占位块始终是文档最后一个元素
-            txtLog.Document.Blocks.InsertBefore(logBottomSpacer, para);
-            // -1 因占位块也占一个 Block 名额
-            if (txtLog.Document.Blocks.Count - 1 > Constants.MaxLogEntries)
+            txtLog.Document.Blocks.Add(para);
+            if (txtLog.Document.Blocks.Count > Constants.MaxLogEntries)
                 txtLog.Document.Blocks.Remove(txtLog.Document.Blocks.FirstBlock);
+            // 文档实际高度在 Render 优先级的布局阶段才更新；连续多条日志快速追加时
+            // 立即 ScrollToEnd 拿到的 ScrollableHeight 是旧值，会沉不到底，
+            // 再在 Background 优先级（布局完成后）补滚一次确保最后一条到达视口底端。
             txtLog.ScrollToEnd();
+            txtLog.Dispatcher.BeginInvoke(DispatcherPriority.Background, new Action(() =>
+            {
+                if (txtLog != null) txtLog.ScrollToEnd();
+            }));
         });
     }
 
@@ -482,8 +488,6 @@ public partial class MainWindow : Window
     {
         if (txtLog == null) return;
         txtLog.Document.Blocks.Clear();
-        // Clear 会连占位块一起移除，需重新添加，否则后续日志无法定位插入锚点
-        txtLog.Document.Blocks.Add(logBottomSpacer);
     }
     private void BtnCopyLog_Click(object sender, RoutedEventArgs e)
     {

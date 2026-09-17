@@ -416,6 +416,8 @@
         <Setter Property="Padding" Value="9,6" />
         <Setter Property="Margin" Value="1" />
         <Setter Property="Cursor" Value="Hand" />
+        <!-- 悬停显示该项完整文本，长选项被截断时可查看全部内容 -->
+        <Setter Property="ToolTip" Value="{Binding RelativeSource={RelativeSource Self}, Path=Content}" />
         <Setter Property="Template">
             <Setter.Value>
                 <ControlTemplate TargetType="ComboBoxItem">
