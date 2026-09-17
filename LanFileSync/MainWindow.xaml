@@ -35,6 +35,12 @@
                     BorderBrush="{DynamicResource TitleBarBorderBrush}" BorderThickness="0,0,0,1">
                 <DockPanel>
                     <StackPanel DockPanel.Dock="Right" Orientation="Horizontal">
+                        <Button x:Name="btnHelp" Style="{StaticResource TitleBarButton}"
+                                Click="BtnHelp_Click" ToolTip="查看使用说明（README）"
+                                shell:WindowChrome.IsHitTestVisibleInChrome="True">
+                            <TextBlock Text="?" FontSize="16" FontWeight="SemiBold"
+                                       Foreground="{Binding Foreground, RelativeSource={RelativeSource AncestorType=Button}}" />
+                        </Button>
                         <Button x:Name="btnThemeToggle" Style="{StaticResource ThemeToggleButton}"
                                 Click="BtnThemeToggle_Click" Margin="0,0,4,0"
                                 shell:WindowChrome.IsHitTestVisibleInChrome="True" />

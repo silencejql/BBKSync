@@ -241,6 +241,10 @@ public partial class MainWindow : Window
     {
         new HistoryWindow(_history) { Owner = this }.ShowDialog(); ReloadHistoryCombo();
     }
+    private void BtnHelp_Click(object sender, RoutedEventArgs e)
+    {
+        new HelpWindow { Owner = this }.ShowDialog();
+    }
     private void BtnStartServer_Click(object sender, RoutedEventArgs e) => StartServer(showErrors: true);
     private void BtnStopServer_Click(object sender, RoutedEventArgs e) => StopServer();
 
