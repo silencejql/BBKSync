@@ -67,13 +67,13 @@ public sealed class TransferEngine
         // 备份远端文件/文件夹，命名为 文件名_AutoUpdateFrom_远端设备信息_日期
         string backupPath;
         if (_itemIsDir)
-            backupPath = _itemPath + "_AutoBackup_" + "_" + _date;
+            backupPath = _itemPath + "_AutoBackup_" + _date;
         else
         {
             string dirOf = Path.GetDirectoryName(_itemPath) ?? "";
             string nameOf = Path.GetFileNameWithoutExtension(_itemPath);
             string extOf = Path.GetExtension(_itemPath);
-            backupPath = Path.Combine(dirOf, nameOf + "_AutoBackup_" + "_" + _date + extOf);
+            backupPath = Path.Combine(dirOf, nameOf + "_AutoBackup_" + _date + extOf);
         }
         if (File.Exists(backupPath) || Directory.Exists(backupPath))
         {
