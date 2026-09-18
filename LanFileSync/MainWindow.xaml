@@ -534,6 +534,166 @@
                                         </StackPanel>
                                     </Grid>
                                 </TabItem>
+                                <TabItem Header="其他小工具" Width="100"
+                                         ToolTip="整理备份文件夹或压缩包：剔除旧备份、删除名称中的日期段">
+                                    <Grid Margin="0">
+                                        <Grid.RowDefinitions>
+                                            <RowDefinition Height="Auto" />
+                                            <RowDefinition Height="*" />
+                                        </Grid.RowDefinitions>
+                                        <!-- 共用的待整理文件夹 -->
+                                        <Grid Grid.Row="0">
+                                            <Grid.ColumnDefinitions>
+                                                <ColumnDefinition Width="Auto" />
+                                                <ColumnDefinition Width="*" />
+                                                <ColumnDefinition Width="Auto" />
+                                            </Grid.ColumnDefinitions>
+                                            <TextBlock Text="文件夹:" VerticalAlignment="Center" FontWeight="SemiBold" />
+                                            <TextBox x:Name="txtToolsDir" Grid.Column="1" Margin="8,0,0,0" Height="30"
+                                                     ToolTip="待整理的备份所在文件夹；只扫描第一层（不递归子文件夹）。留空时默认使用上方「备份到」目录。" />
+                                            <Button x:Name="btnToolsBrowse" Grid.Column="2" Content="浏览..." Padding="12,6" Margin="8,0,0,0"
+                                                    Click="BtnToolsBrowse_Click" />
+                                        </Grid>
+
+                                        <Grid Grid.Row="1" Margin="0,10,0,0">
+                                            <Grid.ColumnDefinitions>
+                                                <ColumnDefinition Width="*" />
+                                                <ColumnDefinition Width="Auto" />
+                                                <ColumnDefinition Width="*" />
+                                            </Grid.ColumnDefinitions>
+
+                                            <!-- 剔除旧备份文件 -->
+                                            <GroupBox Header="剔除旧备份文件">
+                                                <Grid>
+                                                    <Grid.RowDefinitions>
+                                                        <RowDefinition Height="*" />
+                                                        <RowDefinition Height="Auto" />
+                                                    </Grid.RowDefinitions>
+                                                    <StackPanel Grid.Row="0">
+                                                        <TextBlock Foreground="{DynamicResource TextSubBrush}" FontSize="10"
+                                                                   TextWrapping="Wrap" FontWeight="Normal"
+                                                                   Text="日期之前名称相同的备份（文件夹或 .zip/.rar/.7z 压缩包），每组只保留修改日期最新的一个，其余移入回收站。识别名称结尾的日期段，如「BBK_AutoBackup_20260918」。" />
+                                                        <ListView x:Name="lvPurge" Margin="0,8,0,0" MinHeight="120">
+                                                            <ListView.View>
+                                                                <GridView>
+                                                                    <GridViewColumn Header="操作" Width="56">
+                                                                        <GridViewColumn.CellTemplate>
+                                                                            <DataTemplate>
+                                                                                <TextBlock Text="{Binding Action}" FontWeight="SemiBold">
+                                                                                    <TextBlock.Style>
+                                                                                        <Style TargetType="TextBlock">
+                                                                                            <Style.Triggers>
+                                                                                                <DataTrigger Binding="{Binding Action}" Value="删除">
+                                                                                                    <Setter Property="Foreground" Value="#E81123" />
+                                                                                                </DataTrigger>
+                                                                                                <DataTrigger Binding="{Binding Action}" Value="保留">
+                                                                                                    <Setter Property="Foreground" Value="{DynamicResource TextSubBrush}" />
+                                                                                                </DataTrigger>
+                                                                                            </Style.Triggers>
+                                                                                        </Style>
+                                                                                    </TextBlock.Style>
+                                                                                </TextBlock>
+                                                                            </DataTemplate>
+                                                                        </GridViewColumn.CellTemplate>
+                                                                    </GridViewColumn>
+                                                                    <GridViewColumn Header="名称" Width="260"
+                                                                                   DisplayMemberBinding="{Binding Name}" />
+                                                                    <GridViewColumn Header="修改日期" Width="140"
+                                                                                   DisplayMemberBinding="{Binding LastWriteText}" />
+                                                                </GridView>
+                                                            </ListView.View>
+                                                        </ListView>
+                                                    </StackPanel>
+                                                    <Grid Grid.Row="1" Margin="0,8,0,0">
+                                                        <Grid.ColumnDefinitions>
+                                                            <ColumnDefinition Width="*" />
+                                                            <ColumnDefinition Width="Auto" />
+                                                            <ColumnDefinition Width="Auto" />
+                                                        </Grid.ColumnDefinitions>
+                                                        <TextBlock x:Name="txtPurgeSummary" Grid.Column="0" VerticalAlignment="Center"
+                                                                   Foreground="{DynamicResource TextSubBrush}" FontSize="11"
+                                                                   TextWrapping="Wrap" Text="尚未扫描。" />
+                                                        <Button x:Name="btnPurgeScan" Grid.Column="1" Content="扫描预览"
+                                                                Padding="12,6" Margin="0,0,8,0" Click="BtnPurgeScan_Click" />
+                                                        <Button x:Name="btnPurgeRun" Grid.Column="2" Content="执行删除"
+                                                                Style="{StaticResource AccentButton}" Padding="14,6"
+                                                                IsEnabled="False" Click="BtnPurgeRun_Click"
+                                                                ToolTip="删除的备份会移入回收站，可在回收站还原。" />
+                                                    </Grid>
+                                                </Grid>
+                                            </GroupBox>
+
+                                            <Rectangle Grid.Column="1" Width="1" Fill="{DynamicResource CardBorderBrush}"
+                                                       Margin="14,0" />
+
+                                            <!-- 删除日期命名 -->
+                                            <GroupBox Header="删除日期命名" Grid.Column="2" Margin="14,0,0,0">
+                                                <Grid>
+                                                    <Grid.RowDefinitions>
+                                                        <RowDefinition Height="*" />
+                                                        <RowDefinition Height="Auto" />
+                                                    </Grid.RowDefinitions>
+                                                    <StackPanel Grid.Row="0">
+                                                        <TextBlock Foreground="{DynamicResource TextSubBrush}" FontSize="10"
+                                                                   TextWrapping="Wrap" FontWeight="Normal"
+                                                                   Text="将备份文件夹或压缩包名称结尾的「_日期」段删除；删除后同名的只保留修改日期最新的一个（其余移入回收站），再把保留项重命名为无日期名称。如目标名称已存在则整组跳过。" />
+                                                        <ListView x:Name="lvRename" Margin="0,8,0,0" MinHeight="120">
+                                                            <ListView.View>
+                                                                <GridView>
+                                                                    <GridViewColumn Header="操作" Width="56">
+                                                                        <GridViewColumn.CellTemplate>
+                                                                            <DataTemplate>
+                                                                                <TextBlock Text="{Binding Action}" FontWeight="SemiBold">
+                                                                                    <TextBlock.Style>
+                                                                                        <Style TargetType="TextBlock">
+                                                                                            <Style.Triggers>
+                                                                                                <DataTrigger Binding="{Binding Action}" Value="删除">
+                                                                                                    <Setter Property="Foreground" Value="#E81123" />
+                                                                                                </DataTrigger>
+                                                                                                <DataTrigger Binding="{Binding Action}" Value="重命名">
+                                                                                                    <Setter Property="Foreground" Value="{DynamicResource AccentBrush}" />
+                                                                                                </DataTrigger>
+                                                                                                <DataTrigger Binding="{Binding Action}" Value="跳过">
+                                                                                                    <Setter Property="Foreground" Value="{DynamicResource TextSubBrush}" />
+                                                                                                </DataTrigger>
+                                                                                            </Style.Triggers>
+                                                                                        </Style>
+                                                                                    </TextBlock.Style>
+                                                                                </TextBlock>
+                                                                            </DataTemplate>
+                                                                        </GridViewColumn.CellTemplate>
+                                                                    </GridViewColumn>
+                                                                    <GridViewColumn Header="现名称" Width="200"
+                                                                                   DisplayMemberBinding="{Binding Name}" />
+                                                                    <GridViewColumn Header="新名称" Width="150"
+                                                                                   DisplayMemberBinding="{Binding NewName}" />
+                                                                    <GridViewColumn Header="修改日期" Width="140"
+                                                                                   DisplayMemberBinding="{Binding LastWriteText}" />
+                                                                </GridView>
+                                                            </ListView.View>
+                                                        </ListView>
+                                                    </StackPanel>
+                                                    <Grid Grid.Row="1" Margin="0,8,0,0">
+                                                        <Grid.ColumnDefinitions>
+                                                            <ColumnDefinition Width="*" />
+                                                            <ColumnDefinition Width="Auto" />
+                                                            <ColumnDefinition Width="Auto" />
+                                                        </Grid.ColumnDefinitions>
+                                                        <TextBlock x:Name="txtRenameSummary" Grid.Column="0" VerticalAlignment="Center"
+                                                                   Foreground="{DynamicResource TextSubBrush}" FontSize="11"
+                                                                   TextWrapping="Wrap" Text="尚未扫描。" />
+                                                        <Button x:Name="btnRenameScan" Grid.Column="1" Content="扫描预览"
+                                                                Padding="12,6" Margin="0,0,8,0" Click="BtnRenameScan_Click" />
+                                                        <Button x:Name="btnRenameRun" Grid.Column="2" Content="执行重命名"
+                                                                Style="{StaticResource AccentButton}" Padding="14,6"
+                                                                IsEnabled="False" Click="BtnRenameRun_Click"
+                                                                ToolTip="多余备份移入回收站，保留项重命名为去掉日期段的名称。" />
+                                                    </Grid>
+                                                </Grid>
+                                            </GroupBox>
+                                        </Grid>
+                                    </Grid>
+                                </TabItem>
                             </TabControl>
 
                             <!-- 同步与进度 -->
