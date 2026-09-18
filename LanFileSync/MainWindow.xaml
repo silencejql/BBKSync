@@ -620,10 +620,10 @@
                                                 </TabItem.ToolTip>
                                                 <Grid>
                                                     <Grid.RowDefinitions>
-                                                        <RowDefinition Height="Auto" />
+                                                        <RowDefinition Height="*" />
                                                         <RowDefinition Height="Auto" />
                                                     </Grid.RowDefinitions>
-                                                    <ListView x:Name="lvPurge" Grid.Row="0" Margin="0,2,0,0" MinHeight="120" MaxHeight="190" FontSize="10">
+                                                    <ListView x:Name="lvPurge" Grid.Row="0" Margin="0,2,0,0" MinHeight="120" FontSize="10">
                                                         <ListView.View>
                                                             <GridView>
                                                                 <GridViewColumn Header="操作" Width="70">
@@ -680,10 +680,10 @@
                                                 </TabItem.ToolTip>
                                                 <Grid>
                                                     <Grid.RowDefinitions>
-                                                        <RowDefinition Height="Auto" />
+                                                        <RowDefinition Height="*" />
                                                         <RowDefinition Height="Auto" />
                                                     </Grid.RowDefinitions>
-                                                    <ListView x:Name="lvRename" Grid.Row="0" Margin="0,2,0,0" MinHeight="120" MaxHeight="190" FontSize="10">
+                                                    <ListView x:Name="lvRename" Grid.Row="0" Margin="0,2,0,0" MinHeight="120" FontSize="10">
                                                         <ListView.View>
                                                             <GridView>
                                                                 <GridViewColumn Header="操作" Width="70">
