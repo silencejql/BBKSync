@@ -32,7 +32,10 @@ public partial class MainWindow
         public required string Key { get; init; }
         /// <summary>所在文件夹的绝对路径；与 Key 共同构成分组键（不同子文件夹分别成组）。</summary>
         public required string DirPath { get; init; }
-        public required DateTime LastWrite { get; init; }
+        /// <summary>名称中日期段解析出的日期（组内按此排序，而非文件修改时间）。</summary>
+        public required DateTime NameDate { get; init; }
+        /// <summary>名称日期的展示文本。</summary>
+        public required string DateText { get; init; }
         public required bool IsDir { get; init; }
         /// <summary>分组键：同一子文件夹内日期之前名称相同才算一组。</summary>
         public string GroupKey => DirPath + '\u0001' + Key;
@@ -70,7 +73,7 @@ public partial class MainWindow
             return;
         }
         if (DarkMessageBox.Show(
-                $"确认将 {toDelete.Count} 个旧备份移入回收站？\n\n每组仅保留修改日期最新的一个。\n删除项可在回收站中还原。",
+                $"确认将 {toDelete.Count} 个旧备份移入回收站？\n\n每组仅保留名称日期最新的一个。\n删除项可在回收站中还原。",
                 "确认剔除旧备份", MessageBoxButton.OKCancel, MessageBoxImage.Question) != MessageBoxResult.OK)
             return;
 
@@ -327,12 +330,14 @@ public partial class MainWindow
 
         var m = DateSuffixRegex.Match(nameNoExt);
         if (!m.Success || m.Index <= 0) return;
-        if (!TryParseDateToken(m.Groups["date"].Value, out _)) return;
+        string dateToken = m.Groups["date"].Value;
+        if (!TryParseDateToken(dateToken, out var nameDate)) return;
 
         string key = nameNoExt[..m.Index] + ext;
-        var info = isDir
-            ? new DirectoryInfo(fullPath)
-            : (FileSystemInfo)new FileInfo(fullPath);
+        // 名称日期展示：带时间段的显示到秒，仅日期的显示到日
+        string dateText = dateToken.Count(char.IsDigit) > 8
+            ? nameDate.ToString("yyyy-MM-dd HH:mm:ss")
+            : nameDate.ToString("yyyy-MM-dd");
         string display;
         try { display = Path.GetRelativePath(root, fullPath); }
         catch { display = fileName; }
@@ -342,7 +347,8 @@ public partial class MainWindow
             DisplayName = display,
             Key = key,
             DirPath = Path.GetDirectoryName(fullPath) ?? root,
-            LastWrite = info.LastWriteTime,
+            NameDate = nameDate,
+            DateText = dateText,
             IsDir = isDir
         });
     }
@@ -370,7 +376,7 @@ public partial class MainWindow
         foreach (var group in candidates.GroupBy(c => c.GroupKey, StringComparer.OrdinalIgnoreCase))
         {
             var ordered = group
-                .OrderByDescending(c => c.LastWrite)
+                .OrderByDescending(c => c.NameDate)
                 .ThenBy(c => c.DisplayName, StringComparer.OrdinalIgnoreCase)
                 .ToList();
             for (int i = 0; i < ordered.Count; i++)
@@ -380,16 +386,14 @@ public partial class MainWindow
                 {
                     Action = i == 0 ? "保留" : "删除",
                     Name = c.DisplayName,
-                    LastWriteText = c.LastWrite.ToString("yyyy-MM-dd HH:mm:ss"),
+                    LastWriteText = c.DateText,
                     FullPath = c.FullPath,
                     IsDir = c.IsDir
                 });
             }
         }
-        // 删除项在前，便于核对
-        return views.OrderBy(v => v.Action == "删除" ? 0 : 1)
-                    .ThenBy(v => v.Name, StringComparer.OrdinalIgnoreCase)
-                    .ToList();
+        // 按相对路径（名称）排序，同组相邻便于对比，不按操作排序
+        return views.OrderBy(v => v.Name, StringComparer.OrdinalIgnoreCase).ToList();
     }
 
     /// <summary>删除日期命名：同一子文件夹内目标名不存在时最新项重命名、其余删除；目标名已存在则整组跳过。</summary>
@@ -399,7 +403,7 @@ public partial class MainWindow
         foreach (var group in candidates.GroupBy(c => c.GroupKey, StringComparer.OrdinalIgnoreCase))
         {
             var ordered = group
-                .OrderByDescending(c => c.LastWrite)
+                .OrderByDescending(c => c.NameDate)
                 .ThenBy(c => c.DisplayName, StringComparer.OrdinalIgnoreCase)
                 .ToList();
             // 重命名始终在候选项自身所在的文件夹内进行；不同子文件夹分别判定冲突
@@ -433,17 +437,15 @@ public partial class MainWindow
                     Action = action,
                     Name = c.DisplayName,
                     NewName = newName,
-                    LastWriteText = c.LastWrite.ToString("yyyy-MM-dd HH:mm:ss"),
+                    LastWriteText = c.DateText,
                     FullPath = c.FullPath,
                     TargetPath = targetPath,
                     IsDir = c.IsDir
                 });
             }
         }
-        return views
-            .OrderBy(v => v.Action switch { "重命名" => 0, "删除" => 1, _ => 2 })
-            .ThenBy(v => v.Name, StringComparer.OrdinalIgnoreCase)
-            .ToList();
+        // 按相对路径（名称）排序，同组相邻便于对比，不按操作排序
+        return views.OrderBy(v => v.Name, StringComparer.OrdinalIgnoreCase).ToList();
     }
 
     private void RunToolsAction(Func<int> action, bool rescanPurge)
