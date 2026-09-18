@@ -176,7 +176,7 @@
 
                             <!-- 选项卡：备份 / 更新(横跨整个界面) -->
                             <TabControl x:Name="tabs" Margin="0,16,0,0" SelectionChanged="Tabs_SelectionChanged">
-                                <TabItem Header="BBK备份" Width="100">
+                                <TabItem Header="BBK备份" Width="100" ToolTip="备份本机或远端BBK文件夹，根据文件日期选择性备份Log">
                                     <Grid Margin="0">
                                         <Grid.ColumnDefinitions>
                                             <ColumnDefinition Width="*" />
@@ -236,7 +236,7 @@
                                         </StackPanel>
                                     </Grid>
                                 </TabItem>
-                                <TabItem Header="BBK更新" Width="100">
+                                <TabItem Header="BBK更新" Width="100" ToolTip="一键更新本地或远端BBK，自动跳过Config和Log文件夹；更新前选择性备份BBK文件夹(默认备份)">
                                     <Grid Margin="0">
                                         <Grid.ColumnDefinitions>
                                             <ColumnDefinition Width="*" />
@@ -322,7 +322,7 @@
                                         </Border>
                                     </Grid>
                                 </TabItem>
-                                <TabItem Header="文件同步" Width="100">
+                                <TabItem Header="文件同步" Width="100" ToolTip="同步本地或远端文件；可选更新模式(先备份再原替换文件)和拷贝模式(新文件以重命名的方式保存，原文件不动)">
                                     <Grid Margin="0">
                                         <Grid.ColumnDefinitions>
                                             <ColumnDefinition Width="*" />
@@ -367,7 +367,7 @@
                                         </StackPanel>
                                     </Grid>
                                 </TabItem>
-                                <TabItem Header="进程管理" Width="100">
+                                <TabItem Header="进程管理" Width="100" ToolTip="本地或远端BBK进程管理，响应端为设置的远端IP">
                                     <Grid Margin="0">
                                         <Grid.ColumnDefinitions>
                                             <ColumnDefinition Width="*" />
