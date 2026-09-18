@@ -19,6 +19,8 @@ public partial class MainWindow
         public string LastWriteText { get; init; } = "";
         public string FullPath { get; init; } = "";
         public string TargetPath { get; init; } = "";
+        /// <summary>重命名时目标已存在：true 表示候选更新，执行前先把旧目标移入回收站。</summary>
+        public bool ReplaceTarget { get; init; }
         public bool IsDir { get; init; }
     }
 
@@ -34,6 +36,8 @@ public partial class MainWindow
         public required string DirPath { get; init; }
         /// <summary>名称中日期段解析出的日期（组内按此排序，而非文件修改时间）。</summary>
         public required DateTime NameDate { get; init; }
+        /// <summary>文件修改时间（与已存在目标比较新旧用）。</summary>
+        public required DateTime LastWrite { get; init; }
         /// <summary>名称日期的展示文本。</summary>
         public required string DateText { get; init; }
         public required bool IsDir { get; init; }
@@ -120,6 +124,7 @@ public partial class MainWindow
         if (lvRename.ItemsSource is not List<BackupItemView> plan) return;
         var toDelete = plan.Where(i => i.Action == "删除").ToList();
         var toRename = plan.Where(i => i.Action == "重命名").ToList();
+        int toReplace = toRename.Count(i => i.ReplaceTarget);
         if (toDelete.Count == 0 && toRename.Count == 0)
         {
             DarkMessageBox.Show("没有需要处理的备份（可能已整理，或存在名称冲突需人工处理）。",
@@ -127,7 +132,8 @@ public partial class MainWindow
             return;
         }
         if (DarkMessageBox.Show(
-                $"确认执行？\n\n重命名 {toRename.Count} 项（去掉名称结尾的「_日期」段）；\n" +
+                $"确认执行？\n\n重命名 {toRename.Count} 项（去掉名称结尾的「_日期」段）" +
+                (toReplace > 0 ? $"，其中 {toReplace} 项替换修改日期更旧的已有目标（旧目标移入回收站）" : "") + "；\n" +
                 $"同名的 {toDelete.Count} 个旧备份移入回收站。\n\n删除项可在回收站中还原。",
                 "确认删除日期命名", MessageBoxButton.OKCancel, MessageBoxImage.Question) != MessageBoxResult.OK)
             return;
@@ -143,16 +149,7 @@ public partial class MainWindow
             {
                 try
                 {
-                    if (item.IsDir)
-                        Microsoft.VisualBasic.FileIO.FileSystem.DeleteDirectory(
-                            item.FullPath,
-                            Microsoft.VisualBasic.FileIO.UIOption.OnlyErrorDialogs,
-                            Microsoft.VisualBasic.FileIO.RecycleOption.SendToRecycleBin);
-                    else
-                        Microsoft.VisualBasic.FileIO.FileSystem.DeleteFile(
-                            item.FullPath,
-                            Microsoft.VisualBasic.FileIO.UIOption.OnlyErrorDialogs,
-                            Microsoft.VisualBasic.FileIO.RecycleOption.SendToRecycleBin);
+                    RecyclePath(item.FullPath, item.IsDir);
                     LogLine("已移入回收站: " + item.Name);
                     ok++;
                 }
@@ -166,16 +163,28 @@ public partial class MainWindow
             {
                 try
                 {
-                    // 执行前再次确认目标不存在，防止扫描后被外部创建
+                    // 执行前再次确认目标状态，防止扫描后被外部改动
                     if (item.IsDir ? Directory.Exists(item.TargetPath) : File.Exists(item.TargetPath))
                     {
-                        LogLineError("目标名称已存在，跳过重命名: " + item.NewName);
-                        fail++;
-                        continue;
+                        if (!item.ReplaceTarget)
+                        {
+                            LogLineError("目标名称已存在，跳过重命名: " + item.NewName);
+                            fail++;
+                            continue;
+                        }
+                        // 替换：仅当候选仍比目标新时清走旧目标，否则跳过
+                        if (GetLastWrite(item.TargetPath) >= GetLastWrite(item.FullPath))
+                        {
+                            LogLineError("目标修改日期不早于候选，跳过替换: " + item.NewName);
+                            fail++;
+                            continue;
+                        }
+                        RecyclePath(item.TargetPath, item.IsDir);
+                        LogLine("旧目标已移入回收站: " + item.NewName);
                     }
                     if (item.IsDir) Directory.Move(item.FullPath, item.TargetPath);
                     else File.Move(item.FullPath, item.TargetPath);
-                    LogLine($"重命名: {item.Name}  →  {item.NewName}");
+                    LogLine($"重命名: {item.Name}  →  {item.NewName}" + (item.ReplaceTarget ? "（已替换旧目标）" : ""));
                     ok++;
                 }
                 catch (Exception ex)
@@ -242,9 +251,11 @@ public partial class MainWindow
                         int del = views.Count(v => v.Action == "删除");
                         int ren = views.Count(v => v.Action == "重命名");
                         int skip = views.Count(v => v.Action == "跳过");
+                        int rep = views.Count(v => v.ReplaceTarget);
                         txtRenameSummary.Text = views.Count == 0
                             ? "未发现带日期命名的备份文件夹或压缩包（含各子文件夹）。"
-                            : $"重命名 {ren} 项，删除同名旧备份 {del} 项" + (skip > 0 ? $"，冲突跳过 {skip} 项" : "") + "（按所在文件夹分组）。";
+                            : $"重命名 {ren} 项" + (rep > 0 ? $"（替换旧目标 {rep} 项）" : "") +
+                              $"，删除同名旧备份 {del} 项" + (skip > 0 ? $"，冲突跳过 {skip} 项" : "") + "（按所在文件夹分组）。";
                         btnRenameRun.IsEnabled = del > 0 || ren > 0;
                     }
                     LogLine(purge
@@ -341,6 +352,9 @@ public partial class MainWindow
         string display;
         try { display = Path.GetRelativePath(root, fullPath); }
         catch { display = fileName; }
+        DateTime lastWrite;
+        try { lastWrite = File.GetLastWriteTime(fullPath); }
+        catch { lastWrite = DateTime.MinValue; }
         result.Add(new BackupCandidate
         {
             FullPath = fullPath,
@@ -348,6 +362,7 @@ public partial class MainWindow
             Key = key,
             DirPath = Path.GetDirectoryName(fullPath) ?? root,
             NameDate = nameDate,
+            LastWrite = lastWrite,
             DateText = dateText,
             IsDir = isDir
         });
@@ -396,7 +411,8 @@ public partial class MainWindow
         return views.OrderBy(v => v.Name, StringComparer.OrdinalIgnoreCase).ToList();
     }
 
-    /// <summary>删除日期命名：同一子文件夹内目标名不存在时最新项重命名、其余删除；目标名已存在则整组跳过。</summary>
+    /// <summary>删除日期命名：同一子文件夹内目标名不存在时最新项重命名、其余删除；
+    /// 目标名已存在时按修改日期取舍——候选更新则替换旧目标（旧目标入回收站），目标更新则保留目标并删除组内旧项。</summary>
     private static List<BackupItemView> BuildRenamePlan(List<BackupCandidate> candidates)
     {
         var views = new List<BackupItemView>();
@@ -410,6 +426,8 @@ public partial class MainWindow
             var first = ordered[0];
             string targetPath = Path.Combine(first.DirPath, first.Key);
             bool conflict = Directory.Exists(targetPath) || File.Exists(targetPath);
+            // 冲突时按文件修改日期取舍：候选更新→替换；目标更新→跳过候选
+            bool replace = conflict && first.LastWrite > GetLastWrite(targetPath);
             string relDir = Path.GetDirectoryName(first.DisplayName) ?? "";
             string targetDisplay = string.IsNullOrEmpty(relDir) ? first.Key : Path.Combine(relDir, first.Key);
 
@@ -417,10 +435,11 @@ public partial class MainWindow
             {
                 var c = ordered[i];
                 string action, newName;
-                if (conflict)
+                if (conflict && !replace)
                 {
-                    action = "跳过";
-                    newName = "目标名已存在";
+                    // 目标更新：最新候选原样保留，旧项仍删除
+                    action = i == 0 ? "跳过" : "删除";
+                    newName = i == 0 ? "目标已存在且更新" : "—";
                 }
                 else if (i == 0)
                 {
@@ -440,12 +459,33 @@ public partial class MainWindow
                     LastWriteText = c.DateText,
                     FullPath = c.FullPath,
                     TargetPath = targetPath,
+                    ReplaceTarget = i == 0 && replace,
                     IsDir = c.IsDir
                 });
             }
         }
         // 按相对路径（名称）排序，同组相邻便于对比，不按操作排序
         return views.OrderBy(v => v.Name, StringComparer.OrdinalIgnoreCase).ToList();
+    }
+
+    /// <summary>取文件/文件夹的修改时间；异常时返回最小值。</summary>
+    private static DateTime GetLastWrite(string path)
+    {
+        try { return File.GetLastWriteTime(path); }
+        catch { return DateTime.MinValue; }
+    }
+
+    /// <summary>把文件/文件夹移入回收站。</summary>
+    private static void RecyclePath(string path, bool isDir)
+    {
+        if (isDir)
+            Microsoft.VisualBasic.FileIO.FileSystem.DeleteDirectory(path,
+                Microsoft.VisualBasic.FileIO.UIOption.OnlyErrorDialogs,
+                Microsoft.VisualBasic.FileIO.RecycleOption.SendToRecycleBin);
+        else
+            Microsoft.VisualBasic.FileIO.FileSystem.DeleteFile(path,
+                Microsoft.VisualBasic.FileIO.UIOption.OnlyErrorDialogs,
+                Microsoft.VisualBasic.FileIO.RecycleOption.SendToRecycleBin);
     }
 
     private void RunToolsAction(Func<int> action, bool rescanPurge)

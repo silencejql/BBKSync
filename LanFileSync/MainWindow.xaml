@@ -682,7 +682,7 @@
                                                     </Grid.RowDefinitions>
                                                     <TextBlock Grid.Row="0" Foreground="{DynamicResource TextSubBrush}" FontSize="10"
                                                                TextWrapping="Wrap" FontWeight="Normal"
-                                                               Text="将备份文件夹或压缩包名称结尾的「_日期」段删除；删除后同名的只保留名称中日期最新的一个（其余移入回收站），再把保留项重命名为无日期名称。如目标名称已存在则整组跳过。会递归扫描全部子文件夹，各子文件夹内的备份独立分组与重命名，名称列显示相对路径。" />
+                                                               Text="将备份文件夹或压缩包名称结尾的「_日期」段删除；删除后同名的只保留名称中日期最新的一个（其余移入回收站），再把保留项重命名为无日期名称。如目标名称已存在，按文件修改日期取舍：候选更新则替换旧目标（旧目标移入回收站），目标更新则保留目标。会递归扫描全部子文件夹，各子文件夹内的备份独立分组与重命名，名称列显示相对路径。" />
                                                     <ListView x:Name="lvRename" Grid.Row="1" Margin="0,8,0,0" MinHeight="120" MaxHeight="150">
                                                         <ListView.View>
                                                             <GridView>
