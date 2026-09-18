@@ -614,16 +614,16 @@
                                         <TabControl Grid.Row="1" Margin="0,10,0,0">
                                             <!-- 剔除旧备份文件 -->
                                             <TabItem Header="剔除旧备份文件" Width="150">
+                                                <TabItem.ToolTip>
+                                                    <TextBlock TextWrapping="Wrap" MaxWidth="420"
+                                                               Text="日期之前名称相同的备份（文件夹或 .zip/.rar/.7z 压缩包），每组只保留名称中日期最新的一个，其余移入回收站。识别名称结尾的日期段，如「BBK_AutoBackup_20260918」。会递归扫描所选文件夹的全部子文件夹，按备份所在的文件夹分别分组；列表中名称带相对路径（如 PC1\BBK_20260901.zip）。" />
+                                                </TabItem.ToolTip>
                                                 <Grid>
                                                     <Grid.RowDefinitions>
                                                         <RowDefinition Height="Auto" />
                                                         <RowDefinition Height="Auto" />
-                                                        <RowDefinition Height="Auto" />
                                                     </Grid.RowDefinitions>
-                                                    <TextBlock Grid.Row="0" Foreground="{DynamicResource TextSubBrush}" FontSize="10"
-                                                               TextWrapping="Wrap" FontWeight="Normal"
-                                                               Text="日期之前名称相同的备份（文件夹或 .zip/.rar/.7z 压缩包），每组只保留名称中日期最新的一个，其余移入回收站。识别名称结尾的日期段，如「BBK_AutoBackup_20260918」。会递归扫描所选文件夹的全部子文件夹，按备份所在的文件夹分别分组；列表中名称带相对路径（如 PC1\BBK_20260901.zip）。" />
-                                                    <ListView x:Name="lvPurge" Grid.Row="1" Margin="0,8,0,0" MinHeight="120" MaxHeight="150">
+                                                    <ListView x:Name="lvPurge" Grid.Row="0" Margin="0,2,0,0" MinHeight="120" MaxHeight="190" FontSize="10">
                                                         <ListView.View>
                                                             <GridView>
                                                                 <GridViewColumn Header="操作" Width="70">
@@ -653,7 +653,7 @@
                                                             </GridView>
                                                         </ListView.View>
                                                     </ListView>
-                                                    <Grid Grid.Row="2" Margin="0,8,0,0">
+                                                    <Grid Grid.Row="1" Margin="0,8,0,0">
                                                         <Grid.ColumnDefinitions>
                                                             <ColumnDefinition Width="*" />
                                                             <ColumnDefinition Width="Auto" />
@@ -674,16 +674,16 @@
 
                                             <!-- 删除日期命名 -->
                                             <TabItem Header="删除日期命名" Width="150">
+                                                <TabItem.ToolTip>
+                                                    <TextBlock TextWrapping="Wrap" MaxWidth="420"
+                                                               Text="将备份文件夹或压缩包名称结尾的「_日期」段删除；删除后同名的只保留名称中日期最新的一个（其余移入回收站），再把保留项重命名为无日期名称。如目标名称已存在，按文件修改日期取舍：候选更新则替换旧目标（旧目标移入回收站），目标更新则保留目标。会递归扫描全部子文件夹，各子文件夹内的备份独立分组与重命名，名称列显示相对路径。" />
+                                                </TabItem.ToolTip>
                                                 <Grid>
                                                     <Grid.RowDefinitions>
                                                         <RowDefinition Height="Auto" />
                                                         <RowDefinition Height="Auto" />
-                                                        <RowDefinition Height="Auto" />
                                                     </Grid.RowDefinitions>
-                                                    <TextBlock Grid.Row="0" Foreground="{DynamicResource TextSubBrush}" FontSize="10"
-                                                               TextWrapping="Wrap" FontWeight="Normal"
-                                                               Text="将备份文件夹或压缩包名称结尾的「_日期」段删除；删除后同名的只保留名称中日期最新的一个（其余移入回收站），再把保留项重命名为无日期名称。如目标名称已存在，按文件修改日期取舍：候选更新则替换旧目标（旧目标移入回收站），目标更新则保留目标。会递归扫描全部子文件夹，各子文件夹内的备份独立分组与重命名，名称列显示相对路径。" />
-                                                    <ListView x:Name="lvRename" Grid.Row="1" Margin="0,8,0,0" MinHeight="120" MaxHeight="150">
+                                                    <ListView x:Name="lvRename" Grid.Row="0" Margin="0,2,0,0" MinHeight="120" MaxHeight="190" FontSize="10">
                                                         <ListView.View>
                                                             <GridView>
                                                                 <GridViewColumn Header="操作" Width="70">
@@ -718,7 +718,7 @@
                                                             </GridView>
                                                         </ListView.View>
                                                     </ListView>
-                                                    <Grid Grid.Row="2" Margin="0,8,0,0">
+                                                    <Grid Grid.Row="1" Margin="0,8,0,0">
                                                         <Grid.ColumnDefinitions>
                                                             <ColumnDefinition Width="*" />
                                                             <ColumnDefinition Width="Auto" />
