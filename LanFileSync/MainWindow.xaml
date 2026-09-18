@@ -205,7 +205,8 @@
                                             </Grid>
                                             <StackPanel Orientation="Horizontal" Margin="0,8,0,0">
                                                 <CheckBox x:Name="cbBackupLogRule" Content="Log 文件夹只备份最近" IsChecked="True" VerticalAlignment="Center" />
-                                                <TextBox x:Name="txtBackupLogDays" Width="50" Height="20" Margin="6,0" Text="2" VerticalContentAlignment="Center" />
+                                                <TextBox x:Name="txtBackupLogDays" Width="50" Height="20" Margin="6,0" Text="2" VerticalContentAlignment="Center" 
+                                                         ToolTip="设置 0 时备份所有Log"/>
                                                 <TextBlock Text="天" VerticalAlignment="Center" />
                                             </StackPanel>
                                             <StackPanel x:Name="rowLocalName" Orientation="Horizontal" Margin="0,8,0,0">

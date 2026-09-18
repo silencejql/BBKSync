@@ -209,7 +209,7 @@ public sealed class PeerServer : IDisposable
                     if (paths.Count > 0 && paths.Count < 10)
                         foreach (var p in paths) _log("  → " + p);
                     await SourceSide.SendRequestedFilesAsync(conn, _root, paths,
-                        (_, _) => { if (++sent % 25 == 0 || sent == paths.Count) _log($"已发送 {sent}/{paths.Count} 个文件..."); }, ct);
+                        (_, _) => { if (++sent % (paths.Count / 10) == 0 || sent == paths.Count) _log($"已发送 {sent}/{paths.Count} 个文件..."); }, ct);
                     _log("文件发送完成");
                 }
                 else if (role == Constants.RolePush)
@@ -374,7 +374,7 @@ public sealed class PeerServer : IDisposable
                     if (paths.Count > 0 && paths.Count < 10)
                         foreach (var p in paths) _log("  → " + p);
                     await TransferSide.SendRequestedFilesAsync(conn, paths,
-                        (_, _) => { if (++sent % 25 == 0 || sent == paths.Count) _log($"已发送 {sent}/{paths.Count} 个文件..."); }, ct);
+                        (_, _) => { if (++sent % (paths.Count / 10) == 0 || sent == paths.Count) _log($"已发送 {sent}/{paths.Count} 个文件..."); }, ct);
                     _log("文件发送完成");
 
                     await conn.SendJsonAsync(new { op = "bye", msgs = Array.Empty<string>() }, ct);
