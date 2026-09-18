@@ -437,6 +437,13 @@ public partial class MainWindow : Window
             ResetPasswordFields(pwdUpdate, txtUpdatePwd, eyeLine);
             txtUpdateError.Visibility = Visibility.Collapsed;
         }
+        if (tabs.SelectedIndex != 2)
+        {
+            transferOverlay.Visibility = Visibility.Visible;
+            transferContent.IsEnabled = false;
+            ResetPasswordFields(pwdTransfer, txtTransferPwd, eyeLineTransfer);
+            txtTransferError.Visibility = Visibility.Collapsed;
+        }
         if (tabs.SelectedIndex != 3)
         {
             processOverlay.Visibility = Visibility.Visible;
@@ -467,8 +474,9 @@ public partial class MainWindow : Window
         bool isProcessMgmt = tabs.SelectedIndex == 3;
         bool isUpdateProgram = tabs.SelectedIndex == 4;
         bool pwdOk = updateOverlay.Visibility != Visibility.Visible;
+        bool transferPwdOk = transferOverlay.Visibility != Visibility.Visible;
         btnBackup.IsEnabled = !_coordinator.Busy && isBackup;
-        btnSync.IsEnabled = !_coordinator.Busy && ((isBbkUpdate && pwdOk) || isFileTransfer);
+        btnSync.IsEnabled = !_coordinator.Busy && ((isBbkUpdate && pwdOk) || (isFileTransfer && transferPwdOk));
         btnUpdateProgram.IsEnabled = !_coordinator.Busy && isUpdateProgram;
     }
     private void SetBusy(bool busy)
@@ -863,6 +871,33 @@ public partial class MainWindow : Window
         else
         {
             txtProcessError.Visibility = Visibility.Visible;
+        }
+    }
+    #endregion
+
+    #region 文件同步密码
+    private void PwdTransfer_KeyDown(object sender, KeyEventArgs e)
+    {
+        if (e.Key == Key.Enter) { BtnTransferUnlock_Click(sender, e); e.Handled = true; }
+    }
+
+    private void BtnToggleTransferPwd_Click(object sender, RoutedEventArgs e)
+        => TogglePasswordVisibility(pwdTransfer, txtTransferPwd, eyeLineTransfer);
+
+    private void BtnTransferUnlock_Click(object sender, RoutedEventArgs e)
+    {
+        string pwd = pwdTransfer.Visibility == Visibility.Visible ? pwdTransfer.Password : txtTransferPwd.Text;
+        if (pwd == _settings.Settings.UpdatePassword)
+        {
+            transferOverlay.Visibility = Visibility.Collapsed;
+            transferContent.IsEnabled = true;
+            RefreshOpButtons();
+        }
+        else
+        {
+            txtTransferError.Visibility = Visibility.Visible;
+            pwdTransfer.Clear();
+            pwdTransfer.Focus();
         }
     }
     #endregion
