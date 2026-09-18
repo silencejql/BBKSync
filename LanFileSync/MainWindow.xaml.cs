@@ -53,6 +53,7 @@ public partial class MainWindow : Window
         ReloadHistoryCombo();
         EnsureUpdateBat();
         EnsurePostBackupBat();
+        HookPasswordAutoMask();
         var localIp = GetLocalIPs().FirstOrDefault(ip => !ip.StartsWith("127.", StringComparison.Ordinal)) ?? "";
         if (!string.IsNullOrEmpty(localIp)) cboPeerIp.Text = localIp;
         LogLine("工具已启动，使用目录: " + txtRoot.Text);
@@ -467,6 +468,57 @@ public partial class MainWindow : Window
         txt.Visibility = Visibility.Collapsed;
         eyeLine.Visibility = Visibility.Visible;
     }
+
+    #region 密码标签页空闲自动上锁
+    private DateTime _lastUserInput = DateTime.Now;
+
+    /// <summary>
+    /// 监听窗口键盘/鼠标活动；5 分钟无任何操作时，把已解锁的密码保护标签页重新上锁（恢复密码遮罩）。
+    /// </summary>
+    private void HookPasswordAutoMask()
+    {
+        PreviewKeyDown += (_, _) => _lastUserInput = DateTime.Now;
+        PreviewMouseMove += (_, _) => _lastUserInput = DateTime.Now;
+        var timer = new DispatcherTimer { Interval = TimeSpan.FromSeconds(30) };
+        timer.Tick += (_, _) =>
+        {
+            if ((DateTime.Now - _lastUserInput).TotalMinutes < 5) return;
+            // 同步/备份等操作进行中不上锁，待操作结束后重新计时 5 分钟
+            if (_coordinator.Busy) { _lastUserInput = DateTime.Now; return; }
+            bool lockedAny = false;
+            if (updateOverlay.Visibility != Visibility.Visible)
+            {
+                updateOverlay.Visibility = Visibility.Visible;
+                ResetPasswordFields(pwdUpdate, txtUpdatePwd, eyeLine);
+                txtUpdateError.Visibility = Visibility.Collapsed;
+                lockedAny = true;
+            }
+            if (transferOverlay.Visibility != Visibility.Visible)
+            {
+                transferOverlay.Visibility = Visibility.Visible;
+                transferContent.IsEnabled = false;
+                ResetPasswordFields(pwdTransfer, txtTransferPwd, eyeLineTransfer);
+                txtTransferError.Visibility = Visibility.Collapsed;
+                lockedAny = true;
+            }
+            if (processOverlay.Visibility != Visibility.Visible)
+            {
+                processOverlay.Visibility = Visibility.Visible;
+                processContent.IsEnabled = false;
+                ResetPasswordFields(pwdProcess, txtProcessPwd, eyeLineProcess);
+                txtProcessError.Visibility = Visibility.Collapsed;
+                lockedAny = true;
+            }
+            if (lockedAny)
+            {
+                _lastUserInput = DateTime.Now;
+                RefreshOpButtons();
+                LogLine("空闲超过 5 分钟，密码保护标签页已自动重新上锁。");
+            }
+        };
+        timer.Start();
+    }
+    #endregion
     private void RefreshOpButtons()
     {
         if (btnSync == null || btnBackup == null || btnUpdateProgram == null || tabs == null) return;
