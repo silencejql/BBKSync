@@ -587,7 +587,7 @@
                                         </StackPanel>
                                     </Grid>
                                 </TabItem>
-                                <TabItem Header="其他小工具" Width="100"
+                                <TabItem Header="小工具" Width="100"
                                          ToolTip="整理备份文件夹或压缩包：剔除旧备份、删除名称中的日期段">
                                     <TabControl>
                                         <TabItem Header="备份整理" Width="150">
@@ -616,7 +616,7 @@
                                             <TabItem Header="剔除旧备份文件" Width="150">
                                                 <TabItem.ToolTip>
                                                     <TextBlock TextWrapping="Wrap" MaxWidth="420"
-                                                               Text="日期之前名称相同的备份（文件夹或 .zip/.rar/.7z 压缩包），每组只保留名称中日期最新的一个，其余移入回收站。识别名称结尾的日期段，如「BBK_AutoBackup_20260918」。会递归扫描所选文件夹的全部子文件夹，按备份所在的文件夹分别分组；列表中名称带相对路径（如 PC1\BBK_20260901.zip）。" />
+                                                               Text="按备份名称中的日期排序保留最新的一个。" />
                                                 </TabItem.ToolTip>
                                                 <Grid>
                                                     <Grid.RowDefinitions>
@@ -676,7 +676,7 @@
                                             <TabItem Header="删除日期命名" Width="150">
                                                 <TabItem.ToolTip>
                                                     <TextBlock TextWrapping="Wrap" MaxWidth="420"
-                                                               Text="将备份文件夹或压缩包名称结尾的「_日期」段删除；删除后同名的只保留名称中日期最新的一个（其余移入回收站），再把保留项重命名为无日期名称。如目标名称已存在，按文件修改日期取舍：候选更新则替换旧目标（旧目标移入回收站），目标更新则保留目标。会递归扫描全部子文件夹，各子文件夹内的备份独立分组与重命名，名称列显示相对路径。" />
+                                                               Text="将备份文件夹或压缩包名称结尾的「_日期」段删除；删除后同名的只保留名称中日期最新的一个，再把保留项重命名为无日期名称。如目标名称已存在，按文件修改日期取舍：候选更新则替换旧目标，目标更新则保留目标。" />
                                                 </TabItem.ToolTip>
                                                 <Grid>
                                                     <Grid.RowDefinitions>
