@@ -603,7 +603,7 @@
                                             </Grid.ColumnDefinitions>
                                             <TextBlock Text="文件夹:" VerticalAlignment="Center" FontWeight="SemiBold" />
                                             <TextBox x:Name="txtToolsDir" Grid.Column="1" Margin="8,0,0,0" Height="30"
-                                                     ToolTip="待整理的备份所在文件夹；只扫描第一层（不递归子文件夹）。留空时默认使用上方「备份到」目录。" />
+                                                     ToolTip="待整理的备份所在文件夹；会递归扫描所有子文件夹（带日期命名的备份文件夹视为整体，不再深入）。留空时默认使用上方「备份到」目录。" />
                                             <Button x:Name="btnToolsBrowse" Grid.Column="2" Content="浏览..." Padding="12,6" Margin="8,0,0,0"
                                                     Click="BtnToolsBrowse_Click" />
                                         </Grid>
@@ -615,13 +615,13 @@
                                                 <Grid>
                                                     <Grid.RowDefinitions>
                                                         <RowDefinition Height="Auto" />
-                                                        <RowDefinition Height="*" />
+                                                        <RowDefinition Height="Auto" />
                                                         <RowDefinition Height="Auto" />
                                                     </Grid.RowDefinitions>
                                                     <TextBlock Grid.Row="0" Foreground="{DynamicResource TextSubBrush}" FontSize="10"
                                                                TextWrapping="Wrap" FontWeight="Normal"
-                                                               Text="日期之前名称相同的备份（文件夹或 .zip/.rar/.7z 压缩包），每组只保留修改日期最新的一个，其余移入回收站。识别名称结尾的日期段，如「BBK_AutoBackup_20260918」。" />
-                                                    <ListView x:Name="lvPurge" Grid.Row="1" Margin="0,8,0,0" MinHeight="160">
+                                                               Text="日期之前名称相同的备份（文件夹或 .zip/.rar/.7z 压缩包），每组只保留修改日期最新的一个，其余移入回收站。识别名称结尾的日期段，如「BBK_AutoBackup_20260918」。会递归扫描所选文件夹的全部子文件夹，按备份所在的文件夹分别分组；列表中名称带相对路径（如 PC1\BBK_20260901.zip）。" />
+                                                    <ListView x:Name="lvPurge" Grid.Row="1" Margin="0,8,0,0" MinHeight="160" MaxHeight="340">
                                                         <ListView.View>
                                                             <GridView>
                                                                 <GridViewColumn Header="操作" Width="70">
@@ -675,13 +675,13 @@
                                                 <Grid>
                                                     <Grid.RowDefinitions>
                                                         <RowDefinition Height="Auto" />
-                                                        <RowDefinition Height="*" />
+                                                        <RowDefinition Height="Auto" />
                                                         <RowDefinition Height="Auto" />
                                                     </Grid.RowDefinitions>
                                                     <TextBlock Grid.Row="0" Foreground="{DynamicResource TextSubBrush}" FontSize="10"
                                                                TextWrapping="Wrap" FontWeight="Normal"
-                                                               Text="将备份文件夹或压缩包名称结尾的「_日期」段删除；删除后同名的只保留修改日期最新的一个（其余移入回收站），再把保留项重命名为无日期名称。如目标名称已存在则整组跳过。" />
-                                                    <ListView x:Name="lvRename" Grid.Row="1" Margin="0,8,0,0" MinHeight="160">
+                                                               Text="将备份文件夹或压缩包名称结尾的「_日期」段删除；删除后同名的只保留修改日期最新的一个（其余移入回收站），再把保留项重命名为无日期名称。如目标名称已存在则整组跳过。会递归扫描全部子文件夹，各子文件夹内的备份独立分组与重命名，名称列显示相对路径。" />
+                                                    <ListView x:Name="lvRename" Grid.Row="1" Margin="0,8,0,0" MinHeight="160" MaxHeight="340">
                                                         <ListView.View>
                                                             <GridView>
                                                                 <GridViewColumn Header="操作" Width="70">

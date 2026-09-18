@@ -26,11 +26,16 @@ public partial class MainWindow
     private sealed class BackupCandidate
     {
         public required string FullPath { get; init; }
+        /// <summary>相对扫描根目录的显示名（子文件夹内的项带相对路径）。</summary>
         public required string DisplayName { get; init; }
-        /// <summary>去掉结尾日期段后的分组键（文件保留扩展名，文件夹无扩展名）。</summary>
+        /// <summary>去掉结尾日期段后的名称（文件保留扩展名，文件夹无扩展名）；即重命名目标名。</summary>
         public required string Key { get; init; }
+        /// <summary>所在文件夹的绝对路径；与 Key 共同构成分组键（不同子文件夹分别成组）。</summary>
+        public required string DirPath { get; init; }
         public required DateTime LastWrite { get; init; }
         public required bool IsDir { get; init; }
+        /// <summary>分组键：同一子文件夹内日期之前名称相同才算一组。</summary>
+        public string GroupKey => DirPath + '\u0001' + Key;
     }
 
     // 结尾日期段：下划线开头，yyyyMMdd（也兼容 yyyy-MM-dd / yyyy_MM_dd），可选 6 位时间
@@ -215,7 +220,7 @@ public partial class MainWindow
                 var candidates = ScanBackupCandidates(dir);
                 List<BackupItemView> views = purge
                     ? BuildPurgePlan(candidates)
-                    : BuildRenamePlan(candidates, dir);
+                    : BuildRenamePlan(candidates);
                 Dispatcher.Invoke(() =>
                 {
                     if (purge)
@@ -224,8 +229,8 @@ public partial class MainWindow
                         int del = views.Count(v => v.Action == "删除");
                         int keep = views.Count - del;
                         txtPurgeSummary.Text = views.Count == 0
-                            ? "未发现带日期命名的备份文件夹或压缩包。"
-                            : $"发现 {candidates.Select(c => c.Key).Distinct().Count()} 组备份：将删除 {del} 项，保留最新 {keep} 项。";
+                            ? "未发现带日期命名的备份文件夹或压缩包（含各子文件夹）。"
+                            : $"发现 {candidates.Select(c => c.GroupKey).Distinct(StringComparer.OrdinalIgnoreCase).Count()} 组备份：将删除 {del} 项，保留最新 {keep} 项（按所在文件夹分组）。";
                         btnPurgeRun.IsEnabled = del > 0;
                     }
                     else
@@ -235,8 +240,8 @@ public partial class MainWindow
                         int ren = views.Count(v => v.Action == "重命名");
                         int skip = views.Count(v => v.Action == "跳过");
                         txtRenameSummary.Text = views.Count == 0
-                            ? "未发现带日期命名的备份文件夹或压缩包。"
-                            : $"重命名 {ren} 项，删除同名旧备份 {del} 项" + (skip > 0 ? $"，冲突跳过 {skip} 项" : "") + "。";
+                            ? "未发现带日期命名的备份文件夹或压缩包（含各子文件夹）。"
+                            : $"重命名 {ren} 项，删除同名旧备份 {del} 项" + (skip > 0 ? $"，冲突跳过 {skip} 项" : "") + "（按所在文件夹分组）。";
                         btnRenameRun.IsEnabled = del > 0 || ren > 0;
                     }
                     LogLine(purge
@@ -256,32 +261,65 @@ public partial class MainWindow
         });
     }
 
-    /// <summary>枚举文件夹第一层中名称以「_日期」结尾的文件夹和压缩包。</summary>
-    private static List<BackupCandidate> ScanBackupCandidates(string dir)
+    /// <summary>
+    /// 递归枚举备份候选项：普通子文件夹继续深入；名称带日期段的文件夹本身就是一个完整备份单元，
+    /// 收录但不再深入（避免父子同时被改名/删除导致路径失效）。压缩包仅识别 .zip/.rar/.7z。
+    /// </summary>
+    private static List<BackupCandidate> ScanBackupCandidates(string root)
     {
         var result = new List<BackupCandidate>();
-
-        IEnumerable<string> dirs;
-        IEnumerable<string> files;
-        try
-        {
-            dirs = Directory.EnumerateDirectories(dir);
-            files = Directory.EnumerateFiles(dir);
-        }
-        catch { return result; }
-
-        foreach (var path in dirs)
-            AddIfMatch(result, path, isDir: true);
-
-        foreach (var path in files)
-        {
-            if (!ArchiveExtensions.Contains(Path.GetExtension(path))) continue;
-            AddIfMatch(result, path, isDir: false);
-        }
+        ScanBackupDir(root, root, result);
         return result;
     }
 
-    private static void AddIfMatch(List<BackupCandidate> result, string fullPath, bool isDir)
+    private static void ScanBackupDir(string root, string dir, List<BackupCandidate> result)
+    {
+        string[] entries;
+        try
+        {
+            entries = Directory.GetFileSystemEntries(dir);
+        }
+        catch
+        {
+            // 无权限等情况：跳过该目录，不影响其他分支
+            return;
+        }
+
+        foreach (var path in entries)
+        {
+            FileAttributes attr;
+            try { attr = File.GetAttributes(path); }
+            catch { continue; }
+            bool isDir = (attr & FileAttributes.Directory) != 0;
+
+            if (!isDir)
+            {
+                if (ArchiveExtensions.Contains(Path.GetExtension(path)))
+                    TryAddCandidate(result, root, path, isDir: false);
+                continue;
+            }
+
+            // 名称带日期段的文件夹视为一个备份整体，不再向其内部递归
+            if (IsDatedName(path, isDir: true))
+                TryAddCandidate(result, root, path, isDir: true);
+            else
+            {
+                // 跳过 junction/符号链接等重分析点，防止循环递归或越出所选文件夹
+                if ((attr & FileAttributes.ReparsePoint) != 0) continue;
+                ScanBackupDir(root, path, result);
+            }
+        }
+    }
+
+    /// <summary>判断文件夹/文件名（压缩包不含扩展名部分）是否以合法「_日期」段结尾。</summary>
+    private static bool IsDatedName(string fullPath, bool isDir)
+    {
+        string nameNoExt = isDir ? Path.GetFileName(fullPath) : Path.GetFileNameWithoutExtension(fullPath);
+        var m = DateSuffixRegex.Match(nameNoExt);
+        return m.Success && m.Index > 0 && TryParseDateToken(m.Groups["date"].Value, out _);
+    }
+
+    private static void TryAddCandidate(List<BackupCandidate> result, string root, string fullPath, bool isDir)
     {
         string fileName = Path.GetFileName(fullPath);
         string ext = isDir ? "" : Path.GetExtension(fileName);
@@ -295,11 +333,15 @@ public partial class MainWindow
         var info = isDir
             ? new DirectoryInfo(fullPath)
             : (FileSystemInfo)new FileInfo(fullPath);
+        string display;
+        try { display = Path.GetRelativePath(root, fullPath); }
+        catch { display = fileName; }
         result.Add(new BackupCandidate
         {
             FullPath = fullPath,
-            DisplayName = fileName,
+            DisplayName = display,
             Key = key,
+            DirPath = Path.GetDirectoryName(fullPath) ?? root,
             LastWrite = info.LastWriteTime,
             IsDir = isDir
         });
@@ -321,11 +363,11 @@ public partial class MainWindow
         return false;
     }
 
-    /// <summary>剔除旧备份：每组保留修改日期最新的一项，其余标记删除。</summary>
+    /// <summary>剔除旧备份：每个子文件夹内每组保留修改日期最新的一项，其余标记删除。</summary>
     private static List<BackupItemView> BuildPurgePlan(List<BackupCandidate> candidates)
     {
         var views = new List<BackupItemView>();
-        foreach (var group in candidates.GroupBy(c => c.Key, StringComparer.OrdinalIgnoreCase))
+        foreach (var group in candidates.GroupBy(c => c.GroupKey, StringComparer.OrdinalIgnoreCase))
         {
             var ordered = group
                 .OrderByDescending(c => c.LastWrite)
@@ -350,18 +392,22 @@ public partial class MainWindow
                     .ToList();
     }
 
-    /// <summary>删除日期命名：目标名不存在时最新项重命名、其余删除；目标名已存在则整组跳过。</summary>
-    private static List<BackupItemView> BuildRenamePlan(List<BackupCandidate> candidates, string dir)
+    /// <summary>删除日期命名：同一子文件夹内目标名不存在时最新项重命名、其余删除；目标名已存在则整组跳过。</summary>
+    private static List<BackupItemView> BuildRenamePlan(List<BackupCandidate> candidates)
     {
         var views = new List<BackupItemView>();
-        foreach (var group in candidates.GroupBy(c => c.Key, StringComparer.OrdinalIgnoreCase))
+        foreach (var group in candidates.GroupBy(c => c.GroupKey, StringComparer.OrdinalIgnoreCase))
         {
             var ordered = group
                 .OrderByDescending(c => c.LastWrite)
                 .ThenBy(c => c.DisplayName, StringComparer.OrdinalIgnoreCase)
                 .ToList();
-            string targetPath = Path.Combine(dir, group.Key);
+            // 重命名始终在候选项自身所在的文件夹内进行；不同子文件夹分别判定冲突
+            var first = ordered[0];
+            string targetPath = Path.Combine(first.DirPath, first.Key);
             bool conflict = Directory.Exists(targetPath) || File.Exists(targetPath);
+            string relDir = Path.GetDirectoryName(first.DisplayName) ?? "";
+            string targetDisplay = string.IsNullOrEmpty(relDir) ? first.Key : Path.Combine(relDir, first.Key);
 
             for (int i = 0; i < ordered.Count; i++)
             {
@@ -375,7 +421,7 @@ public partial class MainWindow
                 else if (i == 0)
                 {
                     action = "重命名";
-                    newName = group.Key;
+                    newName = targetDisplay;
                 }
                 else
                 {
