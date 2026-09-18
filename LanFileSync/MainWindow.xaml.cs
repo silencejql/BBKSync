@@ -431,6 +431,8 @@ public partial class MainWindow : Window
     private void Tabs_SelectionChanged(object sender, SelectionChangedEventArgs e)
     {
         if (!IsLoaded) return;
+        // 「其他小工具」内嵌 TabControl 的切换事件会冒泡到这里，只处理外层标签切换
+        if (!ReferenceEquals(e.OriginalSource, tabs)) return;
         if (tabs.SelectedIndex != 1)
         {
             updateOverlay.Visibility = Visibility.Visible;
