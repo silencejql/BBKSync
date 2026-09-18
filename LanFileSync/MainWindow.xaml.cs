@@ -445,8 +445,8 @@ public partial class MainWindow : Window
             txtProcessError.Visibility = Visibility.Collapsed;
         }
         RefreshOpButtons();
-        // 「其他小工具」页自带操作按钮，用不到底部同步与进度区；其余标签页保持显示
-        grpSyncProgress.Visibility = tabs.SelectedIndex == 5 ? Visibility.Collapsed : Visibility.Visible;
+        // 「进程管理」「其他小工具」页用不到底部同步与进度区（操作进行中由 SetBusy 强制显示，保证取消可用）
+        grpSyncProgress.Visibility = tabs.SelectedIndex is 3 or 5 ? Visibility.Collapsed : Visibility.Visible;
     }
 
     /// <summary>清空密码/明文内容并恢复到密码框可见状态。</summary>
@@ -478,7 +478,7 @@ public partial class MainWindow : Window
         btnStart.IsEnabled = !busy && _server == null;
         btnStop.IsEnabled = !busy && _server != null;
         // 操作进行中取消按钮必需，强制显示同步与进度区；结束后按当前标签页恢复显隐
-        grpSyncProgress.Visibility = busy || tabs.SelectedIndex != 5 ? Visibility.Visible : Visibility.Collapsed;
+        grpSyncProgress.Visibility = busy || tabs.SelectedIndex is not (3 or 5) ? Visibility.Visible : Visibility.Collapsed;
     }
 
     private static readonly string[] BusyControls =
