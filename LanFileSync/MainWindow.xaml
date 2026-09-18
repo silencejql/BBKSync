@@ -697,7 +697,7 @@
                             </TabControl>
 
                             <!-- 同步与进度 -->
-                            <GroupBox Header="同步与进度" Margin="0,16,0,0">
+                            <GroupBox x:Name="grpSyncProgress" Header="同步与进度" Margin="0,16,0,0">
                                 <StackPanel>
                                     <Grid>
                                         <Grid.ColumnDefinitions>
