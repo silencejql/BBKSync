@@ -174,7 +174,7 @@ try {
     Write-Step "创建本地带注释 tag：$Tag"
     $tagCreated = $false
     try {
-        Invoke-Native -File git -Arguments tag '-a' $Tag '-m' "Release $Tag" -ErrorMessage "创建 tag $Tag 失败"
+        Invoke-Native -File git -Arguments @('tag', '-a', $Tag, '-m', "Release $Tag") -ErrorMessage "创建 tag $Tag 失败"
         $tagCreated = $true
         Write-Ok "tag $Tag 已指向 $(git rev-parse --short HEAD)"
 
@@ -183,7 +183,7 @@ try {
             $upstream = git rev-parse --abbrev-ref --symbolic-full-name '@{u}' 2>$null
             if ($upstream) {
                 Write-Step "快进拉取 $upstream"
-                Invoke-Native -File git -Arguments pull --ff-only --quiet -ErrorMessage 'git pull --ff-only 失败，请先同步远端后重试。'
+                Invoke-Native -File git -Arguments @('pull', '--ff-only', '--quiet') -ErrorMessage 'git pull --ff-only 失败，请先同步远端后重试。'
                 Write-Ok '已是最新'
             }
         }
@@ -199,7 +199,7 @@ try {
             }
 
             Write-Step "dotnet publish -> $PublishDir"
-            Invoke-Native -File dotnet -Arguments publish $Project '-c' Release '-o' $PublishDir --nologo -ErrorMessage 'dotnet publish 失败，请查看上方编译输出。'
+            Invoke-Native -File dotnet -Arguments @('publish', $Project, '-c', 'Release', '-o', $PublishDir, '--nologo') -ErrorMessage 'dotnet publish 失败，请查看上方编译输出。'
 
             # -----------------------------------------------------------------
             # 校验产物版本
@@ -249,8 +249,8 @@ try {
         if ($Push) {
             if (-not $remote) { Fail '指定了 -Push 但未配置 origin 远端。' }
             Write-Step "推送分支 $branch 与 tag $Tag 到 origin"
-            Invoke-Native -File git -Arguments push origin "HEAD:$branch" -ErrorMessage '推送分支失败'
-            Invoke-Native -File git -Arguments push origin "refs/tags/$Tag" -ErrorMessage '推送 tag 失败'
+            Invoke-Native -File git -Arguments @('push', 'origin', "HEAD:$branch") -ErrorMessage '推送分支失败'
+            Invoke-Native -File git -Arguments @('push', 'origin', "refs/tags/$Tag") -ErrorMessage '推送 tag 失败'
             Write-Ok '分支与 tag 已推送'
         }
     }
