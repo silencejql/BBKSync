@@ -220,9 +220,15 @@ try {
             if (-not $vi.ProductVersion.StartsWith($Version)) {
                 Fail "ProductVersion 不以 $Version 开头：实际 $($vi.ProductVersion)"
             }
-            $asmVersion = [System.Reflection.AssemblyName]::GetAssemblyName($exe).Version
+            # 单文件发布的 BBKSync.exe 是原生 apphost（不含程序集清单，无法用 GetAssemblyName），
+            # AssemblyVersion 改为从中间输出目录里最新的托管 BBKSync.dll 读取
+            $buildRoot = Join-Path (Split-Path $Project -Parent) 'bin\Release'
+            $asmDll = Get-ChildItem -Path $buildRoot -Filter 'BBKSync.dll' -Recurse -File -ErrorAction SilentlyContinue |
+                Sort-Object LastWriteTime -Descending | Select-Object -First 1
+            if (-not $asmDll) { Fail "未找到中间产物 BBKSync.dll（$buildRoot），无法校验 AssemblyVersion。" }
+            $asmVersion = [System.Reflection.AssemblyName]::GetAssemblyName($asmDll.FullName).Version
             if ("$asmVersion" -ne $ExpectedFileVersion) {
-                Fail "AssemblyVersion 不匹配：期望 $ExpectedFileVersion，实际 $asmVersion"
+                Fail "AssemblyVersion 不匹配：期望 $ExpectedFileVersion，实际 $asmVersion（$($asmDll.FullName)）"
             }
             Write-Ok "版本校验通过：$Version（FileVersion/AssemblyVersion=$ExpectedFileVersion）"
 
