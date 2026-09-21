@@ -498,13 +498,20 @@
         <Setter Property="Template">
             <Setter.Value>
                 <ControlTemplate TargetType="TabItem">
-                    <Border x:Name="bd" CornerRadius="8" Margin="0,0,6,0"
-                            Background="Transparent" BorderThickness="1"
-                            BorderBrush="Transparent" Padding="16,7" SnapsToDevicePixels="True">
-                        <ContentPresenter x:Name="header" ContentSource="Header"
-                                          HorizontalAlignment="Center" VerticalAlignment="Center"
-                                          RecognizesAccessKey="True" />
-                    </Border>
+                    <Grid>
+                        <Border x:Name="bd" CornerRadius="8" Margin="0,0,6,0"
+                                Background="Transparent" BorderThickness="1"
+                                BorderBrush="Transparent" Padding="16,7" SnapsToDevicePixels="True">
+                            <ContentPresenter x:Name="header" ContentSource="Header"
+                                              HorizontalAlignment="Center" VerticalAlignment="Center"
+                                              RecognizesAccessKey="True" />
+                        </Border>
+                        <!-- 选中时左侧蓝色竖线（与标题一致） -->
+                        <Border x:Name="accentBar" Width="4" Height="15" CornerRadius="2"
+                                Background="{DynamicResource AccentBrush}"
+                                HorizontalAlignment="Left" VerticalAlignment="Center"
+                                Margin="6,0,0,0" Opacity="0" SnapsToDevicePixels="True" />
+                    </Grid>
                     <ControlTemplate.Triggers>
                         <Trigger Property="IsMouseOver" Value="True">
                             <Setter TargetName="bd" Property="Background" Value="#F1F5FC" />
@@ -512,6 +519,7 @@
                         <Trigger Property="IsSelected" Value="True">
                             <Setter TargetName="bd" Property="Background" Value="#FFFFFF" />
                             <Setter TargetName="bd" Property="BorderBrush" Value="{DynamicResource CardBorderBrush}" />
+                            <Setter TargetName="accentBar" Property="Opacity" Value="1" />
                             <Setter Property="Foreground" Value="{DynamicResource TextMainBrush}" />
                         </Trigger>
                         <Trigger Property="IsEnabled" Value="False">
