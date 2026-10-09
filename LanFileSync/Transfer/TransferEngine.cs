@@ -77,8 +77,12 @@ public sealed class TransferEngine
         }
         if (File.Exists(backupPath) || Directory.Exists(backupPath))
         {
-            log("已存在本次备份，跳过: " + backupPath);
-            return true;
+            //log("已存在本次备份，跳过: " + backupPath);
+            //return true;
+
+            log("备份命名已存在，删除原备份: " + backupPath);
+            if (_itemIsDir) Directory.Delete(backupPath);
+            else File.Delete(backupPath);
         }
         if (_itemIsDir)
         {

@@ -1,4 +1,4 @@
-﻿<#
+﻿﻿<#
 .SYNOPSIS
     BBKSync MinVer 一键发版脚本（Windows PowerShell 5.1+）。
 
