@@ -121,7 +121,7 @@ public partial class MainWindow
                     LogDivider(); LogLine($"已连接远端 {host}:{port}，开始拉取备份 → {target} ...");
                     _opLabel = "备份";
                     await client.BackupPullAsync(target, ReadBackupOptions(), preBackupBat, LogLine, OnFileProgress, OnTotal, m => LogLineError("跳过: " + m), ct, LogLineError);
-                    okIps.Add(host); LogLine($"备份完成: {host}");
+                    okIps.Add(host); LogLineSuccess($"备份完成: {host}");
                     await CompressAndRemoveFolderAsync(target, ShouldCompress);
                 }
                 catch (OperationCanceledException) { throw; }
@@ -251,7 +251,7 @@ public partial class MainWindow
                         }
                         await client.PullAsync(root, options, LogLine, OnFileProgress, OnTotal, m => LogLineError("传输失败，跳过: " + m), ct);
                     }
-                    okIps.Add(host); LogLine($"同步完成: {host}");
+                    okIps.Add(host); LogLineSuccess($"同步完成: {host}");
                 }
                 catch (OperationCanceledException) { throw; }
                 catch (Exception ex) { failed.Add($"{host} - {ex.Message}"); LogLineError($"同步失败 {host}: {ex.Message}"); }
@@ -285,7 +285,7 @@ public partial class MainWindow
             if (engine.NeedList.Count > 0 && engine.NeedList.Count < 10)
                 foreach (var p in engine.NeedList) LogLine("  ← " + p);
             await engine.CopyNeededFromAsync(unc, OnFileProgress, m => LogLineError("跳过: " + m), ct);
-            LogLine("共享同步完成"); txtStatus.Text = "共享同步完成";
+            LogLineSuccess("共享同步完成"); txtStatus.Text = "共享同步完成";
         }
         catch (OperationCanceledException) { LogLine("已取消"); }
         catch (Exception ex) { LogLineError("共享同步失败: " + ex.Message); DarkMessageBox.Show("共享同步失败: " + ex.Message, "错误", MessageBoxButton.OK, MessageBoxImage.Error); }
@@ -322,7 +322,7 @@ public partial class MainWindow
                     await client.ConnectAsync(host, port, Constants.RoleTransfer, ct);
                     LogDivider(); LogLine($"传输到 {host}:{port}({(updateMode ? "更新模式" : "拷贝模式")})...");
                     await client.TransferAsync(itemPath, isDir, cbTransferSameSkip.IsChecked == true, updateMode, localDevice, LogLine, OnFileProgress, OnTotal, m => LogLineError("远端电脑: " + m), ct);
-                    okIps.Add(host); LogLine($"传输完成: {host}");
+                    okIps.Add(host); LogLineSuccess($"传输完成: {host}");
                 }
                 catch (OperationCanceledException) { throw; }
                 catch (Exception ex) { failed.Add($"{host} - {ex.Message}"); LogLineError($"传输失败 {host}: {ex.Message}"); }
@@ -376,7 +376,7 @@ public partial class MainWindow
                     await client.ConnectAsync(host, port, Constants.RoleTransferPull, ct);
                     LogDivider(); LogLine($"从 {host}:{port} 拉取文件(远端路径: {itemPath}，{(updateMode ? "更新模式" : "拷贝模式")})...");
                     await client.TransferFromRemoteAsync(itemPath, updateMode, deviceName, localDevice, LogLine, OnFileProgress, OnTotal, m => LogLineError("远端电脑: " + m), ct);
-                    okIps.Add(host); LogLine($"拉取完成: {host}");
+                    okIps.Add(host); LogLineSuccess($"拉取完成: {host}");
                 }
                 catch (OperationCanceledException) { throw; }
                 catch (Exception ex) { failed.Add($"{host} - {ex.Message}"); LogLineError($"拉取失败 {host}: {ex.Message}"); }
@@ -478,7 +478,7 @@ public partial class MainWindow
                     LogLine("已连接，正在发送更新文件...");
                     await client.UpdateAsync(exePath, m => LogLine(m), _coordinator.Token);
                     okIps.Add(h);
-                    LogLine($"{h} 更新完成");
+                    LogLineSuccess($"{h} 更新完成");
                 }
                 catch (OperationCanceledException) { throw; }
                 catch (Exception ex)

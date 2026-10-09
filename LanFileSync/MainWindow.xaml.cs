@@ -174,9 +174,11 @@ public partial class MainWindow : Window
 
     private static Brush s_logBrush = new SolidColorBrush(Color.FromRgb(0x20, 0x24, 0x2E));
     private static Brush s_logErrorBrush = new SolidColorBrush(Color.FromRgb(0xDC, 0x26, 0x26));
+    private static Brush s_logSuccessBrush = new SolidColorBrush(Color.FromRgb(0x16, 0xA3, 0x4A));
 
     private void LogLine(string msg) => LogLine(msg, s_logBrush);
     private void LogLineError(string msg) => LogLine(msg, s_logErrorBrush);
+    private void LogLineSuccess(string msg) => LogLine(msg, s_logSuccessBrush);
     private void LogDivider() => LogLine("------------------------------------------------");
 
     private void LogLine(string msg, Brush brush)
@@ -267,7 +269,7 @@ public partial class MainWindow : Window
             _server.Start();
             btnStart.IsEnabled = false; btnStop.IsEnabled = true;
             txtLocalIp.Text = "本机地址: " + string.Join("   ", GetLocalIPs());
-            LogLine($"服务已启动，端口 {port}，根目录 {root}。远端填上此 IP 与本端口即可同步。");
+            LogLineSuccess($"服务已启动，端口 {port}，根目录 {root}。远端填上此 IP 与本端口即可同步。");
         }
         catch (Exception ex)
         {
@@ -281,7 +283,7 @@ public partial class MainWindow : Window
     {
         _server?.Stop(); _server = null;
         btnStart.IsEnabled = true; btnStop.IsEnabled = false;
-        txtLocalIp.Text = "服务已停止"; LogLine("服务已停止");
+        txtLocalIp.Text = "服务已停止"; LogLineError("服务已停止");
     }
 
     private void BtnComputers_Click(object sender, RoutedEventArgs e)
@@ -310,7 +312,7 @@ public partial class MainWindow : Window
                 if (ok)
                 {
                     okList.Add(host);
-                    LogLine($"[成功] {host}:{port} {detail}");
+                    LogLineSuccess($"[成功] {host}:{port} {detail}");
                 }
                 else
                 {
@@ -415,7 +417,7 @@ public partial class MainWindow : Window
         { LogLineError("PostgreSQL_Backup.bat 不存在或为空，跳过备份前脚本"); return true; }
         string script = File.ReadAllText(batPath);
         LogDivider(); LogLine("开始执行备份前脚本 ...");
-        try { string? err = await Task.Run(() => ScriptRunner.Run(script, AppPaths.ExeDir(), LogLine)); if (err != null) { LogLineError(err + "，继续备份"); } else { LogLine("备份前脚本执行完成"); } }
+        try { string? err = await Task.Run(() => ScriptRunner.Run(script, AppPaths.ExeDir(), LogLine)); if (err != null) { LogLineError(err + "，继续备份"); } else { LogLineSuccess("备份前脚本执行完成"); } }
         catch (Exception ex) { LogLineError("执行备份前脚本异常，继续备份: " + ex.Message); }
         return true;
     }
@@ -823,7 +825,7 @@ public partial class MainWindow : Window
                     await client.ConnectAsync(host, port, Constants.RoleProcessClose, ct);
                     LogDivider(); LogLine($"连接 {host}:{port}，关闭远端进程...");
                     var (msg, remaining) = await client.ProcessCloseAsync(killNames, ct);
-                    okIps.Add(host); LogLine($"{host}: {msg}");
+                    okIps.Add(host); LogLineError($"{host}: {msg}");
                     txtProcessStatus.Text = $"[完成] {host}: {msg}";
                 }
                 catch (OperationCanceledException) { throw; }
@@ -889,7 +891,7 @@ public partial class MainWindow : Window
                     await client.ConnectAsync(host, port, Constants.RoleProcessOpen, ct);
                     LogDivider(); LogLine($"连接 {host}:{port}[{deviceInfo}]，启动远端应用程序...");
                     var (msg, running) = await client.ProcessOpenAsync(exePath, ct);
-                    okIps.Add(host); LogLine($"{host}: {msg}");
+                    okIps.Add(host); LogLineSuccess($"{host}: {msg}");
                     txtProcessStatus.Text = $"[完成] {host}: {msg}";
                 }
                 catch (OperationCanceledException) { throw; }

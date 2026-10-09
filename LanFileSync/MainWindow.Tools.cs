@@ -101,7 +101,7 @@ public partial class MainWindow
                             item.FullPath,
                             Microsoft.VisualBasic.FileIO.UIOption.OnlyErrorDialogs,
                             Microsoft.VisualBasic.FileIO.RecycleOption.SendToRecycleBin);
-                    LogLine("已移入回收站: " + item.Name);
+                    LogLineSuccess("已移入回收站: " + item.Name);
                     ok++;
                 }
                 catch (Exception ex)
@@ -110,7 +110,7 @@ public partial class MainWindow
                     fail++;
                 }
             }
-            LogLine($"剔除完成：成功 {ok} 项" + (fail > 0 ? $"，失败 {fail} 项" : ""));
+            LogLineSuccess($"剔除完成：成功 {ok} 项" + (fail > 0 ? $"，失败 {fail} 项" : ""));
             return ok;
         }, rescanPurge: true);
     }
@@ -150,7 +150,7 @@ public partial class MainWindow
                 try
                 {
                     RecyclePath(item.FullPath, item.IsDir);
-                    LogLine("已移入回收站: " + item.Name);
+                    LogLineSuccess("已移入回收站: " + item.Name);
                     ok++;
                 }
                 catch (Exception ex)
@@ -180,11 +180,11 @@ public partial class MainWindow
                             continue;
                         }
                         RecyclePath(item.TargetPath, item.IsDir);
-                        LogLine("旧目标已移入回收站: " + item.NewName);
+                        LogLineSuccess("旧目标已移入回收站: " + item.NewName);
                     }
                     if (item.IsDir) Directory.Move(item.FullPath, item.TargetPath);
                     else File.Move(item.FullPath, item.TargetPath);
-                    LogLine($"重命名: {item.Name}  →  {item.NewName}" + (item.ReplaceTarget ? "（已替换旧目标）" : ""));
+                    LogLineSuccess($"重命名: {item.Name}  →  {item.NewName}" + (item.ReplaceTarget ? "（已替换旧目标）" : ""));
                     ok++;
                 }
                 catch (Exception ex)
@@ -193,7 +193,7 @@ public partial class MainWindow
                     fail++;
                 }
             }
-            LogLine($"处理完成：成功 {ok} 项" + (fail > 0 ? $"，失败/跳过 {fail} 项" : ""));
+            LogLineSuccess($"处理完成：成功 {ok} 项" + (fail > 0 ? $"，失败/跳过 {fail} 项" : ""));
             return ok;
         }, rescanPurge: false);
     }
