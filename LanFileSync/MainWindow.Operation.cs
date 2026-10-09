@@ -82,7 +82,7 @@ public partial class MainWindow
         }
         catch (OperationCanceledException) { LogLine("备份已取消"); }
         catch (Exception ex) { LogLineError("备份失败: " + ex.Message); DarkMessageBox.Show("备份失败: " + ex.Message, "错误", MessageBoxButton.OK, MessageBoxImage.Error); }
-        finally { EndBusy(); }
+        finally { EndBusy(); LogSingleOperationSummary("本地备份", true); }
     }
 
     private async Task BackupFromRemoteAsync(string dest)
@@ -136,6 +136,7 @@ public partial class MainWindow
         }
         if (okIps.Count > 0) txtStatus.Text = hosts.Count > 1 ? $"远程备份完成({okIps.Count}/{hosts.Count} 台)" : "远程备份完成";
         if (failed.Count > 0) DarkMessageBox.Show("以下电脑备份失败：\n" + string.Join("\n", failed), "部分失败", MessageBoxButton.OK, MessageBoxImage.Warning);
+        LogHostOperationSummary("远程备份", okIps, failed);
     }
 
     private async Task BackupFromShareAsync(string dest)
@@ -166,7 +167,7 @@ public partial class MainWindow
         }
         catch (OperationCanceledException) { LogLine("备份已取消"); }
         catch (Exception ex) { LogLineError("备份失败: " + ex.Message); DarkMessageBox.Show("备份失败: " + ex.Message, "错误", MessageBoxButton.OK, MessageBoxImage.Error); }
-        finally { EndBusy(); }
+        finally { EndBusy(); LogSingleOperationSummary("共享备份", true); }
     }
 
     private string? TryGetShareUnc()
@@ -265,6 +266,7 @@ public partial class MainWindow
         }
         if (okIps.Count > 0) txtStatus.Text = hosts.Count > 1 ? $"同步完成({okIps.Count}/{hosts.Count} 台)" : "同步完成";
         if (failed.Count > 0) DarkMessageBox.Show("以下电脑同步失败：\n" + string.Join("\n", failed), "部分失败", MessageBoxButton.OK, MessageBoxImage.Warning);
+        LogHostOperationSummary("远端同步", okIps, failed);
     }
 
     private async Task SyncFromShareAsync()
@@ -289,7 +291,7 @@ public partial class MainWindow
         }
         catch (OperationCanceledException) { LogLine("已取消"); }
         catch (Exception ex) { LogLineError("共享同步失败: " + ex.Message); DarkMessageBox.Show("共享同步失败: " + ex.Message, "错误", MessageBoxButton.OK, MessageBoxImage.Error); }
-        finally { EndBusy(); }
+        finally { EndBusy(); LogSingleOperationSummary("共享同步", true); }
     }
 
     private async Task TransferToRemoteAsync()
@@ -336,6 +338,7 @@ public partial class MainWindow
         }
         if (okIps.Count > 0) txtStatus.Text = hosts.Count > 1 ? $"传输完成({okIps.Count}/{hosts.Count} 台)" : "传输完成";
         if (failed.Count > 0) DarkMessageBox.Show("以下电脑传输失败：\n" + string.Join("\n", failed), "部分失败", MessageBoxButton.OK, MessageBoxImage.Warning);
+        LogHostOperationSummary("文件传输", okIps, failed);
     }
 
     private async Task TransferFromRemoteAsync()
@@ -390,6 +393,7 @@ public partial class MainWindow
         }
         if (okIps.Count > 0) txtStatus.Text = hosts.Count > 1 ? $"拉取完成({okIps.Count}/{hosts.Count} 台)" : "拉取完成";
         if (failed.Count > 0) DarkMessageBox.Show("以下电脑拉取失败：\n" + string.Join("\n", failed), "部分失败", MessageBoxButton.OK, MessageBoxImage.Warning);
+        LogHostOperationSummary("文件拉取", okIps, failed);
     }
 
     private void LogBackupSummary(string what, BackupEngine engine, int total)
@@ -496,5 +500,6 @@ public partial class MainWindow
         }
         if (okIps.Count > 0) txtStatus.Text = hosts.Count > 1 ? $"更新完成({okIps.Count}/{hosts.Count} 台)" : "更新完成";
         if (failed.Count > 0) DarkMessageBox.Show("以下电脑更新失败：\n" + string.Join("\n", failed), "部分失败", MessageBoxButton.OK, MessageBoxImage.Warning);
+        LogHostOperationSummary("程序升级", okIps, failed);
     }
 }

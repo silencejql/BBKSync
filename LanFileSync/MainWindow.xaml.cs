@@ -181,6 +181,36 @@ public partial class MainWindow : Window
     private void LogLineSuccess(string msg) => LogLine(msg, s_logSuccessBrush);
     private void LogDivider() => LogLine("------------------------------------------------");
 
+    /// <summary>多主机操作收尾统一汇总：全部成功绿色，有失败则红色标失败主机、绿色标成功主机，最后给一行计数概览。</summary>
+    private void LogHostOperationSummary(string opName, List<string> okIps, List<string> failed)
+    {
+        int total = okIps.Count + failed.Count;
+        LogDivider();
+        if (failed.Count == 0)
+        {
+            LogLineSuccess($"✅ {opName}完成：{okIps.Count}/{total} 台全部成功");
+        }
+        else if (okIps.Count == 0)
+        {
+            LogLineError($"❌ {opName}完成：0/{total} 台成功，全部失败");
+            foreach (var h in failed) LogLineError($"  失败: {h}");
+        }
+        else
+        {
+            LogLine($"⚠️  {opName}完成：{okIps.Count}/{total} 台成功，{failed.Count} 台失败");
+            foreach (var h in okIps) LogLineSuccess($"  成功: {h}");
+            foreach (var h in failed) LogLineError($"  失败: {h}");
+        }
+    }
+
+    /// <summary>单主机/本地操作收尾汇总。</summary>
+    private void LogSingleOperationSummary(string opName, bool success, string detail = "")
+    {
+        LogDivider();
+        if (success) LogLineSuccess($"✅ {opName}完成{(string.IsNullOrEmpty(detail) ? "" : "：" + detail)}");
+        else LogLineError($"❌ {opName}失败{(string.IsNullOrEmpty(detail) ? "" : "：" + detail)}");
+    }
+
     private void LogLine(string msg, Brush brush)
     {
         string line = $"[{DateTime.Now:HH:mm:ss}] {msg}";
@@ -332,6 +362,7 @@ public partial class MainWindow : Window
             : $"成功 {okList.Count} 个，失败 {failList.Count} 个：\n" + string.Join("\n", failList.Select(h => h + ":" + port));
         DarkMessageBox.Show(summary, "测试结果", MessageBoxButton.OK,
             failList.Count == 0 ? MessageBoxImage.Information : MessageBoxImage.Warning);
+        LogHostOperationSummary("测试连接", okList, failList);
     }
 
     /// <summary>测试单个远端地址：先测 TCP 连通性(1 秒)，再校验协议应答(1 秒)。返回是否成功及详情。</summary>
@@ -802,6 +833,7 @@ public partial class MainWindow : Window
         }
         if (failed.Count > 0)
             DarkMessageBox.Show("以下电脑获取失败：\n" + string.Join("\n", failed), "部分失败", MessageBoxButton.OK, MessageBoxImage.Warning);
+        LogHostOperationSummary("获取进程文件列表", okIps, failed);
     }
 
     private async void BtnProcessClose_Click(object sender, RoutedEventArgs e)
@@ -840,6 +872,7 @@ public partial class MainWindow : Window
         }
         if (okIps.Count > 0) txtStatus.Text = hosts.Count > 1 ? $"关闭完成({okIps.Count}/{hosts.Count} 台)" : "关闭完成";
         if (failed.Count > 0) DarkMessageBox.Show("以下电脑失败：\n" + string.Join("\n", failed), "部分失败", MessageBoxButton.OK, MessageBoxImage.Warning);
+        LogHostOperationSummary("关闭进程", okIps, failed);
     }
 
     /// <summary>探测远端设备名称和线路(失败时返回 host 作为名称)。</summary>
@@ -906,6 +939,7 @@ public partial class MainWindow : Window
         }
         if (okIps.Count > 0) txtStatus.Text = hosts.Count > 1 ? $"启动完成({okIps.Count}/{hosts.Count} 台)" : "启动完成";
         if (failed.Count > 0) DarkMessageBox.Show("以下电脑失败：\n" + string.Join("\n", failed), "部分失败", MessageBoxButton.OK, MessageBoxImage.Warning);
+        LogHostOperationSummary("启动进程", okIps, failed);
     }
 
     private void PwdProcess_KeyDown(object sender, KeyEventArgs e)
