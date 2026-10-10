@@ -181,26 +181,70 @@ public partial class MainWindow : Window
     private void LogLineSuccess(string msg) => LogLine(msg, s_logSuccessBrush);
     private void LogDivider() => LogLine("------------------------------------------------");
 
-    /// <summary>多主机操作收尾统一汇总：全部成功绿色，有失败则红色标失败主机、绿色标成功主机，最后给一行计数概览。</summary>
-    private void LogHostOperationSummary(string opName, List<string> okIps, List<string> failed)
+    /// <summary>多主机操作收尾统一汇总：全部成功绿色，有失败则红色标失败主机、绿色标成功主机，最后给一行计数概览。
+    /// 每个主机显示「IP [设备名]」标识，设备名通过探测远端获取（失败则只显示 IP）。</summary>
+    private async Task LogHostOperationSummary(string opName, List<string> okIps, List<string> failed, int port)
     {
         int total = okIps.Count + failed.Count;
+        // 并行探测所有主机的设备名（1 秒超时，失败回退为 IP）
+        var allIps = okIps.Concat(failed.Select(ExtractIpFromFailed)).Where(s => !string.IsNullOrEmpty(s)).Distinct().ToList();
+        var deviceMap = await ProbeDeviceNamesAsync(allIps, port);
+
+        string Label(string ip) => deviceMap.TryGetValue(ip, out var dev) && !string.IsNullOrEmpty(dev) && dev != ip
+            ? $"{ip} [{dev}]" : ip;
+
         LogDivider();
         if (failed.Count == 0)
         {
             LogLineSuccess($"✅ {opName}完成：{okIps.Count}/{total} 台全部成功");
+            foreach (var h in okIps) LogLineSuccess($"  成功: {Label(h)}");
         }
         else if (okIps.Count == 0)
         {
             LogLineError($"❌ {opName}完成：0/{total} 台成功，全部失败");
-            foreach (var h in failed) LogLineError($"  失败: {h}");
+            foreach (var h in failed) LogLineError($"  失败: {Label(ExtractIpFromFailed(h))} — {ExtractMsgFromFailed(h)}");
         }
         else
         {
             LogLine($"⚠️  {opName}完成：{okIps.Count}/{total} 台成功，{failed.Count} 台失败");
-            foreach (var h in okIps) LogLineSuccess($"  成功: {h}");
-            foreach (var h in failed) LogLineError($"  失败: {h}");
+            foreach (var h in okIps) LogLineSuccess($"  成功: {Label(h)}");
+            foreach (var h in failed) LogLineError($"  失败: {Label(ExtractIpFromFailed(h))} — {ExtractMsgFromFailed(h)}");
         }
+    }
+
+    /// <summary>从 failed 列表项 "ip - message" 中提取 IP。</summary>
+    private static string ExtractIpFromFailed(string entry)
+    {
+        int idx = entry.IndexOf(" - ", StringComparison.Ordinal);
+        return idx > 0 ? entry.Substring(0, idx) : entry;
+    }
+
+    /// <summary>从 failed 列表项 "ip - message" 中提取错误信息。</summary>
+    private static string ExtractMsgFromFailed(string entry)
+    {
+        int idx = entry.IndexOf(" - ", StringComparison.Ordinal);
+        return idx > 0 ? entry.Substring(idx + 3) : "";
+    }
+
+    /// <summary>并行探测多个主机的设备名，返回 IP → 设备名 映射（含 Line）。</summary>
+    private async Task<Dictionary<string, string>> ProbeDeviceNamesAsync(List<string> ips, int port)
+    {
+        var map = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
+        if (ips.Count == 0 || port <= 0) return map;
+        var tasks = ips.Select(async ip =>
+        {
+            try
+            {
+                var (name, line) = await ProbeRemoteAsync(ip, port);
+                string label = string.IsNullOrWhiteSpace(name) || name == ip ? ip : name;
+                if (!string.IsNullOrWhiteSpace(line)) label += $"/Line{line}";
+                return (ip, label);
+            }
+            catch { return (ip, ip); }
+        });
+        var results = await Task.WhenAll(tasks);
+        foreach (var (ip, label) in results) map[ip] = label;
+        return map;
     }
 
     /// <summary>单主机/本地操作收尾汇总。</summary>
@@ -362,7 +406,7 @@ public partial class MainWindow : Window
             : $"成功 {okList.Count} 个，失败 {failList.Count} 个：\n" + string.Join("\n", failList.Select(h => h + ":" + port));
         DarkMessageBox.Show(summary, "测试结果", MessageBoxButton.OK,
             failList.Count == 0 ? MessageBoxImage.Information : MessageBoxImage.Warning);
-        LogHostOperationSummary("测试连接", okList, failList);
+        await LogHostOperationSummary("测试连接", okList, failList, port);
     }
 
     /// <summary>测试单个远端地址：先测 TCP 连通性(1 秒)，再校验协议应答(1 秒)。返回是否成功及详情。</summary>
@@ -572,6 +616,8 @@ public partial class MainWindow : Window
         btnCancel.IsEnabled = busy;
         btnStart.IsEnabled = !busy && _server == null;
         btnStop.IsEnabled = !busy && _server != null;
+        // 操作进行中禁用主操作按钮（备份/更新/升级），结束后按当前标签页与密码状态恢复
+        RefreshOpButtons();
         // 操作进行中取消按钮必需，强制显示同步与进度区；结束后按当前标签页恢复显隐
         grpSyncProgress.Visibility = busy || tabs.SelectedIndex != 5 ? Visibility.Visible : Visibility.Collapsed;
     }
@@ -833,7 +879,7 @@ public partial class MainWindow : Window
         }
         if (failed.Count > 0)
             DarkMessageBox.Show("以下电脑获取失败：\n" + string.Join("\n", failed), "部分失败", MessageBoxButton.OK, MessageBoxImage.Warning);
-        LogHostOperationSummary("获取进程文件列表", okIps, failed);
+        await LogHostOperationSummary("获取进程文件列表", okIps, failed, port);
     }
 
     private async void BtnProcessClose_Click(object sender, RoutedEventArgs e)
@@ -872,7 +918,7 @@ public partial class MainWindow : Window
         }
         if (okIps.Count > 0) txtStatus.Text = hosts.Count > 1 ? $"关闭完成({okIps.Count}/{hosts.Count} 台)" : "关闭完成";
         if (failed.Count > 0) DarkMessageBox.Show("以下电脑失败：\n" + string.Join("\n", failed), "部分失败", MessageBoxButton.OK, MessageBoxImage.Warning);
-        LogHostOperationSummary("关闭进程", okIps, failed);
+        await LogHostOperationSummary("关闭进程", okIps, failed, port);
     }
 
     /// <summary>探测远端设备名称和线路(失败时返回 host 作为名称)。</summary>
@@ -939,7 +985,7 @@ public partial class MainWindow : Window
         }
         if (okIps.Count > 0) txtStatus.Text = hosts.Count > 1 ? $"启动完成({okIps.Count}/{hosts.Count} 台)" : "启动完成";
         if (failed.Count > 0) DarkMessageBox.Show("以下电脑失败：\n" + string.Join("\n", failed), "部分失败", MessageBoxButton.OK, MessageBoxImage.Warning);
-        LogHostOperationSummary("启动进程", okIps, failed);
+        await LogHostOperationSummary("启动进程", okIps, failed, port);
     }
 
     private void PwdProcess_KeyDown(object sender, KeyEventArgs e)

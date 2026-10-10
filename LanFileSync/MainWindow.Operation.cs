@@ -136,7 +136,7 @@ public partial class MainWindow
         }
         if (okIps.Count > 0) txtStatus.Text = hosts.Count > 1 ? $"远程备份完成({okIps.Count}/{hosts.Count} 台)" : "远程备份完成";
         if (failed.Count > 0) DarkMessageBox.Show("以下电脑备份失败：\n" + string.Join("\n", failed), "部分失败", MessageBoxButton.OK, MessageBoxImage.Warning);
-        LogHostOperationSummary("远程备份", okIps, failed);
+        await LogHostOperationSummary("远程备份", okIps, failed, port);
     }
 
     private async Task BackupFromShareAsync(string dest)
@@ -266,7 +266,7 @@ public partial class MainWindow
         }
         if (okIps.Count > 0) txtStatus.Text = hosts.Count > 1 ? $"同步完成({okIps.Count}/{hosts.Count} 台)" : "同步完成";
         if (failed.Count > 0) DarkMessageBox.Show("以下电脑同步失败：\n" + string.Join("\n", failed), "部分失败", MessageBoxButton.OK, MessageBoxImage.Warning);
-        LogHostOperationSummary("远端同步", okIps, failed);
+        await LogHostOperationSummary("远端同步", okIps, failed, port);
     }
 
     private async Task SyncFromShareAsync()
@@ -338,7 +338,7 @@ public partial class MainWindow
         }
         if (okIps.Count > 0) txtStatus.Text = hosts.Count > 1 ? $"传输完成({okIps.Count}/{hosts.Count} 台)" : "传输完成";
         if (failed.Count > 0) DarkMessageBox.Show("以下电脑传输失败：\n" + string.Join("\n", failed), "部分失败", MessageBoxButton.OK, MessageBoxImage.Warning);
-        LogHostOperationSummary("文件传输", okIps, failed);
+        await LogHostOperationSummary("文件传输", okIps, failed, port);
     }
 
     private async Task TransferFromRemoteAsync()
@@ -393,7 +393,7 @@ public partial class MainWindow
         }
         if (okIps.Count > 0) txtStatus.Text = hosts.Count > 1 ? $"拉取完成({okIps.Count}/{hosts.Count} 台)" : "拉取完成";
         if (failed.Count > 0) DarkMessageBox.Show("以下电脑拉取失败：\n" + string.Join("\n", failed), "部分失败", MessageBoxButton.OK, MessageBoxImage.Warning);
-        LogHostOperationSummary("文件拉取", okIps, failed);
+        await LogHostOperationSummary("文件拉取", okIps, failed, port);
     }
 
     private void LogBackupSummary(string what, BackupEngine engine, int total)
@@ -500,6 +500,6 @@ public partial class MainWindow
         }
         if (okIps.Count > 0) txtStatus.Text = hosts.Count > 1 ? $"更新完成({okIps.Count}/{hosts.Count} 台)" : "更新完成";
         if (failed.Count > 0) DarkMessageBox.Show("以下电脑更新失败：\n" + string.Join("\n", failed), "部分失败", MessageBoxButton.OK, MessageBoxImage.Warning);
-        LogHostOperationSummary("程序升级", okIps, failed);
+        await LogHostOperationSummary("程序升级", okIps, failed, port);
     }
 }
