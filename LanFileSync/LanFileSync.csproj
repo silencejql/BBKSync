@@ -48,6 +48,12 @@
       EventLog 已实测可删。
     从发布清单中剔除后不影响现有功能，单文件 exe 压缩后约省 12MB。
     注意：System.Drawing.Common 不能删——托盘图标 AppIcons 用到了 System.Drawing.Icon。
+    注意：System.Net.Requests、PresentationFramework.Fluent 不能删——WPF 在启动加载主题资源字典时会
+      解析到它们，删除后 App.InitializeComponent 直接抛 XamlParseException（无窗口、无 crash.log），
+      已实测确认。
+    已实测可删：System.Net.Mail、System.Net.HttpListener、System.Net.Quic、msquic、
+      System.Threading.Tasks.Dataflow、System.Diagnostics.PerformanceCounter——本项目只用原始 TCP
+      Socket 通信，不使用 HTTP 监听、邮件、QUIC 与性能计数器。
   -->
   <Target Name="PruneUnusedRuntimePackFiles" AfterTargets="ComputeResolvedFilesToPublishList" BeforeTargets="_HandleFileConflictsForPublish;_ComputeFilesToBundle;GenerateSingleFileBundle">
     <ItemGroup>
@@ -70,6 +76,12 @@
                 or '%(Filename)' == 'System.Private.DataContractSerialization'
                 or '%(Filename)' == 'System.Diagnostics.EventLog'
                 or '%(Filename)' == 'System.Security.Cryptography.Pkcs'
+                or '%(Filename)' == 'System.Net.Mail'
+                or '%(Filename)' == 'System.Net.HttpListener'
+                or '%(Filename)' == 'System.Net.Quic'
+                or '%(Filename)' == 'msquic'
+                or '%(Filename)' == 'System.Threading.Tasks.Dataflow'
+                or '%(Filename)' == 'System.Diagnostics.PerformanceCounter'
                 or $([System.String]::Copy('%(Filename)').StartsWith('mscordaccore'))" />
     </ItemGroup>
   </Target>
