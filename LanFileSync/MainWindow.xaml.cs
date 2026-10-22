@@ -2,6 +2,9 @@ using System.ComponentModel;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Input;
+using System.Windows.Media;
+using System.Windows.Media.Animation;
+using System.Windows.Media.Imaging;
 using System.Windows.Threading;
 using LanFileSync.Services;
 using LanFileSync.ViewModels;
@@ -288,8 +291,53 @@ public partial class MainWindow : Window
     {
         // 主题字典替换会重建日志框模板并把滚动位置重置到顶部，这里记录偏移并在布局完成后恢复
         double offset = txtLog.VerticalOffset;
+
+        // 切换前抓取当前界面快照，切换后让旧画面淡出，形成主题交叉过渡
+        var snapshot = CaptureSnapshot();
+
         ThemeManager.Toggle();
         RestoreLogScroll(offset);
+        FadeOutSnapshot(snapshot);
+    }
+
+    /// <summary>抓取整个窗口内容快照；尺寸异常时返回 null（不做过渡，不影响主题切换）。</summary>
+    private ImageSource? CaptureSnapshot()
+    {
+        // 若上一次过渡尚未结束，先移除叠层，避免把旧快照一起拍进去
+        themeFadeOverlay.BeginAnimation(UIElement.OpacityProperty, null);
+        themeFadeOverlay.Visibility = Visibility.Collapsed;
+        themeFadeOverlay.Source = null;
+
+        var dpi = VisualTreeHelper.GetDpi(this);
+        int w = (int)Math.Ceiling(rootHost.ActualWidth * dpi.DpiScaleX);
+        int h = (int)Math.Ceiling(rootHost.ActualHeight * dpi.DpiScaleY);
+        if (w <= 0 || h <= 0) return null;
+
+        var bmp = new RenderTargetBitmap(w, h, 96 * dpi.DpiScaleX, 96 * dpi.DpiScaleY, PixelFormats.Pbgra32);
+        bmp.Render(rootHost);
+        bmp.Freeze();
+        return bmp;
+    }
+
+    /// <summary>用快照覆盖新主题画面并淡出，形成平滑的主题切换过渡。</summary>
+    private void FadeOutSnapshot(ImageSource? snapshot)
+    {
+        if (snapshot is null) return;
+
+        themeFadeOverlay.Source = snapshot;
+        themeFadeOverlay.Opacity = 1;
+        themeFadeOverlay.Visibility = Visibility.Visible;
+
+        var fade = new DoubleAnimation(1, 0, TimeSpan.FromMilliseconds(260))
+        {
+            EasingFunction = new CubicEase { EasingMode = EasingMode.EaseOut }
+        };
+        fade.Completed += (_, _) =>
+        {
+            themeFadeOverlay.Visibility = Visibility.Collapsed;
+            themeFadeOverlay.Source = null;
+        };
+        themeFadeOverlay.BeginAnimation(UIElement.OpacityProperty, fade);
     }
 
     private void RestoreLogScroll(double offset)

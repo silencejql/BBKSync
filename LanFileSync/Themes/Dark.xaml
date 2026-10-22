@@ -38,7 +38,10 @@
                             Padding="{TemplateBinding Padding}"
                             RenderTransformOrigin="0.5,0.5">
                         <Border.RenderTransform>
-                            <ScaleTransform x:Name="pressScale" ScaleX="1" ScaleY="1" />
+                            <TransformGroup>
+                                <ScaleTransform x:Name="pressScale" ScaleX="1" ScaleY="1" />
+                                <TranslateTransform x:Name="hoverLift" Y="0" />
+                            </TransformGroup>
                         </Border.RenderTransform>
                         <Grid>
                             <Border x:Name="hoverLayer" CornerRadius="7" Background="#1B2434"
@@ -57,6 +60,15 @@
                                         <DoubleAnimation Storyboard.TargetName="hoverLayer"
                                                          Storyboard.TargetProperty="Opacity"
                                                          To="1" Duration="0:0:0.08" />
+                                        <DoubleAnimation Storyboard.TargetName="pressScale"
+                                                         Storyboard.TargetProperty="ScaleX"
+                                                         To="1.03" Duration="0:0:0.1" />
+                                        <DoubleAnimation Storyboard.TargetName="pressScale"
+                                                         Storyboard.TargetProperty="ScaleY"
+                                                         To="1.03" Duration="0:0:0.1" />
+                                        <DoubleAnimation Storyboard.TargetName="hoverLift"
+                                                         Storyboard.TargetProperty="Y"
+                                                         To="-1" Duration="0:0:0.1" />
                                     </Storyboard>
                                 </BeginStoryboard>
                             </Trigger.EnterActions>
@@ -66,6 +78,15 @@
                                         <DoubleAnimation Storyboard.TargetName="hoverLayer"
                                                          Storyboard.TargetProperty="Opacity"
                                                          To="0" Duration="0:0:0.1" />
+                                        <DoubleAnimation Storyboard.TargetName="pressScale"
+                                                         Storyboard.TargetProperty="ScaleX"
+                                                         To="1" Duration="0:0:0.12" />
+                                        <DoubleAnimation Storyboard.TargetName="pressScale"
+                                                         Storyboard.TargetProperty="ScaleY"
+                                                         To="1" Duration="0:0:0.12" />
+                                        <DoubleAnimation Storyboard.TargetName="hoverLift"
+                                                         Storyboard.TargetProperty="Y"
+                                                         To="0" Duration="0:0:0.12" />
                                     </Storyboard>
                                 </BeginStoryboard>
                             </Trigger.ExitActions>
@@ -79,10 +100,10 @@
                                                          To="1" Duration="0:0:0.05" />
                                         <DoubleAnimation Storyboard.TargetName="pressScale"
                                                          Storyboard.TargetProperty="ScaleX"
-                                                         To="0.985" Duration="0:0:0.06" />
+                                                         To="0.96" Duration="0:0:0.06" />
                                         <DoubleAnimation Storyboard.TargetName="pressScale"
                                                          Storyboard.TargetProperty="ScaleY"
-                                                         To="0.985" Duration="0:0:0.06" />
+                                                         To="0.96" Duration="0:0:0.06" />
                                     </Storyboard>
                                 </BeginStoryboard>
                             </Trigger.EnterActions>
@@ -139,7 +160,10 @@
                             </LinearGradientBrush>
                         </Border.Background>
                         <Border.RenderTransform>
-                            <ScaleTransform x:Name="pressScale" ScaleX="1" ScaleY="1" />
+                            <TransformGroup>
+                                <ScaleTransform x:Name="pressScale" ScaleX="1" ScaleY="1" />
+                                <TranslateTransform x:Name="hoverLift" Y="0" />
+                            </TransformGroup>
                         </Border.RenderTransform>
                         <Grid>
                             <Border x:Name="hoverLayer" CornerRadius="7" Background="#24FFFFFF" Opacity="0" />
@@ -164,6 +188,15 @@
                                         <DoubleAnimation Storyboard.TargetName="hoverLayer"
                                                          Storyboard.TargetProperty="Opacity"
                                                          To="1" Duration="0:0:0.08" />
+                                        <DoubleAnimation Storyboard.TargetName="pressScale"
+                                                         Storyboard.TargetProperty="ScaleX"
+                                                         To="1.03" Duration="0:0:0.1" />
+                                        <DoubleAnimation Storyboard.TargetName="pressScale"
+                                                         Storyboard.TargetProperty="ScaleY"
+                                                         To="1.03" Duration="0:0:0.1" />
+                                        <DoubleAnimation Storyboard.TargetName="hoverLift"
+                                                         Storyboard.TargetProperty="Y"
+                                                         To="-1" Duration="0:0:0.1" />
                                     </Storyboard>
                                 </BeginStoryboard>
                             </Trigger.EnterActions>
@@ -173,6 +206,15 @@
                                         <DoubleAnimation Storyboard.TargetName="hoverLayer"
                                                          Storyboard.TargetProperty="Opacity"
                                                          To="0" Duration="0:0:0.1" />
+                                        <DoubleAnimation Storyboard.TargetName="pressScale"
+                                                         Storyboard.TargetProperty="ScaleX"
+                                                         To="1" Duration="0:0:0.12" />
+                                        <DoubleAnimation Storyboard.TargetName="pressScale"
+                                                         Storyboard.TargetProperty="ScaleY"
+                                                         To="1" Duration="0:0:0.12" />
+                                        <DoubleAnimation Storyboard.TargetName="hoverLift"
+                                                         Storyboard.TargetProperty="Y"
+                                                         To="0" Duration="0:0:0.12" />
                                     </Storyboard>
                                 </BeginStoryboard>
                             </Trigger.ExitActions>
@@ -186,10 +228,10 @@
                                                          To="1" Duration="0:0:0.05" />
                                         <DoubleAnimation Storyboard.TargetName="pressScale"
                                                          Storyboard.TargetProperty="ScaleX"
-                                                         To="0.985" Duration="0:0:0.06" />
+                                                         To="0.96" Duration="0:0:0.06" />
                                         <DoubleAnimation Storyboard.TargetName="pressScale"
                                                          Storyboard.TargetProperty="ScaleY"
-                                                         To="0.985" Duration="0:0:0.06" />
+                                                         To="0.96" Duration="0:0:0.06" />
                                     </Storyboard>
                                 </BeginStoryboard>
                             </Trigger.EnterActions>
@@ -481,6 +523,32 @@
                                         <GradientStop Color="#7AE7FF" Offset="1" />
                                     </LinearGradientBrush>
                                 </Border.Background>
+                                <!-- 循环流光：一条高光带从左向右掠过进度条 -->
+                                <Border Width="140" HorizontalAlignment="Left" Opacity="0.85">
+                                    <Border.Background>
+                                        <LinearGradientBrush StartPoint="0,0" EndPoint="1,0">
+                                            <GradientStop Color="#00FFFFFF" Offset="0" />
+                                            <GradientStop Color="#CCFFFFFF" Offset="0.5" />
+                                            <GradientStop Color="#00FFFFFF" Offset="1" />
+                                        </LinearGradientBrush>
+                                    </Border.Background>
+                                    <Border.RenderTransform>
+                                        <TranslateTransform x:Name="sheenShift" X="-160" />
+                                    </Border.RenderTransform>
+                                    <Border.Triggers>
+                                        <EventTrigger RoutedEvent="FrameworkElement.Loaded">
+                                            <BeginStoryboard>
+                                                <Storyboard>
+                                                    <DoubleAnimation Storyboard.TargetName="sheenShift"
+                                                                     Storyboard.TargetProperty="X"
+                                                                     From="-160" To="1000"
+                                                                     Duration="0:0:1.6"
+                                                                     RepeatBehavior="Forever" />
+                                                </Storyboard>
+                                            </BeginStoryboard>
+                                        </EventTrigger>
+                                    </Border.Triggers>
+                                </Border>
                             </Border>
                         </Grid>
                     </Border>
@@ -498,32 +566,107 @@
         <Setter Property="Template">
             <Setter.Value>
                 <ControlTemplate TargetType="TabItem">
-                    <Grid>
+                    <Grid x:Name="tabRoot" RenderTransformOrigin="0.5,0.5">
+                        <Grid.RenderTransform>
+                            <TranslateTransform x:Name="tabShift" Y="0" />
+                        </Grid.RenderTransform>
+                        <!-- 悬停 / 选中底色：用不透明度动画淡入淡出 -->
+                        <Border x:Name="hoverBg" CornerRadius="8" Margin="0,0,6,0"
+                                Background="#1B2434" Opacity="0" SnapsToDevicePixels="True" />
+                        <Border x:Name="selBg" CornerRadius="8" Margin="0,0,6,0"
+                                Background="#151B24" BorderThickness="1"
+                                BorderBrush="{DynamicResource CardBorderBrush}"
+                                Opacity="0" SnapsToDevicePixels="True" />
                         <Border x:Name="bd" CornerRadius="8" Margin="0,0,6,0"
-                                Background="Transparent" BorderThickness="1"
-                                BorderBrush="Transparent" Padding="16,7" SnapsToDevicePixels="True">
+                                Background="Transparent" BorderThickness="0"
+                                Padding="16,7" SnapsToDevicePixels="True">
                             <ContentPresenter x:Name="header" ContentSource="Header"
                                               HorizontalAlignment="Center" VerticalAlignment="Center"
                                               RecognizesAccessKey="True" />
                         </Border>
-                        <!-- 选中时左侧蓝色竖线（与标题一致） -->
+                        <!-- 选中时左侧蓝色竖线（与标题一致），选中时弹性展开 -->
                         <Border x:Name="accentBar" Width="4" Height="15" CornerRadius="2"
                                 Background="{DynamicResource AccentBrush}"
                                 HorizontalAlignment="Left" VerticalAlignment="Center"
-                                Margin="6,0,0,0" Opacity="0" SnapsToDevicePixels="True" />
+                                Margin="6,0,0,0" Opacity="0"
+                                RenderTransformOrigin="0.5,0.5" SnapsToDevicePixels="True">
+                            <Border.RenderTransform>
+                                <ScaleTransform x:Name="accentScale" ScaleY="0.2" />
+                            </Border.RenderTransform>
+                        </Border>
                     </Grid>
                     <ControlTemplate.Triggers>
                         <Trigger Property="IsMouseOver" Value="True">
-                            <Setter TargetName="bd" Property="Background" Value="#1B2434" />
+                            <Trigger.EnterActions>
+                                <BeginStoryboard>
+                                    <Storyboard>
+                                        <DoubleAnimation Storyboard.TargetName="hoverBg"
+                                                         Storyboard.TargetProperty="Opacity"
+                                                         To="1" Duration="0:0:0.12" />
+                                        <DoubleAnimation Storyboard.TargetName="tabShift"
+                                                         Storyboard.TargetProperty="Y"
+                                                         To="-1.5" Duration="0:0:0.12" />
+                                    </Storyboard>
+                                </BeginStoryboard>
+                            </Trigger.EnterActions>
+                            <Trigger.ExitActions>
+                                <BeginStoryboard>
+                                    <Storyboard>
+                                        <DoubleAnimation Storyboard.TargetName="hoverBg"
+                                                         Storyboard.TargetProperty="Opacity"
+                                                         To="0" Duration="0:0:0.14" />
+                                        <DoubleAnimation Storyboard.TargetName="tabShift"
+                                                         Storyboard.TargetProperty="Y"
+                                                         To="0" Duration="0:0:0.14" />
+                                    </Storyboard>
+                                </BeginStoryboard>
+                            </Trigger.ExitActions>
                         </Trigger>
                         <Trigger Property="IsSelected" Value="True">
-                            <Setter TargetName="bd" Property="Background" Value="#151B24" />
-                            <Setter TargetName="bd" Property="BorderBrush" Value="{DynamicResource CardBorderBrush}" />
-                            <Setter TargetName="accentBar" Property="Opacity" Value="1" />
+                            <Trigger.EnterActions>
+                                <BeginStoryboard>
+                                    <Storyboard>
+                                        <DoubleAnimation Storyboard.TargetName="selBg"
+                                                         Storyboard.TargetProperty="Opacity"
+                                                         To="1" Duration="0:0:0.18" />
+                                        <DoubleAnimation Storyboard.TargetName="tabShift"
+                                                         Storyboard.TargetProperty="Y"
+                                                         To="-1" Duration="0:0:0.18" />
+                                        <DoubleAnimation Storyboard.TargetName="accentBar"
+                                                         Storyboard.TargetProperty="Opacity"
+                                                         To="1" Duration="0:0:0.18" />
+                                        <DoubleAnimation Storyboard.TargetName="accentScale"
+                                                         Storyboard.TargetProperty="ScaleY"
+                                                         To="1" Duration="0:0:0.22">
+                                            <DoubleAnimation.EasingFunction>
+                                                <BackEase Amplitude="0.45" EasingMode="EaseOut" />
+                                            </DoubleAnimation.EasingFunction>
+                                        </DoubleAnimation>
+                                    </Storyboard>
+                                </BeginStoryboard>
+                            </Trigger.EnterActions>
+                            <Trigger.ExitActions>
+                                <BeginStoryboard>
+                                    <Storyboard>
+                                        <DoubleAnimation Storyboard.TargetName="selBg"
+                                                         Storyboard.TargetProperty="Opacity"
+                                                         To="0" Duration="0:0:0.16" />
+                                        <DoubleAnimation Storyboard.TargetName="tabShift"
+                                                         Storyboard.TargetProperty="Y"
+                                                         To="0" Duration="0:0:0.16" />
+                                        <DoubleAnimation Storyboard.TargetName="accentBar"
+                                                         Storyboard.TargetProperty="Opacity"
+                                                         To="0" Duration="0:0:0.16" />
+                                        <DoubleAnimation Storyboard.TargetName="accentScale"
+                                                         Storyboard.TargetProperty="ScaleY"
+                                                         To="0.2" Duration="0:0:0.16" />
+                                    </Storyboard>
+                                </BeginStoryboard>
+                            </Trigger.ExitActions>
                             <Setter Property="Foreground" Value="{DynamicResource TextMainBrush}" />
                         </Trigger>
                         <Trigger Property="IsEnabled" Value="False">
-                            <Setter TargetName="bd" Property="Opacity" Value="0.5" />
+                            <Setter TargetName="tabRoot" Property="Opacity" Value="0.5" />
                         </Trigger>
                     </ControlTemplate.Triggers>
                 </ControlTemplate>
@@ -897,9 +1040,32 @@
                         <Border Grid.Row="1" Background="#151B24" CornerRadius="12"
                                 BorderBrush="{DynamicResource CardBorderBrush}"
                                 BorderThickness="1" SnapsToDevicePixels="True" />
-                        <ContentPresenter Grid.Row="1" Margin="16,14"
-                                          ContentSource="SelectedContent" />
+                        <ContentPresenter x:Name="contentHost" Grid.Row="1" Margin="16,14"
+                                          ContentSource="SelectedContent" RenderTransformOrigin="0.5,0.5">
+                            <ContentPresenter.RenderTransform>
+                                <TranslateTransform x:Name="contentShift" Y="0" />
+                            </ContentPresenter.RenderTransform>
+                        </ContentPresenter>
                     </Grid>
+                    <ControlTemplate.Triggers>
+                        <!-- 切换标签时内容淡入并轻微上浮 -->
+                        <EventTrigger RoutedEvent="Selector.SelectionChanged">
+                            <BeginStoryboard>
+                                <Storyboard>
+                                    <DoubleAnimation Storyboard.TargetName="contentHost"
+                                                     Storyboard.TargetProperty="Opacity"
+                                                     From="0" To="1" Duration="0:0:0.22" />
+                                    <DoubleAnimation Storyboard.TargetName="contentShift"
+                                                     Storyboard.TargetProperty="Y"
+                                                     From="14" To="0" Duration="0:0:0.28">
+                                        <DoubleAnimation.EasingFunction>
+                                            <CubicEase EasingMode="EaseOut" />
+                                        </DoubleAnimation.EasingFunction>
+                                    </DoubleAnimation>
+                                </Storyboard>
+                            </BeginStoryboard>
+                        </EventTrigger>
+                    </ControlTemplate.Triggers>
                 </ControlTemplate>
             </Setter.Value>
         </Setter>

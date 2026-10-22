@@ -21,8 +21,47 @@
                             GlassFrameThickness="0" CornerRadius="0"
                             UseAeroCaptionButtons="False" />
     </shell:WindowChrome.WindowChrome>
+    <Window.Triggers>
+        <!-- 窗口入场：轻微放大上浮 + 淡入 -->
+        <EventTrigger RoutedEvent="FrameworkElement.Loaded">
+            <BeginStoryboard>
+                <Storyboard>
+                    <DoubleAnimation Storyboard.TargetName="rootBorder"
+                                     Storyboard.TargetProperty="Opacity"
+                                     From="0" To="1" Duration="0:0:0.3" />
+                    <DoubleAnimation Storyboard.TargetName="windowScale"
+                                     Storyboard.TargetProperty="ScaleX"
+                                     From="0.96" To="1" Duration="0:0:0.34">
+                        <DoubleAnimation.EasingFunction>
+                            <CubicEase EasingMode="EaseOut" />
+                        </DoubleAnimation.EasingFunction>
+                    </DoubleAnimation>
+                    <DoubleAnimation Storyboard.TargetName="windowScale"
+                                     Storyboard.TargetProperty="ScaleY"
+                                     From="0.96" To="1" Duration="0:0:0.34">
+                        <DoubleAnimation.EasingFunction>
+                            <CubicEase EasingMode="EaseOut" />
+                        </DoubleAnimation.EasingFunction>
+                    </DoubleAnimation>
+                    <DoubleAnimation Storyboard.TargetName="windowShift"
+                                     Storyboard.TargetProperty="Y"
+                                     From="16" To="0" Duration="0:0:0.34">
+                        <DoubleAnimation.EasingFunction>
+                            <CubicEase EasingMode="EaseOut" />
+                        </DoubleAnimation.EasingFunction>
+                    </DoubleAnimation>
+                </Storyboard>
+            </BeginStoryboard>
+        </EventTrigger>
+    </Window.Triggers>
     <Grid x:Name="rootHost">
-    <Border x:Name="rootBorder" BorderThickness="0" CornerRadius="12">
+    <Border x:Name="rootBorder" BorderThickness="0" CornerRadius="12" RenderTransformOrigin="0.5,0.5">
+        <Border.RenderTransform>
+            <TransformGroup>
+                <ScaleTransform x:Name="windowScale" ScaleX="1" ScaleY="1" />
+                <TranslateTransform x:Name="windowShift" Y="0" />
+            </TransformGroup>
+        </Border.RenderTransform>
         <Grid x:Name="rootContent" Background="{DynamicResource WindowBgBrush}"
               local:CornerClip.Radius="11">
             <Grid.RowDefinitions>
@@ -900,5 +939,8 @@
             </DockPanel>
         </Grid>
     </Border>
+        <!-- 主题切换快照叠层：切换瞬间盖住旧画面再淡出，形成交叉过渡 -->
+        <Image x:Name="themeFadeOverlay" Visibility="Collapsed" Stretch="Fill"
+               IsHitTestVisible="False" local:CornerClip.Radius="12" />
     </Grid>
 </Window>
