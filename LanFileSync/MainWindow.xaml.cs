@@ -328,7 +328,7 @@ public partial class MainWindow : Window
         themeFadeOverlay.Opacity = 1;
         themeFadeOverlay.Visibility = Visibility.Visible;
 
-        var fade = new DoubleAnimation(1, 0, TimeSpan.FromMilliseconds(260))
+        var fade = new DoubleAnimation(1, 0, TimeSpan.FromMilliseconds(480))
         {
             EasingFunction = new CubicEase { EasingMode = EasingMode.EaseOut }
         };

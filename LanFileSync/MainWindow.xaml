@@ -28,24 +28,24 @@
                 <Storyboard>
                     <DoubleAnimation Storyboard.TargetName="rootBorder"
                                      Storyboard.TargetProperty="Opacity"
-                                     From="0" To="1" Duration="0:0:0.3" />
+                                     From="0" To="1" Duration="0:0:0.6" />
                     <DoubleAnimation Storyboard.TargetName="windowScale"
                                      Storyboard.TargetProperty="ScaleX"
-                                     From="0.96" To="1" Duration="0:0:0.34">
+                                     From="0.96" To="1" Duration="0:0:0.7">
                         <DoubleAnimation.EasingFunction>
                             <CubicEase EasingMode="EaseOut" />
                         </DoubleAnimation.EasingFunction>
                     </DoubleAnimation>
                     <DoubleAnimation Storyboard.TargetName="windowScale"
                                      Storyboard.TargetProperty="ScaleY"
-                                     From="0.96" To="1" Duration="0:0:0.34">
+                                     From="0.96" To="1" Duration="0:0:0.7">
                         <DoubleAnimation.EasingFunction>
                             <CubicEase EasingMode="EaseOut" />
                         </DoubleAnimation.EasingFunction>
                     </DoubleAnimation>
                     <DoubleAnimation Storyboard.TargetName="windowShift"
                                      Storyboard.TargetProperty="Y"
-                                     From="16" To="0" Duration="0:0:0.34">
+                                     From="16" To="0" Duration="0:0:0.7">
                         <DoubleAnimation.EasingFunction>
                             <CubicEase EasingMode="EaseOut" />
                         </DoubleAnimation.EasingFunction>
@@ -846,7 +846,8 @@
                                         <Button x:Name="btnCancel" Grid.Column="4" Content="取消" Command="{Binding CancelCommand}" />
                                     </Grid>
                                     <ProgressBar x:Name="progressBar" Margin="0,12,0,0" Minimum="0"
-                                                 Maximum="{Binding ProgressMaximum}" Value="{Binding ProgressValue}" />
+                                                 Maximum="{Binding ProgressMaximum}" Value="{Binding ProgressValue}"
+                                                 Tag="{Binding IsBusy}" />
                                     <TextBlock x:Name="txtCur" Margin="0,7,0,0" Text="{Binding CurrentFileText}" TextTrimming="CharacterEllipsis" />
                                 </StackPanel>
                             </GroupBox>

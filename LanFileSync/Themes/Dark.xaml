@@ -523,8 +523,9 @@
                                         <GradientStop Color="#7AE7FF" Offset="1" />
                                     </LinearGradientBrush>
                                 </Border.Background>
-                                <!-- 循环流光：一条高光带从左向右掠过进度条 -->
-                                <Border Width="140" HorizontalAlignment="Left" Opacity="0.85">
+                                <!-- 循环流光：仅在操作进行中显示，动作结束后停止 -->
+                                <Border x:Name="sheen" Width="140" HorizontalAlignment="Left" Opacity="0.85"
+                                        Visibility="Collapsed">
                                     <Border.Background>
                                         <LinearGradientBrush StartPoint="0,0" EndPoint="1,0">
                                             <GradientStop Color="#00FFFFFF" Offset="0" />
@@ -535,23 +536,30 @@
                                     <Border.RenderTransform>
                                         <TranslateTransform x:Name="sheenShift" X="-160" />
                                     </Border.RenderTransform>
-                                    <Border.Triggers>
-                                        <EventTrigger RoutedEvent="FrameworkElement.Loaded">
-                                            <BeginStoryboard>
-                                                <Storyboard>
-                                                    <DoubleAnimation Storyboard.TargetName="sheenShift"
-                                                                     Storyboard.TargetProperty="X"
-                                                                     From="-160" To="1000"
-                                                                     Duration="0:0:1.6"
-                                                                     RepeatBehavior="Forever" />
-                                                </Storyboard>
-                                            </BeginStoryboard>
-                                        </EventTrigger>
-                                    </Border.Triggers>
                                 </Border>
                             </Border>
                         </Grid>
                     </Border>
+                    <ControlTemplate.Triggers>
+                        <!-- Tag 绑定操作忙碌状态：忙碌时循环流光，结束后停止并隐藏 -->
+                        <DataTrigger Binding="{Binding Tag, RelativeSource={RelativeSource Self}}" Value="True">
+                            <Setter TargetName="sheen" Property="Visibility" Value="Visible" />
+                            <DataTrigger.EnterActions>
+                                <BeginStoryboard x:Name="sheenStory">
+                                    <Storyboard>
+                                        <DoubleAnimation Storyboard.TargetName="sheenShift"
+                                                         Storyboard.TargetProperty="X"
+                                                         From="-160" To="1000"
+                                                         Duration="0:0:1.6"
+                                                         RepeatBehavior="Forever" />
+                                    </Storyboard>
+                                </BeginStoryboard>
+                            </DataTrigger.EnterActions>
+                            <DataTrigger.ExitActions>
+                                <StopStoryboard BeginStoryboardName="sheenStory" />
+                            </DataTrigger.ExitActions>
+                        </DataTrigger>
+                    </ControlTemplate.Triggers>
                 </ControlTemplate>
             </Setter.Value>
         </Setter>
