@@ -1,7 +1,6 @@
 using System.ComponentModel;
 using System.Windows;
 using System.Windows.Controls;
-using System.Windows.Documents;
 using System.Windows.Input;
 using System.Windows.Threading;
 using LanFileSync.Services;
@@ -285,7 +284,23 @@ public partial class MainWindow : Window
 
     private void TitleClose_Click(object sender, RoutedEventArgs e) { Close(); }
 
-    private void BtnThemeToggle_Click(object sender, RoutedEventArgs e) => ThemeManager.Toggle();
+    private void BtnThemeToggle_Click(object sender, RoutedEventArgs e)
+    {
+        // 主题字典替换会重建日志框模板并把滚动位置重置到顶部，这里记录偏移并在布局完成后恢复
+        double offset = txtLog.VerticalOffset;
+        ThemeManager.Toggle();
+        RestoreLogScroll(offset);
+    }
+
+    private void RestoreLogScroll(double offset)
+    {
+        // 两次 Background 回调：第一次等主题资源生效，第二次等文档布局完成、可滚动高度恢复后再定位
+        Dispatcher.BeginInvoke(DispatcherPriority.Background, new Action(() =>
+        {
+            txtLog.ScrollToVerticalOffset(offset);
+            Dispatcher.BeginInvoke(DispatcherPriority.Background, new Action(() => txtLog.ScrollToVerticalOffset(offset)));
+        }));
+    }
 
     internal void UpdateTheme(bool dark)
     {
@@ -293,13 +308,6 @@ public partial class MainWindow : Window
 
         var icon = btnThemeToggle.Template.FindName("icon", btnThemeToggle) as TextBlock;
         if (icon != null) icon.Text = dark ? "☾" : "☀";
-    }
-
-    private void BtnCopyLog_Click(object sender, RoutedEventArgs e)
-    {
-        if (txtLog == null) return;
-        var textRange = new TextRange(txtLog.Document.ContentStart, txtLog.Document.ContentEnd);
-        if (!string.IsNullOrEmpty(textRange.Text)) { Clipboard.SetText(textRange.Text); }
     }
 
     private void ShowMainWindow()

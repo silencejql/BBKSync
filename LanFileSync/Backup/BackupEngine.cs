@@ -48,6 +48,9 @@ public sealed class BackupEngine
 
                 if (Options.ApplyLogRule && UploadRules.HasSegment(rel, "Log"))
                 {
+                    // 保留天数为 0 表示完全不备份 Log 文件夹
+                    if (Options.LogRetentionDays <= 0)
+                        continue;
                     var fi = new FileInfo(file);
                     if (fi.LastWriteTimeUtc < cut)
                         continue;

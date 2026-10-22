@@ -32,10 +32,14 @@ public sealed class BackupSyncEngine
                 continue;
             if (Options.IsIgnored(f.RelPath))
                 continue;
-            if (Options.ApplyLogRule
-                && UploadRules.HasSegment(f.RelPath, "Log")
-                && f.MTimeUtcTicks < cut.Ticks)
-                continue;
+            if (Options.ApplyLogRule && UploadRules.HasSegment(f.RelPath, "Log"))
+            {
+                // 保留天数为 0 表示完全不备份 Log 文件夹
+                if (Options.LogRetentionDays <= 0)
+                    continue;
+                if (f.MTimeUtcTicks < cut.Ticks)
+                    continue;
+            }
             if (NeedsFetch(f))
                 _needed.Add(f.RelPath);
         }

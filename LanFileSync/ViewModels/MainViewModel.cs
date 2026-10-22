@@ -609,6 +609,13 @@ public partial class MainViewModel : ObservableObject
             items.Add(new IpComboItem { Ip = ip, Label = display });
         }
 
+        // 本机 IP 默认加入下拉，便于测试连接等主动直连操作
+        foreach (string ip in HostHelper.GetLocalIPs())
+        {
+            if (items.Any(i => string.Equals(i.Ip, ip, StringComparison.OrdinalIgnoreCase))) continue;
+            items.Add(new IpComboItem { Ip = ip, Label = $"本机({ip})" });
+        }
+
         PeerHistory.Clear();
         foreach (var item in items) PeerHistory.Add(item);
 
@@ -682,7 +689,7 @@ public partial class MainViewModel : ObservableObject
         _settings.Settings.Backup.Dest = BackupDestPath.Trim();
         _settings.Settings.Backup.BeforeSync = BackupBeforeSync;
         _settings.Settings.Backup.LogRule = BackupLogRule;
-        _settings.Settings.Backup.LogDays = int.TryParse(BackupLogDaysText, out int d) && d >= 1 ? d : 2;
+        _settings.Settings.Backup.LogDays = int.TryParse(BackupLogDaysText, out int d) && d >= 0 ? d : 2;
         _settings.Settings.Backup.IgnoreRegexes = BackupIgnore;
         _settings.Settings.Backup.IgnoreRegexEnabled = IgnoreEnabled;
         _settings.Settings.Backup.CompressZip = CompressZip;
@@ -896,7 +903,7 @@ public partial class MainViewModel : ObservableObject
 
     private BackupOptions ReadBackupOptions()
     {
-        if (!int.TryParse(BackupLogDaysText, out int days) || days < 1) days = 2;
+        if (!int.TryParse(BackupLogDaysText, out int days) || days < 0) days = 2;
         string[] ignores = BackupIgnore
             .Split(new[] { ',', '，', '\r', '\n' }, StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries)
             .Where(s => s.Length > 0).ToArray();
