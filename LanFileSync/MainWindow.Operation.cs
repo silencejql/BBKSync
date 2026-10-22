@@ -52,12 +52,8 @@ public partial class MainWindow
             string dest = txtBackupDest.Text.Trim();
             if (string.IsNullOrWhiteSpace(dest)) { DarkMessageBox.Show("请输入备份目标文件夹。", "提示", MessageBoxButton.OK, MessageBoxImage.Information); return; }
             if (rbBackupRemote.IsChecked == true) { await BackupFromRemoteAsync(dest); }
-            else
-            {
-                await RunPreBackupBatAsync();
-                if (rbBackupShare.IsChecked == true) await BackupFromShareAsync(dest);
-                else await BackupLocalAsync(dest);
-            }
+            else if (rbBackupShare.IsChecked == true) await BackupFromShareAsync(dest);
+            else await BackupLocalAsync(dest);
             LogLine("备份程序执行完成");
         }
         finally { ExitOperation(); }
@@ -69,6 +65,8 @@ public partial class MainWindow
         if (string.IsNullOrWhiteSpace(src) || !Directory.Exists(src))
         { DarkMessageBox.Show("源文件夹无效或不存在：" + src, "错误", MessageBoxButton.OK, MessageBoxImage.Warning); return; }
         if (DarkMessageBox.Show("确认开始备份本地BBK程序？\n\n程序备份到：" + dest + "。", "确认", MessageBoxButton.OKCancel, MessageBoxImage.Question) != MessageBoxResult.OK) return;
+        // 确认之后再执行 PostgreSQL 备份前脚本：取消备份时不会白跑数据库备份
+        await RunPreBackupBatAsync();
         string fallback = Environment.MachineName;
         string name = BackupNameFor(fallback);
         string target = BackupTargetPath(dest, name);
@@ -148,6 +146,8 @@ public partial class MainWindow
     {
         string? unc = TryGetShareUnc();
         if (unc == null) return;
+        // 共享连接与相关提示都通过后再执行 PostgreSQL 备份前脚本
+        await RunPreBackupBatAsync();
         string target;
         if (cbAutoFetchName.IsChecked == true)
         {
