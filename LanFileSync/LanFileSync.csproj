@@ -21,9 +21,7 @@
     <!-- 只保留简体中文资源 -->
     <SatelliteResourceLanguages>zh-Hans</SatelliteResourceLanguages>
     <InvariantGlobalization>false</InvariantGlobalization>
-    <!-- 启用压缩（会牺牲一点启动速度） -->
-    <EnableCompressionInSingleFile>true</EnableCompressionInSingleFile>
-    
+
     <DebugType>none</DebugType>
     <DebugSymbols>false</DebugSymbols>
     <PlatformTarget>AnyCPU</PlatformTarget>
@@ -34,6 +32,41 @@
   <ItemGroup>
     <Resource Include="app.ico" />
   </ItemGroup>
+
+  <!--
+    体积精简：自包含发布时 WindowsDesktop 运行时包会整包复制，其中
+    - System.Windows.Forms.*（约 22MB）为 WinForms 运行时与设计器，本项目为纯 WPF，
+      代码中没有任何 WinForms 引用，WPF 框架程序集也不依赖它们；
+    - mscordaccore / mscordbi / Microsoft.DiaSymReader / createdump（约 6MB）仅用于调试与崩溃转储；
+    - 打印/XPS、DirectoryServices、EventLog、HTTP、DataSet、并行 LINQ 等
+      本项目完全未使用的框架服务（约 10MB），仅在调用对应功能时才会被加载。
+    注意：System.Windows.Controls.Ribbon 不能删——WPF 的 presentation XML 命名空间
+      会映射到 Ribbon 程序集，BAML 解析任意 xaml 类型（如 AncestorType）时都会加载它，
+      删掉会导致启动即 XamlParseException / FileNotFoundException。
+    从发布清单中剔除后不影响现有功能，单文件 exe 压缩后约省 10MB。
+    注意：System.Drawing.Common 不能删——托盘图标 AppIcons 用到了 System.Drawing.Icon。
+  -->
+  <Target Name="PruneUnusedRuntimePackFiles" AfterTargets="ComputeResolvedFilesToPublishList" BeforeTargets="_HandleFileConflictsForPublish;_ComputeFilesToBundle;GenerateSingleFileBundle">
+    <ItemGroup>
+      <ResolvedFileToPublish Remove="@(ResolvedFileToPublish)"
+        Condition="'%(Filename)' == 'System.Windows.Forms'
+                or '%(Filename)' == 'System.Windows.Forms.Primitives'
+                or '%(Filename)' == 'System.Windows.Forms.Design'
+                or '%(Filename)' == 'System.Windows.Forms.Design.Editors'
+                or '%(Filename)' == 'Microsoft.DiaSymReader.Native.amd64'
+                or '%(Filename)' == 'createdump'
+                or '%(Filename)' == 'mscordbi'
+                or '%(Filename)' == 'ReachFramework'
+                or '%(Filename)' == 'System.Printing'
+                or '%(Filename)' == 'System.DirectoryServices'
+                or '%(Filename)' == 'System.Diagnostics.EventLog.Messages'
+                or '%(Filename)' == 'System.Net.Http'
+                or '%(Filename)' == 'System.Data.Common'
+                or '%(Filename)' == 'System.Linq.Parallel'
+                or '%(Filename)' == 'System.Security.Cryptography.Pkcs'
+                or $([System.String]::Copy('%(Filename)').StartsWith('mscordaccore'))" />
+    </ItemGroup>
+  </Target>
 
   <!-- README 作为嵌入资源打进 exe，发布时不产生单独文件；标题栏“?”按钮读取该资源 -->
   <ItemGroup>
