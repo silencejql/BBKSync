@@ -297,15 +297,33 @@ public partial class MainWindow : Window
 
         ThemeManager.Toggle();
         RestoreLogScroll(offset);
+        SpinThemeIcon();
         FadeOutSnapshot(snapshot);
+    }
+
+    /// <summary>点击主题按钮时让图标旋转一周，强化切换反馈。</summary>
+    private void SpinThemeIcon()
+    {
+        if (btnThemeToggle.Template.FindName("icon", btnThemeToggle) is not TextBlock icon) return;
+        icon.RenderTransformOrigin = new Point(0.5, 0.5);
+        if (icon.RenderTransform is not RotateTransform rotate)
+        {
+            rotate = new RotateTransform(0);
+            icon.RenderTransform = rotate;
+        }
+        var spin = new DoubleAnimation(0, 360, TimeSpan.FromMilliseconds(560))
+        {
+            EasingFunction = new CubicEase { EasingMode = EasingMode.EaseInOut }
+        };
+        rotate.BeginAnimation(RotateTransform.AngleProperty, spin);
     }
 
     /// <summary>抓取整个窗口内容快照；尺寸异常时返回 null（不做过渡，不影响主题切换）。</summary>
     private ImageSource? CaptureSnapshot()
     {
         // 若上一次过渡尚未结束，先移除叠层，避免把旧快照一起拍进去
-        themeFadeOverlay.BeginAnimation(UIElement.OpacityProperty, null);
-        themeFadeOverlay.Visibility = Visibility.Collapsed;
+        themeFadeHost.BeginAnimation(UIElement.OpacityProperty, null);
+        themeFadeHost.Visibility = Visibility.Collapsed;
         themeFadeOverlay.Source = null;
 
         var dpi = VisualTreeHelper.GetDpi(this);
@@ -325,19 +343,23 @@ public partial class MainWindow : Window
         if (snapshot is null) return;
 
         themeFadeOverlay.Source = snapshot;
-        themeFadeOverlay.Opacity = 1;
-        themeFadeOverlay.Visibility = Visibility.Visible;
+        themeFadeHost.Opacity = 1;
+        themeFadeHost.Visibility = Visibility.Visible;
 
-        var fade = new DoubleAnimation(1, 0, TimeSpan.FromMilliseconds(480))
+        // 缓入缓出更接近连续变化，避免 CubicEase/前快后慢造成的“突然变色”感
+        const int durationMs = 560;
+        var ease = new SineEase { EasingMode = EasingMode.EaseInOut };
+
+        var fade = new DoubleAnimation(1, 0, TimeSpan.FromMilliseconds(durationMs))
         {
-            EasingFunction = new CubicEase { EasingMode = EasingMode.EaseOut }
+            EasingFunction = ease
         };
         fade.Completed += (_, _) =>
         {
-            themeFadeOverlay.Visibility = Visibility.Collapsed;
+            themeFadeHost.Visibility = Visibility.Collapsed;
             themeFadeOverlay.Source = null;
         };
-        themeFadeOverlay.BeginAnimation(UIElement.OpacityProperty, fade);
+        themeFadeHost.BeginAnimation(UIElement.OpacityProperty, fade);
     }
 
     private void RestoreLogScroll(double offset)

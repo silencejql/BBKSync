@@ -941,7 +941,9 @@
         </Grid>
     </Border>
         <!-- 主题切换快照叠层：切换瞬间盖住旧画面再淡出，形成交叉过渡 -->
-        <Image x:Name="themeFadeOverlay" Visibility="Collapsed" Stretch="Fill"
-               IsHitTestVisible="False" local:CornerClip.Radius="12" />
+        <Grid x:Name="themeFadeHost" Visibility="Collapsed" IsHitTestVisible="False"
+              local:CornerClip.Radius="12">
+            <Image x:Name="themeFadeOverlay" Stretch="Fill" />
+        </Grid>
     </Grid>
 </Window>

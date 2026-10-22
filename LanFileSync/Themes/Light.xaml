@@ -464,16 +464,54 @@
             <Setter.Value>
                 <ControlTemplate TargetType="ComboBoxItem">
                     <Border x:Name="bd" Background="{TemplateBinding Background}"
-                            CornerRadius="6"
-                            Padding="{TemplateBinding Padding}" SnapsToDevicePixels="True">
-                        <ContentPresenter />
+                            CornerRadius="6" SnapsToDevicePixels="True">
+                        <Grid>
+                            <!-- 悬停 / 选中底色淡入淡出 -->
+                            <Border x:Name="hoverLayer" CornerRadius="6" Background="#EEF4FF" Opacity="0" />
+                            <Border x:Name="selLayer" CornerRadius="6" Background="#DEE9FB" Opacity="0" />
+                            <ContentPresenter Margin="{TemplateBinding Padding}" />
+                        </Grid>
                     </Border>
                     <ControlTemplate.Triggers>
                         <Trigger Property="IsHighlighted" Value="True">
-                            <Setter TargetName="bd" Property="Background" Value="#EEF4FF" />
+                            <Trigger.EnterActions>
+                                <BeginStoryboard>
+                                    <Storyboard>
+                                        <DoubleAnimation Storyboard.TargetName="hoverLayer"
+                                                         Storyboard.TargetProperty="Opacity"
+                                                         To="1" Duration="0:0:0.09" />
+                                    </Storyboard>
+                                </BeginStoryboard>
+                            </Trigger.EnterActions>
+                            <Trigger.ExitActions>
+                                <BeginStoryboard>
+                                    <Storyboard>
+                                        <DoubleAnimation Storyboard.TargetName="hoverLayer"
+                                                         Storyboard.TargetProperty="Opacity"
+                                                         To="0" Duration="0:0:0.14" />
+                                    </Storyboard>
+                                </BeginStoryboard>
+                            </Trigger.ExitActions>
                         </Trigger>
                         <Trigger Property="IsSelected" Value="True">
-                            <Setter TargetName="bd" Property="Background" Value="#DEE9FB" />
+                            <Trigger.EnterActions>
+                                <BeginStoryboard>
+                                    <Storyboard>
+                                        <DoubleAnimation Storyboard.TargetName="selLayer"
+                                                         Storyboard.TargetProperty="Opacity"
+                                                         To="1" Duration="0:0:0.14" />
+                                    </Storyboard>
+                                </BeginStoryboard>
+                            </Trigger.EnterActions>
+                            <Trigger.ExitActions>
+                                <BeginStoryboard>
+                                    <Storyboard>
+                                        <DoubleAnimation Storyboard.TargetName="selLayer"
+                                                         Storyboard.TargetProperty="Opacity"
+                                                         To="0" Duration="0:0:0.18" />
+                                    </Storyboard>
+                                </BeginStoryboard>
+                            </Trigger.ExitActions>
                             <Setter Property="Foreground" Value="#2563EB" />
                         </Trigger>
                     </ControlTemplate.Triggers>
@@ -551,6 +589,13 @@
                                                          Storyboard.TargetProperty="X"
                                                          From="-160" To="1000"
                                                          Duration="0:0:1.6"
+                                                         RepeatBehavior="Forever" />
+                                        <!-- 忙碌时进度条轻微呼吸，增强“正在处理”的动感 -->
+                                        <DoubleAnimation Storyboard.TargetName="PART_Indicator"
+                                                         Storyboard.TargetProperty="Opacity"
+                                                         From="1" To="0.86"
+                                                         Duration="0:0:0.9"
+                                                         AutoReverse="True"
                                                          RepeatBehavior="Forever" />
                                     </Storyboard>
                                 </BeginStoryboard>
@@ -910,15 +955,54 @@
             <Setter.Value>
                 <ControlTemplate TargetType="ListViewItem">
                     <Border x:Name="bd" Background="{TemplateBinding Background}"
-                            CornerRadius="6" Margin="2,1" Padding="8,0" SnapsToDevicePixels="True">
-                        <GridViewRowPresenter VerticalAlignment="Center" />
+                            CornerRadius="6" Margin="2,1" SnapsToDevicePixels="True">
+                        <Grid>
+                            <!-- 悬停 / 选中底色淡入淡出，避免瞬间跳色 -->
+                            <Border x:Name="hoverLayer" CornerRadius="6" Background="#F1F5FC" Opacity="0" />
+                            <Border x:Name="selLayer" CornerRadius="6" Background="#DEE9FB" Opacity="0" />
+                            <GridViewRowPresenter Margin="8,0" VerticalAlignment="Center" />
+                        </Grid>
                     </Border>
                     <ControlTemplate.Triggers>
                         <Trigger Property="IsMouseOver" Value="True">
-                            <Setter TargetName="bd" Property="Background" Value="#F1F5FC" />
+                            <Trigger.EnterActions>
+                                <BeginStoryboard>
+                                    <Storyboard>
+                                        <DoubleAnimation Storyboard.TargetName="hoverLayer"
+                                                         Storyboard.TargetProperty="Opacity"
+                                                         To="1" Duration="0:0:0.09" />
+                                    </Storyboard>
+                                </BeginStoryboard>
+                            </Trigger.EnterActions>
+                            <Trigger.ExitActions>
+                                <BeginStoryboard>
+                                    <Storyboard>
+                                        <DoubleAnimation Storyboard.TargetName="hoverLayer"
+                                                         Storyboard.TargetProperty="Opacity"
+                                                         To="0" Duration="0:0:0.14" />
+                                    </Storyboard>
+                                </BeginStoryboard>
+                            </Trigger.ExitActions>
                         </Trigger>
                         <Trigger Property="IsSelected" Value="True">
-                            <Setter TargetName="bd" Property="Background" Value="#DEE9FB" />
+                            <Trigger.EnterActions>
+                                <BeginStoryboard>
+                                    <Storyboard>
+                                        <DoubleAnimation Storyboard.TargetName="selLayer"
+                                                         Storyboard.TargetProperty="Opacity"
+                                                         To="1" Duration="0:0:0.14" />
+                                    </Storyboard>
+                                </BeginStoryboard>
+                            </Trigger.EnterActions>
+                            <Trigger.ExitActions>
+                                <BeginStoryboard>
+                                    <Storyboard>
+                                        <DoubleAnimation Storyboard.TargetName="selLayer"
+                                                         Storyboard.TargetProperty="Opacity"
+                                                         To="0" Duration="0:0:0.18" />
+                                    </Storyboard>
+                                </BeginStoryboard>
+                            </Trigger.ExitActions>
                         </Trigger>
                     </ControlTemplate.Triggers>
                 </ControlTemplate>
