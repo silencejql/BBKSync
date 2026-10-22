@@ -307,16 +307,40 @@
         <Setter Property="Template">
             <Setter.Value>
                 <ControlTemplate TargetType="TextBox">
-                    <Border x:Name="bd" CornerRadius="8" SnapsToDevicePixels="True"
-                            Background="{TemplateBinding Background}"
-                            BorderBrush="{TemplateBinding BorderBrush}"
-                            BorderThickness="{TemplateBinding BorderThickness}"
-                            Padding="{TemplateBinding Padding}">
-                        <ScrollViewer x:Name="PART_ContentHost" Margin="1,0" />
-                    </Border>
+                    <Grid>
+                        <!-- 聚焦时外扩一圈主题色光晕（纯描边，不使用阴影效果） -->
+                        <Border x:Name="focusRing" CornerRadius="10" Margin="-2"
+                                BorderThickness="1" BorderBrush="{DynamicResource AccentBrush}"
+                                Opacity="0" IsHitTestVisible="False" />
+                        <Border x:Name="bd" CornerRadius="8" SnapsToDevicePixels="True"
+                                Background="{TemplateBinding Background}"
+                                BorderBrush="{TemplateBinding BorderBrush}"
+                                BorderThickness="{TemplateBinding BorderThickness}"
+                                Padding="{TemplateBinding Padding}">
+                            <ScrollViewer x:Name="PART_ContentHost" Margin="1,0" />
+                        </Border>
+                    </Grid>
                     <ControlTemplate.Triggers>
                         <Trigger Property="IsKeyboardFocused" Value="True">
                             <Setter TargetName="bd" Property="BorderBrush" Value="#00D4FF" />
+                            <Trigger.EnterActions>
+                                <BeginStoryboard>
+                                    <Storyboard>
+                                        <DoubleAnimation Storyboard.TargetName="focusRing"
+                                                         Storyboard.TargetProperty="Opacity"
+                                                         To="0.35" Duration="0:0:0.18" />
+                                    </Storyboard>
+                                </BeginStoryboard>
+                            </Trigger.EnterActions>
+                            <Trigger.ExitActions>
+                                <BeginStoryboard>
+                                    <Storyboard>
+                                        <DoubleAnimation Storyboard.TargetName="focusRing"
+                                                         Storyboard.TargetProperty="Opacity"
+                                                         To="0" Duration="0:0:0.2" />
+                                    </Storyboard>
+                                </BeginStoryboard>
+                            </Trigger.ExitActions>
                         </Trigger>
                         <Trigger Property="IsEnabled" Value="False">
                             <Setter TargetName="bd" Property="Opacity" Value="0.50" />
@@ -653,20 +677,16 @@
                 <ControlTemplate TargetType="TabItem">
                     <Grid x:Name="tabRoot" RenderTransformOrigin="0.5,0.5">
                         <Grid.RenderTransform>
+                            <!-- 仅鼠标悬停标签按钮时上浮；选中态不再额外位移 -->
                             <TranslateTransform x:Name="tabHoverShift" Y="0" />
                         </Grid.RenderTransform>
-                        <!-- 内层承载“选中上浮”，与外层悬停位移分离，避免两个动画互相覆盖 -->
-                        <Grid>
-                            <Grid.RenderTransform>
-                                <TranslateTransform x:Name="tabSelShift" Y="0" />
-                            </Grid.RenderTransform>
-                        <!-- 悬停 / 选中底色：用不透明度动画淡入淡出 -->
-                        <Border x:Name="hoverBg" CornerRadius="8" Margin="0,0,6,0"
-                                Background="#1B2434" Opacity="0" SnapsToDevicePixels="True" />
+                        <!-- 选中 / 悬停底色：用不透明度动画淡入淡出（悬停层在选中层之上） -->
                         <Border x:Name="selBg" CornerRadius="8" Margin="0,0,6,0"
                                 Background="#151B24" BorderThickness="1"
                                 BorderBrush="{DynamicResource CardBorderBrush}"
                                 Opacity="0" SnapsToDevicePixels="True" />
+                        <Border x:Name="hoverBg" CornerRadius="8" Margin="0,0,6,0"
+                                Background="#1B2434" Opacity="0" SnapsToDevicePixels="True" />
                         <Border x:Name="bd" CornerRadius="8" Margin="0,0,6,0"
                                 Background="Transparent" BorderThickness="0"
                                 Padding="16,7" SnapsToDevicePixels="True">
@@ -684,7 +704,6 @@
                                 <ScaleTransform x:Name="accentScale" ScaleY="0.2" />
                             </Border.RenderTransform>
                         </Border>
-                        </Grid>
                     </Grid>
                     <ControlTemplate.Triggers>
                         <Trigger Property="IsMouseOver" Value="True">
@@ -720,9 +739,6 @@
                                         <DoubleAnimation Storyboard.TargetName="selBg"
                                                          Storyboard.TargetProperty="Opacity"
                                                          To="1" Duration="0:0:0.18" />
-                                        <DoubleAnimation Storyboard.TargetName="tabSelShift"
-                                                         Storyboard.TargetProperty="Y"
-                                                         To="-1" Duration="0:0:0.18" />
                                         <DoubleAnimation Storyboard.TargetName="accentBar"
                                                          Storyboard.TargetProperty="Opacity"
                                                          To="1" Duration="0:0:0.18" />
@@ -741,9 +757,6 @@
                                     <Storyboard>
                                         <DoubleAnimation Storyboard.TargetName="selBg"
                                                          Storyboard.TargetProperty="Opacity"
-                                                         To="0" Duration="0:0:0.16" />
-                                        <DoubleAnimation Storyboard.TargetName="tabSelShift"
-                                                         Storyboard.TargetProperty="Y"
                                                          To="0" Duration="0:0:0.16" />
                                         <DoubleAnimation Storyboard.TargetName="accentBar"
                                                          Storyboard.TargetProperty="Opacity"
@@ -775,10 +788,19 @@
             <Setter.Value>
                 <ControlTemplate TargetType="CheckBox">
                     <StackPanel Orientation="Horizontal" Background="Transparent">
-                        <Border x:Name="box" Width="18" Height="18" CornerRadius="5"
-                                Background="#0E141D"
-                                BorderBrush="{DynamicResource InputBorderBrush}" BorderThickness="1.5"
-                                VerticalAlignment="Center">
+                        <Grid Width="18" Height="18" VerticalAlignment="Center">
+                            <!-- 勾选瞬间从方框向外扩散的涟漪 -->
+                            <Border x:Name="ripple" CornerRadius="9" BorderThickness="1.5"
+                                    BorderBrush="{DynamicResource AccentBrush}" Opacity="0"
+                                    IsHitTestVisible="False" RenderTransformOrigin="0.5,0.5">
+                                <Border.RenderTransform>
+                                    <ScaleTransform x:Name="rippleScale" ScaleX="0.7" ScaleY="0.7" />
+                                </Border.RenderTransform>
+                            </Border>
+                            <Border x:Name="box" Width="18" Height="18" CornerRadius="5"
+                                    Background="#0E141D"
+                                    BorderBrush="{DynamicResource InputBorderBrush}" BorderThickness="1.5"
+                                    VerticalAlignment="Center">
                             <Path x:Name="check" Stretch="Uniform" Margin="3.5"
                                   Data="M2,9 L7,13.5 L15.5,3.5"
                                   Stroke="#06141C" StrokeThickness="2" Fill="Transparent"
@@ -788,7 +810,8 @@
                                     <ScaleTransform x:Name="checkScale" ScaleX="0.5" ScaleY="0.5" />
                                 </Path.RenderTransform>
                             </Path>
-                        </Border>
+                            </Border>
+                        </Grid>
                         <ContentPresenter Margin="9,0,0,0" VerticalAlignment="Center"
                                           RecognizesAccessKey="True" />
                     </StackPanel>
@@ -808,6 +831,15 @@
                                         <DoubleAnimation Storyboard.TargetName="checkScale"
                                                          Storyboard.TargetProperty="ScaleY"
                                                          To="1" Duration="0:0:0.18" />
+                                        <DoubleAnimation Storyboard.TargetName="ripple"
+                                                         Storyboard.TargetProperty="Opacity"
+                                                         From="0.85" To="0" Duration="0:0:0.42" />
+                                        <DoubleAnimation Storyboard.TargetName="rippleScale"
+                                                         Storyboard.TargetProperty="ScaleX"
+                                                         From="0.7" To="1.9" Duration="0:0:0.42" />
+                                        <DoubleAnimation Storyboard.TargetName="rippleScale"
+                                                         Storyboard.TargetProperty="ScaleY"
+                                                         From="0.7" To="1.9" Duration="0:0:0.42" />
                                     </Storyboard>
                                 </BeginStoryboard>
                             </Trigger.EnterActions>
@@ -998,6 +1030,16 @@
                             <!-- 悬停 / 选中底色淡入淡出，避免瞬间跳色 -->
                             <Border x:Name="hoverLayer" CornerRadius="6" Background="#1B2434" Opacity="0" />
                             <Border x:Name="selLayer" CornerRadius="6" Background="#1F3A4D" Opacity="0" />
+                            <!-- 选中行左侧强调条：与标签页一致，选中时弹性展开 -->
+                            <Border x:Name="selBar" Width="3" Height="14" CornerRadius="1.5"
+                                    Background="{DynamicResource AccentBrush}"
+                                    HorizontalAlignment="Left" VerticalAlignment="Center"
+                                    Margin="3,0,0,0" Opacity="0"
+                                    RenderTransformOrigin="0.5,0.5" SnapsToDevicePixels="True">
+                                <Border.RenderTransform>
+                                    <ScaleTransform x:Name="selBarScale" ScaleY="0.3" />
+                                </Border.RenderTransform>
+                            </Border>
                             <GridViewRowPresenter Margin="8,0" VerticalAlignment="Center" />
                         </Grid>
                     </Border>
@@ -1029,6 +1071,16 @@
                                         <DoubleAnimation Storyboard.TargetName="selLayer"
                                                          Storyboard.TargetProperty="Opacity"
                                                          To="1" Duration="0:0:0.14" />
+                                        <DoubleAnimation Storyboard.TargetName="selBar"
+                                                         Storyboard.TargetProperty="Opacity"
+                                                         To="1" Duration="0:0:0.12" />
+                                        <DoubleAnimation Storyboard.TargetName="selBarScale"
+                                                         Storyboard.TargetProperty="ScaleY"
+                                                         To="1" Duration="0:0:0.24">
+                                            <DoubleAnimation.EasingFunction>
+                                                <BackEase Amplitude="0.4" EasingMode="EaseOut" />
+                                            </DoubleAnimation.EasingFunction>
+                                        </DoubleAnimation>
                                     </Storyboard>
                                 </BeginStoryboard>
                             </Trigger.EnterActions>
@@ -1038,6 +1090,12 @@
                                         <DoubleAnimation Storyboard.TargetName="selLayer"
                                                          Storyboard.TargetProperty="Opacity"
                                                          To="0" Duration="0:0:0.18" />
+                                        <DoubleAnimation Storyboard.TargetName="selBar"
+                                                         Storyboard.TargetProperty="Opacity"
+                                                         To="0" Duration="0:0:0.14" />
+                                        <DoubleAnimation Storyboard.TargetName="selBarScale"
+                                                         Storyboard.TargetProperty="ScaleY"
+                                                         To="0.3" Duration="0:0:0.14" />
                                     </Storyboard>
                                 </BeginStoryboard>
                             </Trigger.ExitActions>
