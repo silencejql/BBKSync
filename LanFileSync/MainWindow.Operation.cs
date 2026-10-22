@@ -132,14 +132,8 @@ public partial class MainWindow
             }
         }
         catch (OperationCanceledException) { LogLine("备份已取消"); }
-        finally
-        {
-            if (okIps.Count > 0) SaveIpHistory(port);
-            EndBusy();
-        }
-        if (okIps.Count > 0) txtStatus.Text = hosts.Count > 1 ? $"远程备份完成({okIps.Count}/{hosts.Count} 台)" : "远程备份完成";
-        if (failed.Count > 0) DarkMessageBox.Show("以下电脑备份失败：\n" + string.Join("\n", failed), "部分失败", MessageBoxButton.OK, MessageBoxImage.Warning);
-        await LogHostOperationSummary("远程备份", okIps, failed, port);
+        finally { EndHostOperation(okIps, port); }
+        await FinishHostOperationAsync("远程备份", "远程备份", okIps, failed, hosts.Count, port, "备份");
     }
 
     private async Task BackupFromShareAsync(string dest)
@@ -271,14 +265,8 @@ public partial class MainWindow
             }
         }
         catch (OperationCanceledException) { LogLine("已取消"); }
-        finally
-        {
-            if (okIps.Count > 0) SaveIpHistory(port);
-            EndBusy();
-        }
-        if (okIps.Count > 0) txtStatus.Text = hosts.Count > 1 ? $"同步完成({okIps.Count}/{hosts.Count} 台)" : "同步完成";
-        if (failed.Count > 0) DarkMessageBox.Show("以下电脑同步失败：\n" + string.Join("\n", failed), "部分失败", MessageBoxButton.OK, MessageBoxImage.Warning);
-        await LogHostOperationSummary("远端同步", okIps, failed, port);
+        finally { EndHostOperation(okIps, port); }
+        await FinishHostOperationAsync("远端同步", "同步", okIps, failed, hosts.Count, port);
     }
 
     private async Task SyncFromShareAsync()
@@ -343,14 +331,8 @@ public partial class MainWindow
             }
         }
         catch (OperationCanceledException) { LogLine("已取消"); }
-        finally
-        {
-            if (okIps.Count > 0) SaveIpHistory(port);
-            EndBusy();
-        }
-        if (okIps.Count > 0) txtStatus.Text = hosts.Count > 1 ? $"传输完成({okIps.Count}/{hosts.Count} 台)" : "传输完成";
-        if (failed.Count > 0) DarkMessageBox.Show("以下电脑传输失败：\n" + string.Join("\n", failed), "部分失败", MessageBoxButton.OK, MessageBoxImage.Warning);
-        await LogHostOperationSummary("文件传输", okIps, failed, port);
+        finally { EndHostOperation(okIps, port); }
+        await FinishHostOperationAsync("文件传输", "传输", okIps, failed, hosts.Count, port);
     }
 
     private async Task TransferFromRemoteAsync()
@@ -398,14 +380,8 @@ public partial class MainWindow
             }
         }
         catch (OperationCanceledException) { LogLine("已取消"); }
-        finally
-        {
-            if (okIps.Count > 0) SaveIpHistory(port);
-            EndBusy();
-        }
-        if (okIps.Count > 0) txtStatus.Text = hosts.Count > 1 ? $"拉取完成({okIps.Count}/{hosts.Count} 台)" : "拉取完成";
-        if (failed.Count > 0) DarkMessageBox.Show("以下电脑拉取失败：\n" + string.Join("\n", failed), "部分失败", MessageBoxButton.OK, MessageBoxImage.Warning);
-        await LogHostOperationSummary("文件拉取", okIps, failed, port);
+        finally { EndHostOperation(okIps, port); }
+        await FinishHostOperationAsync("文件拉取", "拉取", okIps, failed, hosts.Count, port);
     }
 
     private void LogBackupSummary(string what, BackupEngine engine, int total)
@@ -413,6 +389,25 @@ public partial class MainWindow
         int copied = engine.CopiedCount, skipped = engine.SkippedCount;
         LogLine(copied == 0 ? $"{what}完成：共 {total} 项，全部与备份目标相同，无需传输。"
             : $"{what}完成：共 {total} 项，复制 {copied} 项" + (skipped > 0 ? $"，跳过相同 {skipped} 项" : "") + "。");
+    }
+
+    /// <summary>多主机操作收尾：状态栏结果、失败弹窗、带设备名的日志汇总。</summary>
+    private async Task FinishHostOperationAsync(string opName, string statusLabel, List<string> okIps,
+        List<string> failed, int hostCount, int port, string? failNoun = null)
+    {
+        if (okIps.Count > 0)
+            txtStatus.Text = hostCount > 1 ? $"{statusLabel}完成({okIps.Count}/{hostCount} 台)" : $"{statusLabel}完成";
+        if (failed.Count > 0)
+            DarkMessageBox.Show($"以下电脑{failNoun ?? statusLabel}失败：\n" + string.Join("\n", failed),
+                "部分失败", MessageBoxButton.OK, MessageBoxImage.Warning);
+        await LogHostOperationSummary(opName, okIps, failed, port);
+    }
+
+    /// <summary>多主机操作结束：有成功主机时记录 IP 历史，并解除忙碌状态。</summary>
+    private void EndHostOperation(List<string> okIps, int port)
+    {
+        if (okIps.Count > 0) SaveIpHistory(port);
+        EndBusy();
     }
 
     private void UpdateShareVisibility()
@@ -505,13 +500,7 @@ public partial class MainWindow
             }
         }
         catch (OperationCanceledException) { LogLine("操作已取消"); }
-        finally
-        {
-            if (okIps.Count > 0) SaveIpHistory(port);
-            EndBusy();
-        }
-        if (okIps.Count > 0) txtStatus.Text = hosts.Count > 1 ? $"更新完成({okIps.Count}/{hosts.Count} 台)" : "更新完成";
-        if (failed.Count > 0) DarkMessageBox.Show("以下电脑更新失败：\n" + string.Join("\n", failed), "部分失败", MessageBoxButton.OK, MessageBoxImage.Warning);
-        await LogHostOperationSummary("程序升级", okIps, failed, port);
+        finally { EndHostOperation(okIps, port); }
+        await FinishHostOperationAsync("程序升级", "更新", okIps, failed, hosts.Count, port);
     }
 }

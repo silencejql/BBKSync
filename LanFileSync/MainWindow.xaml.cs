@@ -532,28 +532,24 @@ public partial class MainWindow : Window
         // 「其他小工具」内嵌 TabControl 的切换事件会冒泡到这里，只处理外层标签切换
         if (!ReferenceEquals(e.OriginalSource, tabs)) return;
         if (tabs.SelectedIndex != 1)
-        {
-            updateOverlay.Visibility = Visibility.Visible;
-            ResetPasswordFields(pwdUpdate, txtUpdatePwd, eyeLine);
-            txtUpdateError.Visibility = Visibility.Collapsed;
-        }
+            LockPasswordTab(updateOverlay, null, pwdUpdate, txtUpdatePwd, txtUpdateError, eyeLine);
         if (tabs.SelectedIndex != 2)
-        {
-            transferOverlay.Visibility = Visibility.Visible;
-            transferContent.IsEnabled = false;
-            ResetPasswordFields(pwdTransfer, txtTransferPwd, eyeLineTransfer);
-            txtTransferError.Visibility = Visibility.Collapsed;
-        }
+            LockPasswordTab(transferOverlay, transferContent, pwdTransfer, txtTransferPwd, txtTransferError, eyeLineTransfer);
         if (tabs.SelectedIndex != 3)
-        {
-            processOverlay.Visibility = Visibility.Visible;
-            processContent.IsEnabled = false;
-            ResetPasswordFields(pwdProcess, txtProcessPwd, eyeLineProcess);
-            txtProcessError.Visibility = Visibility.Collapsed;
-        }
+            LockPasswordTab(processOverlay, processContent, pwdProcess, txtProcessPwd, txtProcessError, eyeLineProcess);
         RefreshOpButtons();
         // 「其他小工具」页自带操作按钮，用不到底部同步与进度区；其余标签页保持显示
         grpSyncProgress.Visibility = tabs.SelectedIndex == 5 ? Visibility.Collapsed : Visibility.Visible;
+    }
+
+    /// <summary>重新上锁密码保护标签页：显示遮罩、禁用内容区、清空密码并隐藏错误提示。</summary>
+    private static void LockPasswordTab(Border overlay, FrameworkElement? content, PasswordBox pwd,
+        TextBox txt, TextBlock error, System.Windows.Shapes.Line eyeLine)
+    {
+        overlay.Visibility = Visibility.Visible;
+        if (content != null) content.IsEnabled = false;
+        ResetPasswordFields(pwd, txt, eyeLine);
+        error.Visibility = Visibility.Collapsed;
     }
 
     /// <summary>清空密码/明文内容并恢复到密码框可见状态。</summary>
@@ -585,25 +581,17 @@ public partial class MainWindow : Window
             bool lockedAny = false;
             if (updateOverlay.Visibility != Visibility.Visible)
             {
-                updateOverlay.Visibility = Visibility.Visible;
-                ResetPasswordFields(pwdUpdate, txtUpdatePwd, eyeLine);
-                txtUpdateError.Visibility = Visibility.Collapsed;
+                LockPasswordTab(updateOverlay, null, pwdUpdate, txtUpdatePwd, txtUpdateError, eyeLine);
                 lockedAny = true;
             }
             if (transferOverlay.Visibility != Visibility.Visible)
             {
-                transferOverlay.Visibility = Visibility.Visible;
-                transferContent.IsEnabled = false;
-                ResetPasswordFields(pwdTransfer, txtTransferPwd, eyeLineTransfer);
-                txtTransferError.Visibility = Visibility.Collapsed;
+                LockPasswordTab(transferOverlay, transferContent, pwdTransfer, txtTransferPwd, txtTransferError, eyeLineTransfer);
                 lockedAny = true;
             }
             if (processOverlay.Visibility != Visibility.Visible)
             {
-                processOverlay.Visibility = Visibility.Visible;
-                processContent.IsEnabled = false;
-                ResetPasswordFields(pwdProcess, txtProcessPwd, eyeLineProcess);
-                txtProcessError.Visibility = Visibility.Collapsed;
+                LockPasswordTab(processOverlay, processContent, pwdProcess, txtProcessPwd, txtProcessError, eyeLineProcess);
                 lockedAny = true;
             }
             if (lockedAny)
