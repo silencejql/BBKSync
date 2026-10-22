@@ -324,6 +324,8 @@ public partial class MainWindow : Window
         // 若上一次过渡尚未结束，先移除叠层，避免把旧快照一起拍进去
         themeFadeHost.BeginAnimation(UIElement.OpacityProperty, null);
         themeFadeHost.Visibility = Visibility.Collapsed;
+        themeFadeTint.BeginAnimation(UIElement.OpacityProperty, null);
+        themeFadeOverlay.BeginAnimation(UIElement.OpacityProperty, null);
         themeFadeOverlay.Source = null;
 
         var dpi = VisualTreeHelper.GetDpi(this);
@@ -337,17 +339,19 @@ public partial class MainWindow : Window
         return bmp;
     }
 
-    /// <summary>用快照覆盖新主题画面并淡出，形成平滑的主题切换过渡。</summary>
+    /// <summary>用快照覆盖新主题画面，并配合亮度呼吸淡出，形成平滑的主题切换过渡。</summary>
     private void FadeOutSnapshot(ImageSource? snapshot)
     {
         if (snapshot is null) return;
 
         themeFadeOverlay.Source = snapshot;
+        themeFadeOverlay.Opacity = 1;
+        themeFadeTint.Opacity = 0;
         themeFadeHost.Opacity = 1;
         themeFadeHost.Visibility = Visibility.Visible;
 
         // 缓入缓出更接近连续变化，避免 CubicEase/前快后慢造成的“突然变色”感
-        const int durationMs = 560;
+        const int durationMs = 720;
         var ease = new SineEase { EasingMode = EasingMode.EaseInOut };
 
         var fade = new DoubleAnimation(1, 0, TimeSpan.FromMilliseconds(durationMs))
@@ -356,10 +360,26 @@ public partial class MainWindow : Window
         };
         fade.Completed += (_, _) =>
         {
+            themeFadeOverlay.BeginAnimation(UIElement.OpacityProperty, null);
+            themeFadeTint.BeginAnimation(UIElement.OpacityProperty, null);
+            themeFadeOverlay.Opacity = 1;
+            themeFadeTint.Opacity = 0;
             themeFadeHost.Visibility = Visibility.Collapsed;
             themeFadeOverlay.Source = null;
         };
-        themeFadeHost.BeginAnimation(UIElement.OpacityProperty, fade);
+        themeFadeOverlay.BeginAnimation(UIElement.OpacityProperty, fade);
+
+        // 呼吸灯：先随新主题背景提亮/压暗，再平滑回落到新界面本身
+        var breathe = new DoubleAnimationUsingKeyFrames
+        {
+            Duration = TimeSpan.FromMilliseconds(durationMs)
+        };
+        breathe.KeyFrames.Add(new EasingDoubleKeyFrame(0, KeyTime.FromTimeSpan(TimeSpan.Zero)));
+        breathe.KeyFrames.Add(new EasingDoubleKeyFrame(0.42, KeyTime.FromTimeSpan(TimeSpan.FromMilliseconds(320)),
+            new SineEase { EasingMode = EasingMode.EaseInOut }));
+        breathe.KeyFrames.Add(new EasingDoubleKeyFrame(0, KeyTime.FromTimeSpan(TimeSpan.FromMilliseconds(durationMs)),
+            new SineEase { EasingMode = EasingMode.EaseInOut }));
+        themeFadeTint.BeginAnimation(UIElement.OpacityProperty, breathe);
     }
 
     private void RestoreLogScroll(double offset)

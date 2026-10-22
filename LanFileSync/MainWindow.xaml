@@ -944,6 +944,8 @@
         <Grid x:Name="themeFadeHost" Visibility="Collapsed" IsHitTestVisible="False"
               local:CornerClip.Radius="12">
             <Image x:Name="themeFadeOverlay" Stretch="Fill" />
+            <!-- 目标主题背景色叠层：按呼吸灯节奏先压暗/提亮再回落 -->
+            <Border x:Name="themeFadeTint" Background="{DynamicResource WindowBgBrush}" Opacity="0" />
         </Grid>
     </Grid>
 </Window>

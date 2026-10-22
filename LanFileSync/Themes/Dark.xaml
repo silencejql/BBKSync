@@ -168,6 +168,25 @@
                         <Grid>
                             <Border x:Name="hoverLayer" CornerRadius="7" Background="#24FFFFFF" Opacity="0" />
                             <Border x:Name="pressLayer" CornerRadius="7" Background="#3306141C" Opacity="0" />
+                            <!-- 悬停流光：斜向高光带从左扫过按钮表面 -->
+                            <Border x:Name="sheenClip" CornerRadius="7" ClipToBounds="True"
+                                    IsHitTestVisible="False" Opacity="0">
+                                <Border x:Name="sheenBand" Width="110" HorizontalAlignment="Left">
+                                    <Border.Background>
+                                        <LinearGradientBrush StartPoint="0,0" EndPoint="1,0">
+                                            <GradientStop Color="#00FFFFFF" Offset="0" />
+                                            <GradientStop Color="#5EFFFFFF" Offset="0.5" />
+                                            <GradientStop Color="#00FFFFFF" Offset="1" />
+                                        </LinearGradientBrush>
+                                    </Border.Background>
+                                    <Border.RenderTransform>
+                                        <TransformGroup>
+                                            <SkewTransform AngleX="-20" />
+                                            <TranslateTransform x:Name="sheenShift" X="-150" />
+                                        </TransformGroup>
+                                    </Border.RenderTransform>
+                                </Border>
+                            </Border>
                             <ContentPresenter HorizontalAlignment="{TemplateBinding HorizontalContentAlignment}"
                                               VerticalAlignment="{TemplateBinding VerticalContentAlignment}"
                                               RecognizesAccessKey="True">
@@ -188,6 +207,16 @@
                                         <DoubleAnimation Storyboard.TargetName="hoverLayer"
                                                          Storyboard.TargetProperty="Opacity"
                                                          To="1" Duration="0:0:0.08" />
+                                        <DoubleAnimation Storyboard.TargetName="sheenClip"
+                                                         Storyboard.TargetProperty="Opacity"
+                                                         To="1" Duration="0:0:0.1" />
+                                        <DoubleAnimation Storyboard.TargetName="sheenShift"
+                                                         Storyboard.TargetProperty="X"
+                                                         From="-150" To="260" Duration="0:0:0.62">
+                                            <DoubleAnimation.EasingFunction>
+                                                <CubicEase EasingMode="EaseOut" />
+                                            </DoubleAnimation.EasingFunction>
+                                        </DoubleAnimation>
                                         <DoubleAnimation Storyboard.TargetName="pressScale"
                                                          Storyboard.TargetProperty="ScaleX"
                                                          To="1.03" Duration="0:0:0.1" />
@@ -206,6 +235,9 @@
                                         <DoubleAnimation Storyboard.TargetName="hoverLayer"
                                                          Storyboard.TargetProperty="Opacity"
                                                          To="0" Duration="0:0:0.1" />
+                                        <DoubleAnimation Storyboard.TargetName="sheenClip"
+                                                         Storyboard.TargetProperty="Opacity"
+                                                         To="0" Duration="0:0:0.18" />
                                         <DoubleAnimation Storyboard.TargetName="pressScale"
                                                          Storyboard.TargetProperty="ScaleX"
                                                          To="1" Duration="0:0:0.12" />
@@ -621,8 +653,13 @@
                 <ControlTemplate TargetType="TabItem">
                     <Grid x:Name="tabRoot" RenderTransformOrigin="0.5,0.5">
                         <Grid.RenderTransform>
-                            <TranslateTransform x:Name="tabShift" Y="0" />
+                            <TranslateTransform x:Name="tabHoverShift" Y="0" />
                         </Grid.RenderTransform>
+                        <!-- 内层承载“选中上浮”，与外层悬停位移分离，避免两个动画互相覆盖 -->
+                        <Grid>
+                            <Grid.RenderTransform>
+                                <TranslateTransform x:Name="tabSelShift" Y="0" />
+                            </Grid.RenderTransform>
                         <!-- 悬停 / 选中底色：用不透明度动画淡入淡出 -->
                         <Border x:Name="hoverBg" CornerRadius="8" Margin="0,0,6,0"
                                 Background="#1B2434" Opacity="0" SnapsToDevicePixels="True" />
@@ -647,6 +684,7 @@
                                 <ScaleTransform x:Name="accentScale" ScaleY="0.2" />
                             </Border.RenderTransform>
                         </Border>
+                        </Grid>
                     </Grid>
                     <ControlTemplate.Triggers>
                         <Trigger Property="IsMouseOver" Value="True">
@@ -656,7 +694,7 @@
                                         <DoubleAnimation Storyboard.TargetName="hoverBg"
                                                          Storyboard.TargetProperty="Opacity"
                                                          To="1" Duration="0:0:0.12" />
-                                        <DoubleAnimation Storyboard.TargetName="tabShift"
+                                        <DoubleAnimation Storyboard.TargetName="tabHoverShift"
                                                          Storyboard.TargetProperty="Y"
                                                          To="-1.5" Duration="0:0:0.12" />
                                     </Storyboard>
@@ -668,7 +706,7 @@
                                         <DoubleAnimation Storyboard.TargetName="hoverBg"
                                                          Storyboard.TargetProperty="Opacity"
                                                          To="0" Duration="0:0:0.14" />
-                                        <DoubleAnimation Storyboard.TargetName="tabShift"
+                                        <DoubleAnimation Storyboard.TargetName="tabHoverShift"
                                                          Storyboard.TargetProperty="Y"
                                                          To="0" Duration="0:0:0.14" />
                                     </Storyboard>
@@ -682,7 +720,7 @@
                                         <DoubleAnimation Storyboard.TargetName="selBg"
                                                          Storyboard.TargetProperty="Opacity"
                                                          To="1" Duration="0:0:0.18" />
-                                        <DoubleAnimation Storyboard.TargetName="tabShift"
+                                        <DoubleAnimation Storyboard.TargetName="tabSelShift"
                                                          Storyboard.TargetProperty="Y"
                                                          To="-1" Duration="0:0:0.18" />
                                         <DoubleAnimation Storyboard.TargetName="accentBar"
@@ -704,7 +742,7 @@
                                         <DoubleAnimation Storyboard.TargetName="selBg"
                                                          Storyboard.TargetProperty="Opacity"
                                                          To="0" Duration="0:0:0.16" />
-                                        <DoubleAnimation Storyboard.TargetName="tabShift"
+                                        <DoubleAnimation Storyboard.TargetName="tabSelShift"
                                                          Storyboard.TargetProperty="Y"
                                                          To="0" Duration="0:0:0.16" />
                                         <DoubleAnimation Storyboard.TargetName="accentBar"
@@ -1135,7 +1173,10 @@
                         <ContentPresenter x:Name="contentHost" Grid.Row="1" Margin="16,14"
                                           ContentSource="SelectedContent" RenderTransformOrigin="0.5,0.5">
                             <ContentPresenter.RenderTransform>
-                                <TranslateTransform x:Name="contentShift" Y="0" />
+                                <TransformGroup>
+                                    <ScaleTransform x:Name="contentScale" ScaleX="1" ScaleY="1" />
+                                    <TranslateTransform x:Name="contentShift" Y="0" />
+                                </TransformGroup>
                             </ContentPresenter.RenderTransform>
                         </ContentPresenter>
                     </Grid>
@@ -1147,6 +1188,20 @@
                                     <DoubleAnimation Storyboard.TargetName="contentHost"
                                                      Storyboard.TargetProperty="Opacity"
                                                      From="0" To="1" Duration="0:0:0.22" />
+                                    <DoubleAnimation Storyboard.TargetName="contentScale"
+                                                     Storyboard.TargetProperty="ScaleX"
+                                                     From="1.012" To="1" Duration="0:0:0.3">
+                                        <DoubleAnimation.EasingFunction>
+                                            <CubicEase EasingMode="EaseOut" />
+                                        </DoubleAnimation.EasingFunction>
+                                    </DoubleAnimation>
+                                    <DoubleAnimation Storyboard.TargetName="contentScale"
+                                                     Storyboard.TargetProperty="ScaleY"
+                                                     From="1.012" To="1" Duration="0:0:0.3">
+                                        <DoubleAnimation.EasingFunction>
+                                            <CubicEase EasingMode="EaseOut" />
+                                        </DoubleAnimation.EasingFunction>
+                                    </DoubleAnimation>
                                     <DoubleAnimation Storyboard.TargetName="contentShift"
                                                      Storyboard.TargetProperty="Y"
                                                      From="14" To="0" Duration="0:0:0.28">
