@@ -25,7 +25,7 @@ public sealed class TrayIcon : IDisposable
         menu.Items.Add(openItem);
         menu.Items.Add(exitItem);
         _icon.ContextMenu = menu;
-        _icon.DoubleClickCommand = new RelayCommand(() => show());
+        _icon.DoubleClickCommand = new Mvvm.RelayCommand(() => show());
     }
 
     public void Show()
@@ -38,17 +38,4 @@ public sealed class TrayIcon : IDisposable
     {
         _icon.Dispose();
     }
-}
-
-internal sealed class RelayCommand : System.Windows.Input.ICommand
-{
-    private readonly Action _execute;
-
-    public RelayCommand(Action execute) => _execute = execute;
-
-    public event EventHandler? CanExecuteChanged;
-
-    public bool CanExecute(object? parameter) => true;
-
-    public void Execute(object? parameter) => _execute();
 }

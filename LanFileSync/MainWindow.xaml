@@ -3,7 +3,8 @@
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         xmlns:shell="clr-namespace:System.Windows.Shell;assembly=PresentationFramework"
         xmlns:local="clr-namespace:LanFileSync"
-        Title="BBK文件同步与备份工具"
+        xmlns:mvvm="clr-namespace:LanFileSync.Mvvm"
+        Title="{Binding WindowTitle}"
         Icon="/app.ico"
         MinHeight="680" MinWidth="980"
         WindowStartupLocation="CenterScreen"
@@ -36,7 +37,7 @@
                 <DockPanel>
                     <StackPanel DockPanel.Dock="Right" Orientation="Horizontal">
                         <Button x:Name="btnHelp" Style="{StaticResource TitleBarButton}"
-                                Click="BtnHelp_Click" ToolTip="查看使用说明（README）"
+                                Command="{Binding ShowHelpCommand}" ToolTip="查看使用说明（README）"
                                 shell:WindowChrome.IsHitTestVisibleInChrome="True">
                             <TextBlock Text="?" FontSize="16" FontWeight="SemiBold"
                                        Foreground="{Binding Foreground, RelativeSource={RelativeSource AncestorType=Button}}" />
@@ -61,7 +62,7 @@
                         </Button>
                     </StackPanel>
                     <Image Source="/app.ico" Width="18" Height="18" Margin="10,0,10,0" VerticalAlignment="Center" />
-                    <TextBlock x:Name="txtTitle" Text="BBKFileSync" VerticalAlignment="Center" FontWeight="SemiBold"
+                    <TextBlock x:Name="txtTitle" Text="{Binding AppTitle}" VerticalAlignment="Center" FontWeight="SemiBold"
                                Foreground="{DynamicResource TitleFgBrush}" TextTrimming="CharacterEllipsis" />
                 </DockPanel>
             </Border>
@@ -73,9 +74,9 @@
                 BorderBrush="{DynamicResource CardBorderBrush}" BorderThickness="0,1,0,0">
                     <DockPanel Margin="12,0">
                         <TextBlock DockPanel.Dock="Right" x:Name="txtLocalIp" VerticalAlignment="Center"
-                           Foreground="{DynamicResource TextSubBrush}" Text="未启动服务" TextElement.FontSize="12" />
+                           Foreground="{DynamicResource TextSubBrush}" Text="{Binding LocalIpText}" TextElement.FontSize="12" />
                         <TextBlock x:Name="txtStatus" VerticalAlignment="Center"
-                           Foreground="{DynamicResource TextMainBrush}" Text="就绪" TextElement.FontSize="12" />
+                           Foreground="{DynamicResource TextMainBrush}" Text="{Binding StatusText}" TextElement.FontSize="12" />
                     </DockPanel>
                 </Border>
 
@@ -95,7 +96,7 @@
                                     <ColumnDefinition Width="*" />
                                     <ColumnDefinition Width="*" />
                                 </Grid.ColumnDefinitions>
-                                <GroupBox Header="本机配置">
+                                <GroupBox Header="本机配置" IsEnabled="{Binding IsNotBusy}">
                                     <StackPanel>
                                         <Grid>
                                             <Grid.ColumnDefinitions>
@@ -105,12 +106,15 @@
                                                 <ColumnDefinition Width="Auto" />
                                             </Grid.ColumnDefinitions>
                                             <TextBlock Text="BBK文件夹:" VerticalAlignment="Center" FontWeight="SemiBold" />
-                                            <TextBox x:Name="txtRoot" Grid.Column="1" Margin="8,0,0,0" Height="30" HorizontalAlignment="Stretch" />
-                                            <Button Grid.Column="2" Content="浏览..." Padding="12,6" Margin="8,0,0,0" Click="BtnBrowse_Click" />
+                                            <TextBox x:Name="txtRoot" Grid.Column="1" Margin="8,0,0,0" Height="30" HorizontalAlignment="Stretch"
+                                                     Text="{Binding RootPath, UpdateSourceTrigger=PropertyChanged}" />
+                                            <Button Grid.Column="2" Content="浏览..." Padding="12,6" Margin="8,0,0,0"
+                                                    Command="{Binding BrowseRootCommand}" />
                                             <StackPanel Grid.Column="3" Orientation="Horizontal" Margin="16,0,0,0">
                                                 <TextBlock Text="端口:" VerticalAlignment="Center" FontWeight="SemiBold" />
                                                 <TextBox x:Name="txtPort" Margin="8,0,0,0" Height="30" Width="80"
-                                                 ToolTip="本机服务监听端口" />
+                                                         ToolTip="本机服务监听端口"
+                                                         Text="{Binding PortText, UpdateSourceTrigger=PropertyChanged}" />
                                             </StackPanel>
                                         </Grid>
                                         <Grid Margin="0,10,0,0">
@@ -122,15 +126,16 @@
                                             </Grid.ColumnDefinitions>
                                             <CheckBox x:Name="chkAutoStart" FontWeight="Normal"
                                               Content="开机自启并后台监听（驻留托盘）"
-                                              VerticalAlignment="Center" IsChecked="False"
-                                              Checked="ChkAutoStart_Changed" Unchecked="ChkAutoStart_Changed" />
-                                            <Button x:Name="btnStart" Grid.Column="2" Content="启动服务" Margin="10,0,0,0" Click="BtnStartServer_Click" />
-                                            <Button x:Name="btnStop" Grid.Column="3" Content="停止服务" IsEnabled="False" Margin="8,0,0,0" Click="BtnStopServer_Click" />
+                                              VerticalAlignment="Center" IsChecked="{Binding IsAutoStart}" />
+                                            <Button x:Name="btnStart" Grid.Column="2" Content="启动服务" Margin="10,0,0,0"
+                                                    Command="{Binding StartServerCommand}" />
+                                            <Button x:Name="btnStop" Grid.Column="3" Content="停止服务" Margin="8,0,0,0"
+                                                    Command="{Binding StopServerCommand}" />
                                         </Grid>
                                     </StackPanel>
                                 </GroupBox>
 
-                                <GroupBox Grid.Column="1" Header="远端电脑" Margin="14,0,0,0">
+                                <GroupBox Grid.Column="1" Header="远端电脑" Margin="14,0,0,0" IsEnabled="{Binding IsNotBusy}">
                                     <StackPanel>
                                         <Grid>
                                             <Grid.ColumnDefinitions>
@@ -143,6 +148,8 @@
                                             <TextBlock Text="IP/范围:" VerticalAlignment="Center" FontWeight="SemiBold" />
                                             <ComboBox x:Name="cboPeerIp" Grid.Column="1" Margin="8,0,0,0" Height="30" IsEditable="True"
                                           VerticalContentAlignment="Center"
+                                          ItemsSource="{Binding PeerHistory}"
+                                          Text="{Binding PeerIp, UpdateSourceTrigger=PropertyChanged}"
                                           ToolTip="可下拉选择历史记录，也可输入多个 IP（逗号分隔）或范围，如 192.168.1.5-8">
                                                 <ComboBox.ItemTemplate>
                                                     <DataTemplate>
@@ -151,11 +158,11 @@
                                                 </ComboBox.ItemTemplate>
                                             </ComboBox>
                                             <Button x:Name="btnTestConnect" Grid.Column="2" Content="测试连接" Margin="8,0,0,0" Padding="10,6"
-                                            Click="BtnTestConnect_Click" ToolTip="对输入的所有 IP/范围逐一验证 TCP 连接与远端协议应答，并输出成功/失败结果" />
+                                            Command="{Binding TestConnectionCommand}" ToolTip="对输入的所有 IP/范围逐一验证 TCP 连接与远端协议应答，并输出成功/失败结果" />
                                             <Button x:Name="btnHistory" Grid.Column="3" Content="历史" Margin="8,0,0,0" Padding="10,6"
-                                            Click="BtnHistory_Click" ToolTip="管理历史连接的 IP 与备注" />
+                                            Command="{Binding ShowHistoryCommand}" ToolTip="管理历史连接的 IP 与备注" />
                                             <Button x:Name="btnComputers" Grid.Column="4" Content="IP配置" Margin="8,0,0,0" Padding="10,6"
-                                            Click="BtnComputers_Click" ToolTip="配置 IP 与电脑名称的对应关系，用于下拉选择和备份自动命名" />
+                                            Command="{Binding ShowComputersCommand}" ToolTip="配置 IP 与电脑名称的对应关系，用于下拉选择和备份自动命名" />
                                         </Grid>
                                         <Grid Margin="0,8,0,0">
                                             <Grid.ColumnDefinitions>
@@ -165,7 +172,8 @@
                                             </Grid.ColumnDefinitions>
                                             <TextBlock Text="远端端口:" VerticalAlignment="Center" FontWeight="SemiBold" />
                                             <TextBox x:Name="txtPeerPort" Grid.Column="1" Width="90" Margin="8,0,0,0" Height="30"
-                                             ToolTip="远端服务监听端口，默认与本机端口一致" />
+                                             ToolTip="远端服务监听端口，默认与本机端口一致"
+                                             Text="{Binding PeerPortText, UpdateSourceTrigger=PropertyChanged}" />
                                             <TextBlock Grid.Column="2" Margin="12,0,0,0" VerticalAlignment="Center"
                                                Foreground="{DynamicResource TextSubBrush}" TextWrapping="Wrap" FontSize="10"
                                                Text="多台依次处理：逗号或分号分隔，如 [192.168.1.5,192.168.1.6]、[192.168.1.5,6;8]、[192.168.1.5-8]、[192.168.1.5-192.168.1.8]" />
@@ -177,7 +185,7 @@
                             <!-- 选项卡：备份 / 更新(横跨整个界面) -->
                             <TabControl x:Name="tabs" Margin="0,16,0,0" SelectionChanged="Tabs_SelectionChanged">
                                 <TabItem Header="BBK备份" Width="100" ToolTip="备份本机或远端BBK文件夹，根据文件日期选择性备份Log">
-                                    <Grid Margin="0">
+                                    <Grid Margin="0" IsEnabled="{Binding IsNotBusy}">
                                         <Grid.ColumnDefinitions>
                                             <ColumnDefinition Width="*" />
                                             <ColumnDefinition Width="Auto" />
@@ -186,9 +194,12 @@
                                         <StackPanel>
                                             <StackPanel Orientation="Horizontal">
                                                 <TextBlock Text="来源:" VerticalAlignment="Center" FontWeight="SemiBold" />
-                                                <RadioButton x:Name="rbBackupLocal" GroupName="bsrc" Content="本机" IsChecked="True" Margin="10,0,0,0" VerticalAlignment="Center" Checked="RbBackupSource_Changed" />
-                                                <RadioButton x:Name="rbBackupRemote" GroupName="bsrc" Content="局域网电脑(可多台)" Margin="10,0,0,0" VerticalAlignment="Center" Checked="RbBackupSource_Changed" />
-                                                <RadioButton x:Name="rbBackupShare" GroupName="bsrc" Content="Windows共享" Margin="10,0,0,0" VerticalAlignment="Center" Checked="RbBackupSource_Changed" />
+                                                <RadioButton x:Name="rbBackupLocal" GroupName="bsrc" Content="本机" Margin="10,0,0,0" VerticalAlignment="Center"
+                                                             IsChecked="{Binding IsBackupLocal}" />
+                                                <RadioButton x:Name="rbBackupRemote" GroupName="bsrc" Content="局域网电脑(可多台)" Margin="10,0,0,0" VerticalAlignment="Center"
+                                                             IsChecked="{Binding IsBackupRemote}" />
+                                                <RadioButton x:Name="rbBackupShare" GroupName="bsrc" Content="Windows共享" Margin="10,0,0,0" VerticalAlignment="Center"
+                                                             IsChecked="{Binding IsBackupShare}" />
                                             </StackPanel>
                                             <TextBlock x:Name="txtBackupHint" Margin="0,7,0,0" Foreground="{DynamicResource TextSubBrush}" TextWrapping="Wrap" FontSize="10" FontWeight="Normal"
                                                Text="局域网电脑备份用上方「远端电脑」的 IP/范围，逐台处理；Windows共享用下方连接。" />
@@ -200,34 +211,42 @@
                                                 </Grid.ColumnDefinitions>
                                                 <TextBlock Text="备份到:" VerticalAlignment="Center" FontWeight="SemiBold" />
                                                 <TextBox x:Name="txtBackupDest" Grid.Column="1" Margin="8,0,0,0" Height="30" FontWeight="Normal"
-                                                 ToolTip="备份目标父目录，自动存入 备份目录\BBK_电脑名称_日期" />
-                                                <Button Grid.Column="2" Content="浏览..." Padding="12,6" Margin="8,0,0,0" Click="BtnBackupBrowse_Click" />
+                                                 ToolTip="备份目标父目录，自动存入 备份目录\BBK_电脑名称_日期"
+                                                 Text="{Binding BackupDestPath, UpdateSourceTrigger=PropertyChanged}" />
+                                                <Button Grid.Column="2" Content="浏览..." Padding="12,6" Margin="8,0,0,0"
+                                                        Command="{Binding BrowseBackupDestCommand}" />
                                             </Grid>
                                             <StackPanel Orientation="Horizontal" Margin="0,8,0,0">
-                                                <CheckBox x:Name="cbBackupLogRule" Content="Log 文件夹只备份最近" IsChecked="True" VerticalAlignment="Center" />
-                                                <TextBox x:Name="txtBackupLogDays" Width="50" Height="20" Margin="6,0" Text="2" VerticalContentAlignment="Center" 
-                                                         ToolTip="设置 0 时备份所有Log"/>
+                                                <CheckBox x:Name="cbBackupLogRule" Content="Log 文件夹只备份最近" VerticalAlignment="Center"
+                                                          IsChecked="{Binding BackupLogRule}" />
+                                                <TextBox x:Name="txtBackupLogDays" Width="50" Height="20" Margin="6,0" VerticalContentAlignment="Center"
+                                                         ToolTip="设置 0 时备份所有Log"
+                                                         Text="{Binding BackupLogDaysText, UpdateSourceTrigger=PropertyChanged}" />
                                                 <TextBlock Text="天" VerticalAlignment="Center" />
                                             </StackPanel>
                                             <StackPanel x:Name="rowLocalName" Orientation="Horizontal" Margin="0,8,0,0">
                                                 <CheckBox x:Name="cbAutoFetchName" VerticalAlignment="Center"
-                                                  IsChecked="True"
+                                                  IsChecked="{Binding AutoFetchName}"
                                                   Content="自动获取设备配置"
                                                   ToolTip="勾选后自动从备份电脑 BBK 文件夹子目录的 Config\SystemConfig.xml 解析 DeviceNo/LineNo 作为备份命名与存放。" />
                                             </StackPanel>
-                                            <CheckBox x:Name="cbCompressZip" Content="备份完成后自动压缩为 zip（删除文件夹）" IsChecked="True" Margin="0,8,0,0"
+                                            <CheckBox x:Name="cbCompressZip" Content="备份完成后自动压缩为 zip（删除文件夹）" Margin="0,8,0,0"
+                                              IsChecked="{Binding CompressZip}"
                                               ToolTip="备份完成后打包为同名 zip 并删除文件夹。" />
-                                            <CheckBox x:Name="cbRunPreBackupBat" Content="备份前先执行 PostgreSQL 备份脚本" IsChecked="False" Margin="0,8,0,0"
+                                            <CheckBox x:Name="cbRunPreBackupBat" Content="备份前先执行 PostgreSQL 备份脚本" Margin="0,8,0,0"
+                                              IsChecked="{Binding RunPreBackupBat}"
                                               ToolTip="勾选后备份前先在目标电脑执行 PostgreSQL_Backup.bat（含 pg_dump 数据库备份）。局域网备份在远端执行后拉取。" />
                                         </StackPanel>
                                         <Rectangle Grid.Column="1" Width="1" Fill="{DynamicResource CardBorderBrush}" Margin="14,0" />
                                         <StackPanel Grid.Column="2" Margin="5,0,0,0">
-                                            <CheckBox x:Name="cbIgnoreEnabled" Content="启用忽略规则(正则表达式)" IsChecked="True"
+                                            <CheckBox x:Name="cbIgnoreEnabled" Content="启用忽略规则(正则表达式)"
+                                              IsChecked="{Binding IgnoreEnabled}"
                                               ToolTip="取消勾选后，下面的忽略规则不生效，所有文件都会被备份。" />
                                             <TextBlock Margin="0,6,0,0" Foreground="{DynamicResource TextSubBrush}" TextWrapping="Wrap" FontSize="10" FontWeight="Normal"
                                                Text="忽略文件/文件夹(每行一条正则表达式，匹配相对路径)：" />
                                             <TextBox x:Name="txtBackupIgnore" Margin="0,4,0,0" Height="60" AcceptsReturn="True"
                                              TextWrapping="Wrap" VerticalScrollBarVisibility="Auto" HorizontalAlignment="Stretch"
+                                             Text="{Binding BackupIgnore, UpdateSourceTrigger=PropertyChanged}"
                                              ToolTip="每行一条合法正则表达式，大小写不敏感，匹配文件/文件夹相对源目录的路径，命中即忽略备份。&#x0a;&#x0a;忽略文件示例：&#x0a;&#x0a;  Log\.log$           结尾为 Log.log 的文件&#x0a;&#x0a;  \.bak$              所有 .bak 文件(注意 * 号无效，这是正则)&#x0a;&#x0a;  副本                 路径中含「副本」的文件&#x0a;&#x0a;忽略文件夹示例：&#x0a;&#x0a;  (^|/)\.git(/|$)      任何路径下的 .git 文件夹&#x0a;&#x0a;  (^|/)Temp(/|$)       顶层 Temp 文件夹&#x0a;&#x0a;  若要整条容错，可用 ^ 和 $ 锁定。" />
                                             <TextBlock x:Name="txtIgnoreExample" Margin="0,6,0,0" Foreground="{DynamicResource TextSubBrush}" TextWrapping="Wrap" FontSize="10" FontWeight="Normal"
                                                Text="示例：忽略 .bak 文件：\.bak$；忽略全部副本文件：副本；忽略 .git 文件夹：(^|/)\.git(/|$)。" />
@@ -237,7 +256,7 @@
                                     </Grid>
                                 </TabItem>
                                 <TabItem Header="BBK更新" Width="100" ToolTip="一键更新本地或远端BBK，自动跳过Config和Log文件夹；更新前选择性备份BBK文件夹(默认备份)">
-                                    <Grid Margin="0">
+                                    <Grid Margin="0" IsEnabled="{Binding IsNotBusy}">
                                         <Grid.ColumnDefinitions>
                                             <ColumnDefinition Width="*" />
                                             <ColumnDefinition Width="Auto" />
@@ -245,11 +264,14 @@
                                         </Grid.ColumnDefinitions>
                                         <StackPanel>
                                             <TextBlock Text="更新方式" FontWeight="SemiBold" Foreground="{DynamicResource TextSubBrush}" Margin="0,0,0,6" />
-                                            <RadioButton x:Name="rbReceive" GroupName="dir" Content="接收远端更新（远端为源）" Checked="RbDir_Changed" Margin="0,3,0,0" />
-                                            <RadioButton x:Name="rbPush" GroupName="dir" Content="推送本机到远端（本机为源）" Margin="0,6,0,0" Checked="RbDir_Changed" />
-                                            <RadioButton x:Name="rbSyncShare" GroupName="dir" Content="从共享文件夹更新本机（免安装）" Margin="0,6,0,0" Checked="RbDir_Changed" />
+                                            <RadioButton x:Name="rbReceive" GroupName="dir" Content="接收远端更新（远端为源）" Margin="0,3,0,0"
+                                                         IsChecked="{Binding IsReceiveSelected}" />
+                                            <RadioButton x:Name="rbPush" GroupName="dir" Content="推送本机到远端（本机为源）" Margin="0,6,0,0"
+                                                         IsChecked="{Binding IsPushSelected}" />
+                                            <RadioButton x:Name="rbSyncShare" GroupName="dir" Content="从共享文件夹更新本机（免安装）" Margin="0,6,0,0"
+                                                         IsChecked="{Binding IsSyncShareSelected}" />
                                             <TextBlock x:Name="txtHint" Margin="0,8,0,0" Foreground="{DynamicResource TextSubBrush}" TextWrapping="Wrap" FontSize="10" FontWeight="Normal"
-                                               Text="接收远端更新：远端需先「启动服务」。更新规则按本机设置执行。" />
+                                               Text="{Binding UpdateHint}" />
                                             <TextBlock Margin="0,6,0,0" Foreground="{DynamicResource TextSubBrush}" TextWrapping="Wrap" FontSize="10" FontWeight="Normal"
                                                Text="说明：更新BBK文件夹，自动跳过 Log 与 Config 文件夹。" />
                                         </StackPanel>
@@ -258,18 +280,22 @@
                                             <TextBlock Text="更新规则（接收 / 从共享时生效）" FontWeight="SemiBold"
                                                Foreground="{DynamicResource TextSubBrush}" Margin="0,0,0,6" />
                                             <CheckBox x:Name="cbBinReplace" Content="Bin 整体替换（不勾则按日期增量）" Margin="0,3,0,0"
+                                              IsChecked="{Binding BinReplace}"
                                               ToolTip="勾选：先删除本地 Bin 再整体拷贝。不勾选：按修改日期/大小只同步不同的文件。" />
 
-                                            <CheckBox x:Name="cbBackupBeforeSync" Margin="0,10,0,0" IsChecked="True"
+                                            <CheckBox x:Name="cbBackupBeforeSync" Margin="0,10,0,0"
                                               Content="同步前先备份被更新电脑的 BBK"
+                                              IsChecked="{Binding BackupBeforeSync}"
                                               ToolTip="TCP 接收更新、从共享更新本机、或远端推送更新时，都会先把被更新那台电脑的 BBK 备份到「备份目录」再开始同步。" />
-                                            <CheckBox x:Name="cbUpdateCompressZip" Margin="0,6,0,0" IsChecked="True"
+                                            <CheckBox x:Name="cbUpdateCompressZip" Margin="0,6,0,0"
                                               Content="备份完成后自动压缩为 zip（删除文件夹）"
+                                              IsChecked="{Binding UpdateCompressZip}"
                                               ToolTip="同步前备份完成后自动打包为 zip 并删除文件夹。" />
                                         </StackPanel>
                                         <!-- 半透明玻璃遮罩(密码保护) -->
                                         <Border x:Name="updateOverlay" Grid.ColumnSpan="3"
-                                                CornerRadius="8" IsHitTestVisible="True" ClipToBounds="True">
+                                                CornerRadius="8" IsHitTestVisible="True" ClipToBounds="True"
+                                                Visibility="{Binding IsUpdateLocked, Converter={StaticResource BoolToVisibility}}">
                                             <Grid>
                                                 <Border Background="{DynamicResource OverlayBgBrush}" CornerRadius="8">
                                                     <Border.Effect>
@@ -323,16 +349,18 @@
                                     </Grid>
                                 </TabItem>
                                 <TabItem Header="文件同步" Width="100" ToolTip="同步本地或远端文件；可选更新模式(先备份再原替换文件)和拷贝模式(新文件以重命名的方式保存，原文件不动)">
-                                    <Grid Margin="0">
+                                    <Grid Margin="0" IsEnabled="{Binding IsNotBusy}">
                                         <Grid.ColumnDefinitions>
                                             <ColumnDefinition Width="*" />
                                             <ColumnDefinition Width="Auto" />
                                             <ColumnDefinition Width="*" />
                                         </Grid.ColumnDefinitions>
-                                        <StackPanel x:Name="transferContent" IsEnabled="False">
+                                        <StackPanel x:Name="transferContent" IsEnabled="{Binding IsTransferContentEnabled}">
                                             <StackPanel Orientation="Horizontal" Margin="0,0,0,8">
-                                                <RadioButton x:Name="rbTransferPush" GroupName="transferDir" Content="同步给远端" IsChecked="True" Checked="RbTransferDir_Changed" />
-                                                <RadioButton x:Name="rbTransferPull" GroupName="transferDir" Content="从远端同步" Margin="12,0,0,0" Checked="RbTransferDir_Changed" />
+                                                <RadioButton x:Name="rbTransferPush" GroupName="transferDir" Content="同步给远端"
+                                                             IsChecked="{Binding IsTransferToRemote}" />
+                                                <RadioButton x:Name="rbTransferPull" GroupName="transferDir" Content="从远端同步" Margin="12,0,0,0"
+                                                             IsChecked="{Binding IsTransferFromRemote}" />
                                             </StackPanel>
                                             <Grid Margin="0,0,0,0">
                                                 <Grid.ColumnDefinitions>
@@ -343,12 +371,15 @@
                                                 </Grid.ColumnDefinitions>
 <TextBlock Text="路径:" VerticalAlignment="Center" FontWeight="SemiBold" />
                                                 <TextBox x:Name="txtTransferPath" Grid.Column="1" Margin="8,0,0,0" Height="30"
-                                                 ToolTip="文件或文件夹完整路径（两端路径结构一致）。同步给远端：本机源路径；从远端同步：远端文件路径。" />
-                                                <Button x:Name="btnTransferFile" Grid.Column="2" Content="选择文件..." Padding="10,6" Margin="8,0,0,0" Click="BtnTransferFile_Click" />
-                                                <Button x:Name="btnTransferDir" Grid.Column="3" Content="选择文件夹..." Padding="10,6" Margin="8,0,0,0" Click="BtnTransferDir_Click" />
+                                                 ToolTip="文件或文件夹完整路径（两端路径结构一致）。同步给远端：本机源路径；从远端同步：远端文件路径。"
+                                                 Text="{Binding TransferPath, UpdateSourceTrigger=PropertyChanged}" />
+                                                <Button x:Name="btnTransferFile" Grid.Column="2" Content="选择文件..." Padding="10,6" Margin="8,0,0,0"
+                                                        Command="{Binding BrowseTransferFileCommand}" />
+                                                <Button x:Name="btnTransferDir" Grid.Column="3" Content="选择文件夹..." Padding="10,6" Margin="8,0,0,0"
+                                                        Command="{Binding BrowseTransferDirCommand}" />
                                             </Grid>
                                             <TextBlock x:Name="txtTransferHint" Margin="0,10,0,0" Foreground="{DynamicResource TextSubBrush}" TextWrapping="Wrap" FontSize="10" FontWeight="Normal"
-                                               Text="将选中的文件/文件夹同步到远端（远端需先启动服务）。具体规则见右侧「同步设置」。" />
+                                               Text="{Binding TransferHint}" />
                                             <TextBlock Margin="0,8,0,0" Foreground="{DynamicResource TextSubBrush}" TextWrapping="Wrap" FontSize="10" FontWeight="Normal"
                                                Text="更新模式：先备份原文件再覆盖同步；拷贝模式不改动原文件，另存为 名称_设备信息_日期。" />
                                         </StackPanel>
@@ -356,18 +387,21 @@
                                         <StackPanel Grid.Column="2" Margin="14,0,0,0">
                                             <TextBlock Text="同步设置" FontWeight="SemiBold"
                                                Foreground="{DynamicResource TextSubBrush}" Margin="0,0,0,6" />
-                                            <CheckBox x:Name="cbTransferUpdate" Content="是否更新文件" IsChecked="True" Margin="0,3,0,0"
-                                                      Checked="CbTransferUpdate_Changed" Unchecked="CbTransferUpdate_Changed"
+                                            <CheckBox x:Name="cbTransferUpdate" Content="是否更新文件" Margin="0,3,0,0"
+                                                      IsChecked="{Binding TransferUpdate}"
                                               ToolTip="勾选=更新模式：先备份原文件再覆盖；取消=拷贝模式：另存为 名称_设备信息_日期。" />
-                                            <CheckBox x:Name="cbTransferSameSkip" Content="修改时间与大小都相同则跳过同步" IsChecked="True" Margin="0,6,0,0"
+                                            <CheckBox x:Name="cbTransferSameSkip" Content="修改时间与大小都相同则跳过同步" Margin="0,6,0,0"
+                                              IsChecked="{Binding TransferSameSkip}"
+                                              IsEnabled="{Binding IsTransferSameSkipEnabled}"
                                               ToolTip="仅更新模式生效：目标上已存在且大小、修改时间相同的文件不再重复同步。" />
 
                                             <TextBlock x:Name="txtTransferModeHint" Margin="0,8,0,0" Foreground="{DynamicResource TextSubBrush}" TextWrapping="Wrap" FontSize="10" FontWeight="Normal"
-                                               Text="更新模式：同步给远端会先把远端原文件重命名为 名称_设备信息_日期 再覆盖；从远端同步会先把本地原文件重命名为 名称_设备信息_日期 再拉取到原路径。" />
+                                               Text="{Binding TransferModeHint}" />
                                         </StackPanel>
                                         <!-- 半透明玻璃遮罩(密码保护) -->
                                         <Border x:Name="transferOverlay" Grid.ColumnSpan="3"
-                                                CornerRadius="8" IsHitTestVisible="True" ClipToBounds="True">
+                                                CornerRadius="8" IsHitTestVisible="True" ClipToBounds="True"
+                                                Visibility="{Binding IsTransferLocked, Converter={StaticResource BoolToVisibility}}">
                                             <Grid>
                                                 <Border Background="{DynamicResource OverlayBgBrush}" CornerRadius="8">
                                                     <Border.Effect>
@@ -421,13 +455,13 @@
                                     </Grid>
                                 </TabItem>
                                 <TabItem Header="进程管理" Width="100" ToolTip="本地或远端BBK进程管理，响应端为设置的远端IP">
-                                    <Grid Margin="0">
+                                    <Grid Margin="0" IsEnabled="{Binding IsNotBusy}">
                                         <Grid.ColumnDefinitions>
                                             <ColumnDefinition Width="*" />
                                             <ColumnDefinition Width="Auto" />
                                             <ColumnDefinition Width="*" />
                                         </Grid.ColumnDefinitions>
-                                        <Grid x:Name="processContent" IsEnabled="False">
+                                        <Grid x:Name="processContent" IsEnabled="{Binding IsProcessContentEnabled}">
                                             <Grid.RowDefinitions>
                                                 <RowDefinition Height="*" />
                                                 <RowDefinition Height="Auto" />
@@ -444,8 +478,12 @@
                                                     <TextBlock Text="程序路径:" VerticalAlignment="Center" FontWeight="SemiBold" />
                                                     <ComboBox x:Name="cboProcessPath" Grid.Column="1" Margin="8,0,0,0" Height="30" IsEditable="True"
                                                               VerticalContentAlignment="Center"
+                                                              ItemsSource="{Binding ProcessPathItems}"
+                                                              Text="{Binding ProcessPath, UpdateSourceTrigger=PropertyChanged}"
+                                                              IsDropDownOpen="{Binding IsProcessPathDropDownOpen, Mode=TwoWay}"
                                                               ToolTip="要启动的程序完整路径。点击「获取文件列表」后可下拉选择远端文件。" />
-                                                    <Button Grid.Column="2" Content="浏览..." Padding="12,6" Margin="8,0,0,0" Click="BtnProcessBrowse_Click" />
+                                                    <Button Grid.Column="2" Content="浏览..." Padding="12,6" Margin="8,0,0,0"
+                                                            Command="{Binding BrowseProcessCommand}" />
                                                 </Grid>
                                                 <Grid Margin="0,8,0,0">
                                                     <Grid.ColumnDefinitions>
@@ -455,20 +493,21 @@
                                                     </Grid.ColumnDefinitions>
                                                     <TextBlock Text="文件后缀:" VerticalAlignment="Center" FontWeight="SemiBold" />
                                                     <ComboBox x:Name="cboProcessFileSuffixes" Grid.Column="1" Margin="8,0,0,0" Height="30"
-                                                              IsEditable="True" Text="xmlFreeForm"
+                                                              IsEditable="True"
+                                                              Text="{Binding ProcessFileSuffixes, UpdateSourceTrigger=PropertyChanged}"
                                                               ToolTip="要匹配的文件后缀或关键字，多个用逗号或分号分隔；可下拉选择或手动输入">
                                                         <ComboBoxItem Content="xmlFreeForm" />
                                                         <ComboBoxItem Content="exe" />
                                                     </ComboBox>
                                                     <Button x:Name="btnProcessFetchFiles" Grid.Column="2" Content="获取文件列表" Padding="14,6" Margin="8,0,0,0"
-                                                            Click="BtnProcessFetchFiles_Click" 
+                                                            Command="{Binding ProcessFetchFilesCommand}"
                                                             ToolTip="获取：从远端 D:\BBK 列出匹配后缀的文件，写入启动路径下拉框供选择。"/>
                                                 </Grid>
                                                     <TextBlock x:Name="txtProcessStatus" Margin="0,8,0,0" Foreground="{DynamicResource TextMainBrush}" TextWrapping="Wrap" FontSize="11"
-                                                           FontWeight="SemiBold" HorizontalAlignment="Left" />
+                                                           FontWeight="SemiBold" HorizontalAlignment="Left" Text="{Binding ProcessStatusText}" />
                                                 </StackPanel>
                                             <Button x:Name="btnProcessOpen" Grid.Row="1" Margin="0,8,0,0" Padding="14,6"
-                                                    Content="启动远端应用程序" Click="BtnProcessOpen_Click" />
+                                                    Content="启动远端应用程序" Command="{Binding ProcessOpenCommand}" />
                                         </Grid>
                                         <Rectangle Grid.Column="1" Width="1" Fill="{DynamicResource CardBorderBrush}" Margin="14,0" />
                                         <Grid Grid.Column="2" Margin="14,0,0,0">
@@ -488,7 +527,8 @@
                                                         </Grid.ColumnDefinitions>
                                                         <TextBlock Text="关闭进程前缀:" VerticalAlignment="Center" FontWeight="SemiBold" ToolTip="要结束的远端进程名前缀，多个用逗号或分号分隔" />
                                                         <ComboBox x:Name="cboProcessKillNames" Grid.Column="1" Margin="8,0,0,0" Height="30"
-                                                              IsEditable="True" Text="FreeFormsAlways"
+                                                              IsEditable="True"
+                                                              Text="{Binding ProcessKillNames, UpdateSourceTrigger=PropertyChanged}"
                                                               ToolTip="要结束的远端进程名前缀，多个用逗号或分号分隔；可下拉选择或手动输入。留空则使用 FreeFormsAlways。&#x0a;例：FreeFormsAlways,MyApp;AnotherApp">
                                                             <ComboBoxItem Content="FreeFormsAlways" />
                                                             <ComboBoxItem Content="DataBaseQuery" />
@@ -496,11 +536,12 @@
                                                     </Grid>
                                                 </StackPanel>
                                             <Button x:Name="btnProcessClose" Grid.Row="1" Content="关闭远端应用程序" Padding="14,6" Margin="0,8,0,0"
-                                                    Click="BtnProcessClose_Click" />
+                                                    Command="{Binding ProcessCloseCommand}" />
                                         </Grid>
                                         <!-- 半透明玻璃遮罩(密码保护) -->
                                         <Border x:Name="processOverlay" Grid.ColumnSpan="3"
-                                                CornerRadius="8" IsHitTestVisible="True" ClipToBounds="True">
+                                                CornerRadius="8" IsHitTestVisible="True" ClipToBounds="True"
+                                                Visibility="{Binding IsProcessLocked, Converter={StaticResource BoolToVisibility}}">
                                             <Grid>
                                                 <Border Background="{DynamicResource OverlayBgBrush}" CornerRadius="8">
                                                     <Border.Effect>
@@ -554,7 +595,7 @@
                                     </Grid>
                                 </TabItem>
                                 <TabItem Header="程序升级" Width="100">
-                                    <Grid Margin="0">
+                                    <Grid Margin="0" IsEnabled="{Binding IsNotBusy}">
                                         <Grid.ColumnDefinitions>
                                             <ColumnDefinition Width="*" />
                                             <ColumnDefinition Width="Auto" />
@@ -589,7 +630,7 @@
                                 </TabItem>
                                 <TabItem Header="小工具" Width="100"
                                          ToolTip="整理备份文件夹或压缩包：剔除旧备份、删除名称中的日期段">
-                                    <TabControl>
+                                    <TabControl IsEnabled="{Binding IsToolsIdle}">
                                         <TabItem Header="备份整理" Width="150">
                                     <Grid Margin="0">
                                         <Grid.RowDefinitions>
@@ -605,9 +646,10 @@
                                             </Grid.ColumnDefinitions>
                                             <TextBlock Text="文件夹:" VerticalAlignment="Center" FontWeight="SemiBold" />
                                             <TextBox x:Name="txtToolsDir" Grid.Column="1" Margin="8,0,0,0" Height="30"
+                                                     Text="{Binding ToolsDir, UpdateSourceTrigger=PropertyChanged}"
                                                      ToolTip="待整理的备份所在文件夹；会递归扫描所有子文件夹（带日期命名的备份文件夹视为整体，不再深入）。留空时默认使用上方「备份到」目录。" />
                                             <Button x:Name="btnToolsBrowse" Grid.Column="2" Content="浏览..." Padding="12,6" Margin="8,0,0,0"
-                                                    Click="BtnToolsBrowse_Click" />
+                                                    Command="{Binding BrowseToolsDirCommand}" />
                                         </Grid>
 
                                         <!-- 子标签页：各小工具功能 -->
@@ -623,7 +665,8 @@
                                                         <RowDefinition Height="*" />
                                                         <RowDefinition Height="Auto" />
                                                     </Grid.RowDefinitions>
-                                                    <ListView x:Name="lvPurge" Grid.Row="0" Margin="0,2,0,0" MinHeight="120" FontSize="10">
+                                                    <ListView x:Name="lvPurge" Grid.Row="0" Margin="0,2,0,0" MinHeight="120" FontSize="10"
+                                                              ItemsSource="{Binding PurgeItems}">
                                                         <ListView.View>
                                                             <GridView>
                                                                 <GridViewColumn Header="操作" Width="70">
@@ -661,12 +704,12 @@
                                                         </Grid.ColumnDefinitions>
                                                         <TextBlock x:Name="txtPurgeSummary" Grid.Column="0" VerticalAlignment="Center"
                                                                    Foreground="{DynamicResource TextSubBrush}" FontSize="11"
-                                                                   TextWrapping="Wrap" Text="尚未扫描。" />
+                                                                   TextWrapping="Wrap" Text="{Binding PurgeSummary}" />
                                                         <Button x:Name="btnPurgeScan" Grid.Column="1" Content="扫描预览"
-                                                                Padding="12,6" Margin="0,0,8,0" Click="BtnPurgeScan_Click" />
+                                                                Padding="12,6" Margin="0,0,8,0" Command="{Binding PurgeScanCommand}" />
                                                         <Button x:Name="btnPurgeRun" Grid.Column="2" Content="执行删除"
                                                                 Style="{StaticResource AccentButton}" Padding="14,6"
-                                                                IsEnabled="False" Click="BtnPurgeRun_Click"
+                                                                Command="{Binding PurgeRunCommand}"
                                                                 ToolTip="删除的备份会移入回收站，可在回收站还原。" />
                                                     </Grid>
                                                 </Grid>
@@ -683,7 +726,8 @@
                                                         <RowDefinition Height="*" />
                                                         <RowDefinition Height="Auto" />
                                                     </Grid.RowDefinitions>
-                                                    <ListView x:Name="lvRename" Grid.Row="0" Margin="0,2,0,0" MinHeight="120" FontSize="10">
+                                                    <ListView x:Name="lvRename" Grid.Row="0" Margin="0,2,0,0" MinHeight="120" FontSize="10"
+                                                              ItemsSource="{Binding RenameItems}">
                                                         <ListView.View>
                                                             <GridView>
                                                                 <GridViewColumn Header="操作" Width="70">
@@ -726,12 +770,12 @@
                                                         </Grid.ColumnDefinitions>
                                                         <TextBlock x:Name="txtRenameSummary" Grid.Column="0" VerticalAlignment="Center"
                                                                    Foreground="{DynamicResource TextSubBrush}" FontSize="11"
-                                                                   TextWrapping="Wrap" Text="尚未扫描。" />
+                                                                   TextWrapping="Wrap" Text="{Binding RenameSummary}" />
                                                         <Button x:Name="btnRenameScan" Grid.Column="1" Content="扫描预览"
-                                                                Padding="12,6" Margin="0,0,8,0" Click="BtnRenameScan_Click" />
+                                                                Padding="12,6" Margin="0,0,8,0" Command="{Binding RenameScanCommand}" />
                                                         <Button x:Name="btnRenameRun" Grid.Column="2" Content="执行重命名"
                                                                 Style="{StaticResource AccentButton}" Padding="14,6"
-                                                                IsEnabled="False" Click="BtnRenameRun_Click"
+                                                                Command="{Binding RenameRunCommand}"
                                                                 ToolTip="多余备份移入回收站，保留项重命名为去掉日期段的名称。" />
                                                     </Grid>
                                                 </Grid>
@@ -744,7 +788,8 @@
                             </TabControl>
 
                             <!-- 同步与进度 -->
-                            <GroupBox x:Name="grpSyncProgress" Header="同步与进度" Margin="0,16,0,0">
+                            <GroupBox x:Name="grpSyncProgress" Header="同步与进度" Margin="0,16,0,0"
+                                      Visibility="{Binding ShowSyncProgress, Converter={StaticResource BoolToVisibility}}">
                                 <StackPanel>
                                     <Grid>
                                         <Grid.ColumnDefinitions>
@@ -754,21 +799,24 @@
                                             <ColumnDefinition Width="*" />
                                             <ColumnDefinition Width="Auto" />
                                         </Grid.ColumnDefinitions>
-                                        <Button x:Name="btnBackup" Content="开始备份" Style="{StaticResource AccentButton}" Padding="20,7" IsEnabled="False"
-                                        Click="BtnBackup_Click" />
-                                        <Button x:Name="btnSync" Grid.Column="1" Content="开始更新" IsEnabled="False" Margin="8,0,0,0"
-                                        Padding="20,7" Style="{StaticResource AccentButton}" Click="BtnSync_Click" />
-                                        <Button x:Name="btnUpdateProgram" Grid.Column="2" Content="程序升级" IsEnabled="False" Margin="8,0,0,0"
-                                        Padding="20,7" Style="{StaticResource AccentButton}" Click="BtnUpdateProgram_Click" />
-                                        <Button x:Name="btnCancel" Grid.Column="4" Content="取消" IsEnabled="False" Click="BtnCancel_Click" />
+                                        <Button x:Name="btnBackup" Content="开始备份" Style="{StaticResource AccentButton}" Padding="20,7"
+                                        Command="{Binding BackupCommand}" />
+                                        <Button x:Name="btnSync" Grid.Column="1" Content="开始更新" Margin="8,0,0,0"
+                                        Padding="20,7" Style="{StaticResource AccentButton}" Command="{Binding SyncCommand}" />
+                                        <Button x:Name="btnUpdateProgram" Grid.Column="2" Content="程序升级" Margin="8,0,0,0"
+                                        Padding="20,7" Style="{StaticResource AccentButton}" Command="{Binding UpdateProgramCommand}" />
+                                        <Button x:Name="btnCancel" Grid.Column="4" Content="取消" Command="{Binding CancelCommand}" />
                                     </Grid>
-                                    <ProgressBar x:Name="progressBar" Margin="0,12,0,0" Minimum="0" Maximum="1" />
-                                    <TextBlock x:Name="txtCur" Margin="0,7,0,0" Text="进度: -" TextTrimming="CharacterEllipsis" />
+                                    <ProgressBar x:Name="progressBar" Margin="0,12,0,0" Minimum="0"
+                                                 Maximum="{Binding ProgressMaximum}" Value="{Binding ProgressValue}" />
+                                    <TextBlock x:Name="txtCur" Margin="0,7,0,0" Text="{Binding CurrentFileText}" TextTrimming="CharacterEllipsis" />
                                 </StackPanel>
                             </GroupBox>
 
                             <!-- Windows 共享连接 -->
-                            <GroupBox x:Name="grpShare" Header="Windows 共享连接" Margin="0,16,0,0" Visibility="Collapsed">
+                            <GroupBox x:Name="grpShare" Header="Windows 共享连接" Margin="0,16,0,0"
+                                      IsEnabled="{Binding IsNotBusy}"
+                                      Visibility="{Binding ShowShareGroup, Converter={StaticResource BoolToVisibility}}">
                                 <StackPanel>
                                     <Grid>
                                         <Grid.ColumnDefinitions>
@@ -783,15 +831,18 @@
                                         </Grid.ColumnDefinitions>
                                         <TextBlock Text="远端IP:" VerticalAlignment="Center" FontWeight="SemiBold" />
                                         <TextBox x:Name="txtShareIp" Grid.Column="1" Margin="8,0,0,0" Height="30"
+                                         Text="{Binding ShareIp, UpdateSourceTrigger=PropertyChanged}"
                                          ToolTip="远端电脑 IP，例如 192.168.1.8" />
                                         <TextBlock Grid.Column="2" Text="用户名:" Margin="16,0,0,0" VerticalAlignment="Center" />
                                         <TextBox x:Name="txtShareUser" Grid.Column="3" Margin="8,0,0,0" Height="30"
+                                         Text="{Binding ShareUser, UpdateSourceTrigger=PropertyChanged}"
                                          ToolTip="共享账号(留空用当前 Windows 账号)" />
                                         <TextBlock Grid.Column="4" Text="密码:" Margin="16,0,0,0" VerticalAlignment="Center" />
                                         <PasswordBox x:Name="pwdSharePass" Grid.Column="5" Margin="8,0,0,0" Height="30"
                                              ToolTip="共享密码(可留空)" />
                                         <TextBlock Grid.Column="6" Text="共享路径:" Margin="16,0,0,0" VerticalAlignment="Center" />
-                                        <TextBox x:Name="txtSharePath" Grid.Column="7" Margin="8,0,0,0" Height="30" Text="c$\BBK"
+                                        <TextBox x:Name="txtSharePath" Grid.Column="7" Margin="8,0,0,0" Height="30"
+                                         Text="{Binding SharePath, UpdateSourceTrigger=PropertyChanged}"
                                          ToolTip="远端共享的 BBK 路径。默认 c$\BBK 即远端 C 盘 BBK；若共享名为 BBK 则填 BBK" />
                                     </Grid>
                                     <Grid Margin="0,12,0,0">
@@ -799,7 +850,7 @@
                                             <ColumnDefinition Width="Auto" />
                                             <ColumnDefinition Width="*" />
                                         </Grid.ColumnDefinitions>
-                                        <Button x:Name="btnShareTest" Content="测试连接" Padding="14,6" Click="BtnShareTest_Click" />
+                                        <Button x:Name="btnShareTest" Content="测试连接" Padding="14,6" Command="{Binding ShareTestCommand}" />
                                         <TextBlock Grid.Column="1" Margin="12,0,0,0" VerticalAlignment="Center"
                                            Foreground="{DynamicResource TextSubBrush}" TextWrapping="Wrap"
                                            Text="远端只需共享 D:\BBK(或开放 c$ 管理共享)，无需安装本程序。" />
@@ -826,7 +877,8 @@
                                  IsReadOnly="True"
                                  VerticalScrollBarVisibility="Auto"
                                  HorizontalScrollBarVisibility="Auto"
-                                 ContextMenu="{x:Null}">
+                                 ContextMenu="{x:Null}"
+                                 mvvm:LogView.Entries="{Binding LogEntries}">
                                 <!--  文档尾部占位块：作为可滚动内容的一部分，保证滚到底时
                                       最后一条日志停在悬浮按钮上方，而日志框背景边框依旧铺满到底  -->
                                 <FlowDocument PagePadding="0">
@@ -841,7 +893,7 @@
                                     Background="{DynamicResource WindowBgBrush}" CornerRadius="8" Padding="2">
                                 <StackPanel Orientation="Horizontal">
                                     <Button Content="复制日志" Padding="12,5" Click="BtnCopyLog_Click" Margin="0,0,8,0" />
-                                    <Button Content="清空日志" Padding="12,5" Click="BtnClearLog_Click" />
+                                    <Button Content="清空日志" Padding="12,5" Command="{Binding ClearLogCommand}" />
                                 </StackPanel>
                             </Border>
                         </Grid>

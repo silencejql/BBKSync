@@ -1,29 +1,11 @@
 using System.IO;
 using System.Text.RegularExpressions;
-using System.Windows;
-using System.Windows.Controls;
-using Microsoft.Win32;
 
-namespace LanFileSync;
+namespace LanFileSync.ViewModels;
 
 /// <summary>「其他小工具」标签页：剔除旧备份文件、删除日期命名。均为本地文件整理操作。</summary>
-public partial class MainWindow
+public partial class MainViewModel
 {
-    /// <summary>预览列表中的一行。</summary>
-    private sealed class BackupItemView
-    {
-        /// <summary>操作：保留 / 删除 / 重命名 / 跳过。</summary>
-        public string Action { get; init; } = "";
-        public string Name { get; init; } = "";
-        public string NewName { get; init; } = "";
-        public string LastWriteText { get; init; } = "";
-        public string FullPath { get; init; } = "";
-        public string TargetPath { get; init; } = "";
-        /// <summary>重命名时目标已存在：true 表示候选更新，执行前先把旧目标移入回收站。</summary>
-        public bool ReplaceTarget { get; init; }
-        public bool IsDir { get; init; }
-    }
-
     /// <summary>扫描命中的一个备份候选项（文件夹或压缩包）。</summary>
     private sealed class BackupCandidate
     {
@@ -55,107 +37,83 @@ public partial class MainWindow
         ".zip", ".rar", ".7z"
     };
 
-    private bool _toolsBusy;
-
-    private void BtnToolsBrowse_Click(object sender, RoutedEventArgs e)
-    {
-        var dlg = new OpenFolderDialog { Title = "选择要整理的备份所在文件夹" };
-        if (dlg.ShowDialog() == true) txtToolsDir.Text = dlg.FolderName;
-    }
-
     // ================================ 剔除旧备份文件 ================================
 
-    private void BtnPurgeScan_Click(object sender, RoutedEventArgs e) => ToolsScan(purge: true);
-
-    private void BtnPurgeRun_Click(object sender, RoutedEventArgs e)
+    private void PurgeRun()
     {
-        if (lvPurge.ItemsSource is not List<BackupItemView> plan) return;
+        if (PurgeItems is not List<BackupItemView> plan) return;
         var toDelete = plan.Where(i => i.Action == "删除").ToList();
         if (toDelete.Count == 0)
         {
-            DarkMessageBox.Show("没有需要删除的旧备份。", "提示", MessageBoxButton.OK, MessageBoxImage.Information);
+            _dialogs.Info("没有需要删除的旧备份。", "提示");
             return;
         }
-        if (DarkMessageBox.Show(
+        if (!_dialogs.Confirm(
                 $"确认将 {toDelete.Count} 个旧备份移入回收站？\n\n每组仅保留名称日期最新的一个。\n删除项可在回收站中还原。",
-                "确认剔除旧备份", MessageBoxButton.OKCancel, MessageBoxImage.Question) != MessageBoxResult.OK)
-            return;
+                "确认剔除旧备份")) return;
 
-        string dir = ToolsCurrentDir();
+        string dir = ToolsDir.Trim();
         RunToolsAction(() =>
         {
             int ok = 0, fail = 0;
             LogDivider();
-            LogLine($"剔除旧备份：{dir}，共 {toDelete.Count} 项待删除");
+            Log($"剔除旧备份：{dir}，共 {toDelete.Count} 项待删除");
             foreach (var item in toDelete)
             {
                 try
                 {
-                    if (item.IsDir)
-                        Microsoft.VisualBasic.FileIO.FileSystem.DeleteDirectory(
-                            item.FullPath,
-                            Microsoft.VisualBasic.FileIO.UIOption.OnlyErrorDialogs,
-                            Microsoft.VisualBasic.FileIO.RecycleOption.SendToRecycleBin);
-                    else
-                        Microsoft.VisualBasic.FileIO.FileSystem.DeleteFile(
-                            item.FullPath,
-                            Microsoft.VisualBasic.FileIO.UIOption.OnlyErrorDialogs,
-                            Microsoft.VisualBasic.FileIO.RecycleOption.SendToRecycleBin);
-                    LogLineSuccess("已移入回收站: " + item.Name);
+                    RecyclePath(item.FullPath, item.IsDir);
+                    LogSuccess("已移入回收站: " + item.Name);
                     ok++;
                 }
                 catch (Exception ex)
                 {
-                    LogLineError("删除失败: " + item.Name + " —— " + ex.Message);
+                    LogError("删除失败: " + item.Name + " —— " + ex.Message);
                     fail++;
                 }
             }
-            LogLineSuccess($"剔除完成：成功 {ok} 项" + (fail > 0 ? $"，失败 {fail} 项" : ""));
+            LogSuccess($"剔除完成：成功 {ok} 项" + (fail > 0 ? $"，失败 {fail} 项" : ""));
             return ok;
         }, rescanPurge: true);
     }
 
     // ================================ 删除日期命名 ================================
 
-    private void BtnRenameScan_Click(object sender, RoutedEventArgs e) => ToolsScan(purge: false);
-
-    private void BtnRenameRun_Click(object sender, RoutedEventArgs e)
+    private void RenameRun()
     {
-        if (lvRename.ItemsSource is not List<BackupItemView> plan) return;
+        if (RenameItems is not List<BackupItemView> plan) return;
         var toDelete = plan.Where(i => i.Action == "删除").ToList();
         var toRename = plan.Where(i => i.Action == "重命名").ToList();
         int toReplace = toRename.Count(i => i.ReplaceTarget);
         if (toDelete.Count == 0 && toRename.Count == 0)
         {
-            DarkMessageBox.Show("没有需要处理的备份（可能已整理，或存在名称冲突需人工处理）。",
-                "提示", MessageBoxButton.OK, MessageBoxImage.Information);
+            _dialogs.Info("没有需要处理的备份（可能已整理，或存在名称冲突需人工处理）。", "提示");
             return;
         }
-        if (DarkMessageBox.Show(
+        if (!_dialogs.Confirm(
                 $"确认执行？\n\n重命名 {toRename.Count} 项（去掉名称结尾的「_日期」段）" +
                 (toReplace > 0 ? $"，其中 {toReplace} 项替换修改日期更旧的已有目标（旧目标移入回收站）" : "") + "；\n" +
                 $"同名的 {toDelete.Count} 个旧备份移入回收站。\n\n删除项可在回收站中还原。",
-                "确认删除日期命名", MessageBoxButton.OKCancel, MessageBoxImage.Question) != MessageBoxResult.OK)
-            return;
+                "确认删除日期命名")) return;
 
-        string dir = ToolsCurrentDir();
+        string dir = ToolsDir.Trim();
         RunToolsAction(() =>
         {
             int ok = 0, fail = 0;
             LogDivider();
-            LogLine($"删除日期命名：{dir}，重命名 {toRename.Count} 项，删除 {toDelete.Count} 项");
+            Log($"删除日期命名：{dir}，重命名 {toRename.Count} 项，删除 {toDelete.Count} 项");
             // 先删除多余备份，再重命名保留项，避免目标名与待删除项无关（目标名本就无日期，不会冲突）
             foreach (var item in toDelete)
             {
                 try
                 {
                     RecyclePath(item.FullPath, item.IsDir);
-                    LogLineSuccess("已移入回收站: " + item.Name);
+                    LogSuccess("已移入回收站: " + item.Name);
                     ok++;
                 }
                 catch (Exception ex)
                 {
-                    LogLineError("删除失败: " + item.Name + " —— " + ex.Message);
+                    LogError("删除失败: " + item.Name + " —— " + ex.Message);
                     fail++;
                 }
             }
@@ -168,109 +126,102 @@ public partial class MainWindow
                     {
                         if (!item.ReplaceTarget)
                         {
-                            LogLineError("目标名称已存在，跳过重命名: " + item.NewName);
+                            LogError("目标名称已存在，跳过重命名: " + item.NewName);
                             fail++;
                             continue;
                         }
                         // 替换：仅当候选仍比目标新时清走旧目标，否则跳过
                         if (GetLastWrite(item.TargetPath) >= GetLastWrite(item.FullPath))
                         {
-                            LogLineError("目标修改日期不早于候选，跳过替换: " + item.NewName);
+                            LogError("目标修改日期不早于候选，跳过替换: " + item.NewName);
                             fail++;
                             continue;
                         }
                         RecyclePath(item.TargetPath, item.IsDir);
-                        LogLineSuccess("旧目标已移入回收站: " + item.NewName);
+                        LogSuccess("旧目标已移入回收站: " + item.NewName);
                     }
                     if (item.IsDir) Directory.Move(item.FullPath, item.TargetPath);
                     else File.Move(item.FullPath, item.TargetPath);
-                    LogLineSuccess($"重命名: {item.Name}  →  {item.NewName}" + (item.ReplaceTarget ? "（已替换旧目标）" : ""));
+                    LogSuccess($"重命名: {item.Name}  →  {item.NewName}" +
+                               (item.ReplaceTarget ? "（已替换旧目标）" : ""));
                     ok++;
                 }
                 catch (Exception ex)
                 {
-                    LogLineError($"重命名失败: {item.Name} —— {ex.Message}");
+                    LogError($"重命名失败: {item.Name} —— {ex.Message}");
                     fail++;
                 }
             }
-            LogLineSuccess($"处理完成：成功 {ok} 项" + (fail > 0 ? $"，失败/跳过 {fail} 项" : ""));
+            LogSuccess($"处理完成：成功 {ok} 项" + (fail > 0 ? $"，失败/跳过 {fail} 项" : ""));
             return ok;
         }, rescanPurge: false);
     }
 
     // ================================ 共享逻辑 ================================
 
-    private string ToolsCurrentDir() => txtToolsDir.Text.Trim();
-
     private void ToolsScan(bool purge)
     {
         if (_toolsBusy) return;
-        string dir = txtToolsDir.Text.Trim();
+        string dir = ToolsDir.Trim();
         if (string.IsNullOrWhiteSpace(dir))
         {
             // 留空时默认使用「备份到」目录
-            dir = txtBackupDest.Text.Trim();
+            dir = BackupDestPath.Trim();
             if (string.IsNullOrWhiteSpace(dir))
             {
-                DarkMessageBox.Show("请先选择/输入要整理的备份所在文件夹。", "提示",
-                    MessageBoxButton.OK, MessageBoxImage.Information);
+                _dialogs.Info("请先选择/输入要整理的备份所在文件夹。", "提示");
                 return;
             }
-            txtToolsDir.Text = dir;
+            ToolsDir = dir;
         }
         if (!Directory.Exists(dir))
         {
-            DarkMessageBox.Show("文件夹不存在：" + dir, "错误", MessageBoxButton.OK, MessageBoxImage.Warning);
+            _dialogs.Warning("文件夹不存在：" + dir, "错误");
             return;
         }
 
-        SetToolsBusy(true);
-        ThreadPool.QueueUserWorkItem(_ =>
+        ToolsBusy = true;
+        Task.Run(() =>
         {
             try
             {
                 var candidates = ScanBackupCandidates(dir);
-                List<BackupItemView> views = purge
-                    ? BuildPurgePlan(candidates)
-                    : BuildRenamePlan(candidates);
-                Dispatcher.Invoke(() =>
+                List<BackupItemView> views = purge ? BuildPurgePlan(candidates) : BuildRenamePlan(candidates);
+                _ui.Invoke(() =>
                 {
                     if (purge)
                     {
-                        lvPurge.ItemsSource = views;
+                        PurgeItems = views;
                         int del = views.Count(v => v.Action == "删除");
                         int keep = views.Count - del;
-                        txtPurgeSummary.Text = views.Count == 0
+                        PurgeSummary = views.Count == 0
                             ? "未发现带日期命名的备份文件夹或压缩包（含各子文件夹）。"
                             : $"发现 {candidates.Select(c => c.GroupKey).Distinct(StringComparer.OrdinalIgnoreCase).Count()} 组备份：将删除 {del} 项，保留最新 {keep} 项（按所在文件夹分组）。";
-                        btnPurgeRun.IsEnabled = del > 0;
                     }
                     else
                     {
-                        lvRename.ItemsSource = views;
+                        RenameItems = views;
                         int del = views.Count(v => v.Action == "删除");
                         int ren = views.Count(v => v.Action == "重命名");
                         int skip = views.Count(v => v.Action == "跳过");
                         int rep = views.Count(v => v.ReplaceTarget);
-                        txtRenameSummary.Text = views.Count == 0
+                        RenameSummary = views.Count == 0
                             ? "未发现带日期命名的备份文件夹或压缩包（含各子文件夹）。"
                             : $"重命名 {ren} 项" + (rep > 0 ? $"（替换旧目标 {rep} 项）" : "") +
                               $"，删除同名旧备份 {del} 项" + (skip > 0 ? $"，冲突跳过 {skip} 项" : "") + "（按所在文件夹分组）。";
-                        btnRenameRun.IsEnabled = del > 0 || ren > 0;
                     }
-                    LogLine(purge
+                    Log(purge
                         ? $"扫描完成（剔除旧备份）：{dir}，命中 {candidates.Count} 项备份"
                         : $"扫描完成（删除日期命名）：{dir}，命中 {candidates.Count} 项备份");
                 });
             }
             catch (Exception ex)
             {
-                Dispatcher.Invoke(() =>
-                    DarkMessageBox.Show("扫描失败: " + ex.Message, "错误", MessageBoxButton.OK, MessageBoxImage.Warning));
+                _ui.Invoke(() => _dialogs.Warning("扫描失败: " + ex.Message, "错误"));
             }
             finally
             {
-                Dispatcher.Invoke(() => SetToolsBusy(false));
+                _ui.Invoke(() => ToolsBusy = false);
             }
         });
     }
@@ -491,35 +442,22 @@ public partial class MainWindow
     private void RunToolsAction(Func<int> action, bool rescanPurge)
     {
         if (_toolsBusy) return;
-        SetToolsBusy(true);
-        ThreadPool.QueueUserWorkItem(_ =>
+        ToolsBusy = true;
+        Task.Run(() =>
         {
             try { action(); }
             catch (Exception ex)
             {
-                Dispatcher.Invoke(() =>
-                    DarkMessageBox.Show("操作失败: " + ex.Message, "错误", MessageBoxButton.OK, MessageBoxImage.Error));
+                _ui.Invoke(() => _dialogs.Error("操作失败: " + ex.Message, "错误"));
             }
             finally
             {
-                Dispatcher.Invoke(() =>
+                _ui.Invoke(() =>
                 {
-                    SetToolsBusy(false);
+                    ToolsBusy = false;
                     ToolsScan(rescanPurge); // 执行后自动刷新对应预览
                 });
             }
         });
-    }
-
-    private void SetToolsBusy(bool busy)
-    {
-        _toolsBusy = busy;
-        txtToolsDir.IsEnabled = !busy;
-        btnToolsBrowse.IsEnabled = !busy;
-        btnPurgeScan.IsEnabled = !busy;
-        btnRenameScan.IsEnabled = !busy;
-        btnPurgeRun.IsEnabled = !busy && lvPurge.ItemsSource is List<BackupItemView> p && p.Any(i => i.Action == "删除");
-        btnRenameRun.IsEnabled = !busy && lvRename.ItemsSource is List<BackupItemView> r
-            && (r.Any(i => i.Action == "删除") || r.Any(i => i.Action == "重命名"));
     }
 }
