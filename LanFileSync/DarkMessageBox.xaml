@@ -7,7 +7,9 @@
         TextElement.FontFamily="Microsoft YaHei UI, Segoe UI Variable, Segoe UI"
         TextElement.FontSize="13"
         MouseLeftButtonDown="Window_MouseLeftButtonDown"
-        KeyDown="Window_KeyDown">
+        KeyDown="Window_KeyDown"
+        Loaded="Window_Loaded"
+        Closing="Window_Closing">
     <Window.Resources>
         <!-- 弹窗次按钮：描边轻量风格，悬停轻微灰化 -->
         <Style x:Key="DlgSecondaryButton" TargetType="Button">
@@ -71,7 +73,11 @@
         </Style>
     </Window.Resources>
 
-    <Grid>
+    <!-- 弹窗根容器：以中心为原点做缩放，配合淡入淡出实现平滑的打开/关闭 -->
+    <Grid x:Name="dlgRoot" Opacity="0" RenderTransformOrigin="0.5,0.5">
+        <Grid.RenderTransform>
+            <ScaleTransform x:Name="dlgScale" ScaleX="0.9" ScaleY="0.9" />
+        </Grid.RenderTransform>
         <Border CornerRadius="12" Background="{DynamicResource WindowBgBrush}"
                 BorderBrush="{DynamicResource WindowFrameBrush}" BorderThickness="1">
 
