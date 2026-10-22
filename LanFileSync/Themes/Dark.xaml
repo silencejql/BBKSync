@@ -706,7 +706,8 @@
                         </Border>
                     </Grid>
                     <ControlTemplate.Triggers>
-                        <Trigger Property="IsMouseOver" Value="True">
+                        <!-- 悬停只认标签按钮本身（bd），鼠标在页面内容里的勾选框/输入框上不再触发上浮 -->
+                        <Trigger SourceName="bd" Property="IsMouseOver" Value="True">
                             <Trigger.EnterActions>
                                 <BeginStoryboard>
                                     <Storyboard>

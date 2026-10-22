@@ -351,7 +351,7 @@ public partial class MainWindow : Window
         themeFadeHost.Visibility = Visibility.Visible;
 
         // 缓入缓出更接近连续变化，避免 CubicEase/前快后慢造成的“突然变色”感
-        const int durationMs = 420;
+        const int durationMs = 260;
         var ease = new SineEase { EasingMode = EasingMode.EaseInOut };
 
         var fade = new DoubleAnimation(1, 0, TimeSpan.FromMilliseconds(durationMs))
@@ -375,7 +375,7 @@ public partial class MainWindow : Window
             Duration = TimeSpan.FromMilliseconds(durationMs)
         };
         breathe.KeyFrames.Add(new EasingDoubleKeyFrame(0, KeyTime.FromTimeSpan(TimeSpan.Zero)));
-        breathe.KeyFrames.Add(new EasingDoubleKeyFrame(0.34, KeyTime.FromTimeSpan(TimeSpan.FromMilliseconds(170)),
+        breathe.KeyFrames.Add(new EasingDoubleKeyFrame(0.26, KeyTime.FromTimeSpan(TimeSpan.FromMilliseconds(110)),
             new SineEase { EasingMode = EasingMode.EaseInOut }));
         breathe.KeyFrames.Add(new EasingDoubleKeyFrame(0, KeyTime.FromTimeSpan(TimeSpan.FromMilliseconds(durationMs)),
             new SineEase { EasingMode = EasingMode.EaseInOut }));
