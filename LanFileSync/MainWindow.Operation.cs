@@ -46,16 +46,21 @@ public partial class MainWindow
 
     private async void BtnBackup_Click(object sender, RoutedEventArgs e)
     {
-        string dest = txtBackupDest.Text.Trim();
-        if (string.IsNullOrWhiteSpace(dest)) { DarkMessageBox.Show("请输入备份目标文件夹。", "提示", MessageBoxButton.OK, MessageBoxImage.Information); return; }
-        if (rbBackupRemote.IsChecked == true) { await BackupFromRemoteAsync(dest); }
-        else
+        if (!TryEnterOperation()) return;
+        try
         {
-            await RunPreBackupBatAsync();
-            if (rbBackupShare.IsChecked == true) await BackupFromShareAsync(dest);
-            else await BackupLocalAsync(dest);
+            string dest = txtBackupDest.Text.Trim();
+            if (string.IsNullOrWhiteSpace(dest)) { DarkMessageBox.Show("请输入备份目标文件夹。", "提示", MessageBoxButton.OK, MessageBoxImage.Information); return; }
+            if (rbBackupRemote.IsChecked == true) { await BackupFromRemoteAsync(dest); }
+            else
+            {
+                await RunPreBackupBatAsync();
+                if (rbBackupShare.IsChecked == true) await BackupFromShareAsync(dest);
+                else await BackupLocalAsync(dest);
+            }
+            LogLine("备份程序执行完成");
         }
-        LogLine("备份程序执行完成");
+        finally { ExitOperation(); }
     }
 
     private async Task BackupLocalAsync(string dest)
@@ -197,6 +202,13 @@ public partial class MainWindow
     }
 
     private async void BtnSync_Click(object sender, RoutedEventArgs e)
+    {
+        if (!TryEnterOperation()) return;
+        try { await DoSyncAsync(); }
+        finally { ExitOperation(); }
+    }
+
+    private async Task DoSyncAsync()
     {
         if (tabs.SelectedIndex == 2)
         {

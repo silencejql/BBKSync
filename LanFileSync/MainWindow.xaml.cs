@@ -505,6 +505,26 @@ public partial class MainWindow : Window
 
     private void StartBusy() { _coordinator.StartBusy(); _doneCount = 0; _totalCount = 0; SetBusy(true); }
     private void EndBusy() { _coordinator.EndBusy(); SetBusy(false); txtStatus.Text = "就绪"; }
+
+    // 主操作（备份/更新）的同步重入保护：点击后立即占用并禁用按钮，直到整个流程
+    // （含结果汇总）结束。用于覆盖 StartBusy 之前还有异步探测（设备名）与确认框的空档。
+    private bool _opEntered;
+
+    private bool TryEnterOperation()
+    {
+        if (_opEntered || _coordinator.Busy) return false;
+        _opEntered = true;
+        RefreshOpButtons();
+        return true;
+    }
+
+    private void ExitOperation()
+    {
+        if (!_opEntered) return;
+        _opEntered = false;
+        RefreshOpButtons();
+    }
+
     private void BtnCancel_Click(object sender, RoutedEventArgs e) => _coordinator.Cancel();
     private void Tabs_SelectionChanged(object sender, SelectionChangedEventArgs e)
     {
@@ -606,9 +626,10 @@ public partial class MainWindow : Window
         bool isUpdateProgram = tabs.SelectedIndex == 4;
         bool pwdOk = updateOverlay.Visibility != Visibility.Visible;
         bool transferPwdOk = transferOverlay.Visibility != Visibility.Visible;
-        btnBackup.IsEnabled = !_coordinator.Busy && isBackup;
-        btnSync.IsEnabled = !_coordinator.Busy && ((isBbkUpdate && pwdOk) || (isFileTransfer && transferPwdOk));
-        btnUpdateProgram.IsEnabled = !_coordinator.Busy && isUpdateProgram;
+        bool idle = !_coordinator.Busy && !_opEntered;
+        btnBackup.IsEnabled = idle && isBackup;
+        btnSync.IsEnabled = idle && ((isBbkUpdate && pwdOk) || (isFileTransfer && transferPwdOk));
+        btnUpdateProgram.IsEnabled = idle && isUpdateProgram;
     }
     private void SetBusy(bool busy)
     {
