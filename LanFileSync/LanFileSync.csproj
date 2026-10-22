@@ -43,7 +43,10 @@
     注意：System.Windows.Controls.Ribbon 不能删——WPF 的 presentation XML 命名空间
       会映射到 Ribbon 程序集，BAML 解析任意 xaml 类型（如 AncestorType）时都会加载它，
       删掉会导致启动即 XamlParseException / FileNotFoundException。
-    从发布清单中剔除后不影响现有功能，单文件 exe 压缩后约省 10MB。
+    注意：System.Configuration.ConfigurationManager 不能删——启动即崩溃（无窗口、事件
+      日志 0xc000041d），已实测确认；DataContractSerialization / AsyncEnumerable /
+      EventLog 已实测可删。
+    从发布清单中剔除后不影响现有功能，单文件 exe 压缩后约省 12MB。
     注意：System.Drawing.Common 不能删——托盘图标 AppIcons 用到了 System.Drawing.Icon。
   -->
   <Target Name="PruneUnusedRuntimePackFiles" AfterTargets="ComputeResolvedFilesToPublishList" BeforeTargets="_HandleFileConflictsForPublish;_ComputeFilesToBundle;GenerateSingleFileBundle">
@@ -63,6 +66,9 @@
                 or '%(Filename)' == 'System.Net.Http'
                 or '%(Filename)' == 'System.Data.Common'
                 or '%(Filename)' == 'System.Linq.Parallel'
+                or '%(Filename)' == 'System.Linq.AsyncEnumerable'
+                or '%(Filename)' == 'System.Private.DataContractSerialization'
+                or '%(Filename)' == 'System.Diagnostics.EventLog'
                 or '%(Filename)' == 'System.Security.Cryptography.Pkcs'
                 or $([System.String]::Copy('%(Filename)').StartsWith('mscordaccore'))" />
     </ItemGroup>
