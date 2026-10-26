@@ -429,9 +429,13 @@
                                                       IsChecked="{Binding TransferUpdate}"
                                               ToolTip="勾选=更新模式：先备份原文件再覆盖；取消=拷贝模式：另存为 名称_设备信息_日期。" />
                                             <CheckBox x:Name="cbTransferSameSkip" Content="修改时间与大小都相同则跳过同步" Margin="0,6,0,0"
-                                              IsChecked="{Binding TransferSameSkip}"
+                                                      IsChecked="{Binding TransferSameSkip}"
                                               IsEnabled="{Binding IsTransferSameSkipEnabled}"
                                               ToolTip="仅更新模式生效：目标上已存在且大小、修改时间相同的文件不再重复同步。" />
+                                            <CheckBox x:Name="cbTransferDeleteSame" Content="存在同名备份时先删除再备份" Margin="0,6,0,0"
+                                                      IsChecked="{Binding TransferDeleteSameName}"
+                                              IsEnabled="{Binding IsTransferSameSkipEnabled}"
+                                              ToolTip="取消勾选时，存在同名备份则自动重命名为 名称_时分秒 保留旧备份，再进行新备份；勾选时直接删除旧备份后再备份。" />
 
                                             <TextBlock x:Name="txtTransferModeHint" Margin="0,8,0,0" Foreground="{DynamicResource TextSubBrush}" TextWrapping="Wrap" FontSize="10" FontWeight="Normal"
                                                Text="{Binding TransferModeHint}" />

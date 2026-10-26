@@ -10,17 +10,20 @@ public sealed class TransferEngine
     private readonly bool _updateMode;
     private readonly string _deviceTag;
     private readonly string _date;
+    private readonly bool _deleteSameName;
     private readonly string? _copyRoot;
     private readonly List<string> _needed = new();
 
-    public TransferEngine(string itemPath, bool isDir, bool sameSkip, bool updateMode, string deviceTag)
+    public TransferEngine(string itemPath, bool isDir, bool sameSkip, bool updateMode, string deviceTag, bool deleteSameName = false)
     {
         _itemPath = itemPath.Replace('/', Path.DirectorySeparatorChar);
         _itemIsDir = isDir;
         _sameSkip = sameSkip;
         _updateMode = updateMode;
         _deviceTag = FileHelper.SanitizeName(string.IsNullOrWhiteSpace(deviceTag) ? "远端" : deviceTag);
-        _date = DateTime.Now.ToString("yyyyMMdd");
+        _deleteSameName = deleteSameName;
+        // 时分秒后缀：取消勾选删除时，用带时分秒的重命名代替计数后缀
+        _date = DateTime.Now.ToString("yyyyMMdd_HHmmss");
 
         // 拷贝模式的落盘根目录(与原项目同级，命名为 文件夹名_设备信息_日期)
         if (!_updateMode && _itemIsDir)
@@ -77,12 +80,33 @@ public sealed class TransferEngine
         }
         if (File.Exists(backupPath) || Directory.Exists(backupPath))
         {
-            //log("已存在本次备份，跳过: " + backupPath);
-            //return true;
-
-            log("备份命名已存在，删除原备份: " + backupPath);
-            if (_itemIsDir) Directory.Delete(backupPath);
-            else File.Delete(backupPath);
+            if (_deleteSameName)
+            {
+                log("备份命名已存在，删除原备份: " + backupPath);
+                if (_itemIsDir) Directory.Delete(backupPath, recursive: true);
+                else File.Delete(backupPath);
+            }
+            else
+            {
+                // 取消勾选：将旧备份重命名为 名称_AutoBackup_年月日_时分秒 保留，然后新备份再按 _date 另存
+                string oldBackup = backupPath;
+                string newBackup = _itemIsDir
+                    ? FileHelper.UniquePath(_itemPath + "_AutoBackup_" + DateTime.Now.ToString("yyyyMMdd_HHmmss"), isDir: true)
+                    : FileHelper.UniquePath(Path.Combine(Path.GetDirectoryName(_itemPath) ?? "",
+                        Path.GetFileNameWithoutExtension(_itemPath) + "_AutoBackup_" + DateTime.Now.ToString("yyyyMMdd_HHmmss") + Path.GetExtension(_itemPath)),
+                        isDir: false);
+                log("备份命名已存在，重命名旧备份保留: " + oldBackup + " → " + newBackup);
+                try
+                {
+                    if (_itemIsDir) Directory.Move(oldBackup, newBackup);
+                    else File.Move(oldBackup, newBackup);
+                }
+                catch (Exception ex)
+                {
+                    onError("重命名旧备份失败: " + ex.Message);
+                    return false;
+                }
+            }
         }
         if (_itemIsDir)
         {

@@ -4,9 +4,9 @@ namespace LanFileSync;
 
 public static class TransferSide
 {
-    public static async Task SendTransferManifestAsync(PeerConnection peer, string itemPath, bool isDir, bool sameSkip, bool updateMode, string deviceTag, CancellationToken ct)
+    public static async Task SendTransferManifestAsync(PeerConnection peer, string itemPath, bool isDir, bool sameSkip, bool updateMode, string deviceTag, bool deleteSameName, CancellationToken ct)
     {
-        await peer.SendJsonAsync(new { op = "tinit", p = ToFwdSlash(itemPath), isDir, sameSkip, update = updateMode, dev = deviceTag }, ct);
+        await peer.SendJsonAsync(new { op = "tinit", p = ToFwdSlash(itemPath), isDir, sameSkip, update = updateMode, dev = deviceTag, delSame = deleteSameName }, ct);
 
         if (isDir)
         {

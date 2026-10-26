@@ -208,8 +208,9 @@ public sealed class PeerServer : IDisposable
                     _log(paths.Count == 0 ? "远端无需更新/备份(所有文件相同)。" : $"远端需要 {paths.Count} 个文件，开始发送...");
                     if (paths.Count > 0 && paths.Count < 10)
                         foreach (var p in paths) _log("  → " + p);
+                    int reportEvery = paths.Count > 10 ? paths.Count / 10 : (paths.Count > 0 ? 1 : 0);
                     await SourceSide.SendRequestedFilesAsync(conn, _root, paths,
-                        (_, _) => { if (++sent % (paths.Count / (paths.Count > 10 ? 10 : paths.Count)) == 0 || sent == paths.Count) _log($"已发送 {sent}/{paths.Count} 个文件..."); }, ct);
+                        (_, _) => { if (reportEvery > 0 && (++sent % reportEvery == 0 || sent == paths.Count)) _log($"已发送 {sent}/{paths.Count} 个文件..."); }, ct);
                     _log("文件发送完成");
                 }
                 else if (role == Constants.RolePush)
@@ -279,6 +280,7 @@ public sealed class PeerServer : IDisposable
                     bool sameSkip = init.GetProperty("sameSkip").GetBoolean();
                     bool updateMode = !init.TryGetProperty("update", out var upd) || upd.GetBoolean();
                     string sourceDev = init.TryGetProperty("dev", out var dv) ? dv.GetString() ?? "" : "";
+                    bool deleteSame = init.TryGetProperty("delSame", out var ds) && ds.GetBoolean();
                     // 更新模式备份的是本机(目标)文件，用本机设备名；拷贝模式保留来源设备名
                     string ownName = DeviceConfig.ReadFromRoot(_root).Name;
                     if (string.IsNullOrWhiteSpace(ownName)) ownName = Environment.MachineName;
@@ -291,7 +293,7 @@ public sealed class PeerServer : IDisposable
                         ? $"已收到远端文件清单({list.Count} 项)，按本机相同路径计算需要更新的文件..."
                         : $"已收到远端文件清单({list.Count} 项)，拷贝模式全部保存为重命名副本...");
 
-                    var engine = new TransferEngine(itemPath, isDir, sameSkip, updateMode, deviceTag);
+                    var engine = new TransferEngine(itemPath, isDir, sameSkip, updateMode, deviceTag, deleteSame);
                     engine.Plan(list);
 
                     if (updateMode && engine.NeedList.Count > 0)
@@ -373,8 +375,9 @@ public sealed class PeerServer : IDisposable
                     _log(paths.Count == 0 ? "远端无需拉取文件。" : $"远端要拉取 {paths.Count} 个文件，开始发送...");
                     if (paths.Count > 0 && paths.Count < 10)
                         foreach (var p in paths) _log("  → " + p);
+                    int reportEvery = paths.Count > 10 ? paths.Count / 10 : (paths.Count > 0 ? 1 : 0);
                     await TransferSide.SendRequestedFilesAsync(conn, paths,
-                        (_, _) => { if (++sent % (paths.Count / (paths.Count > 10 ? 10 : paths.Count)) == 0 || sent == paths.Count) _log($"已发送 {sent}/{paths.Count} 个文件..."); }, ct);
+                        (_, _) => { if (reportEvery > 0 && (++sent % reportEvery == 0 || sent == paths.Count)) _log($"已发送 {sent}/{paths.Count} 个文件..."); }, ct);
                     _log("文件发送完成");
 
                     await conn.SendJsonAsync(new { op = "bye", msgs = Array.Empty<string>() }, ct);
@@ -390,6 +393,7 @@ public sealed class PeerServer : IDisposable
                     if (exeMsg.GetProperty("op").GetString() != "exe")
                         throw new InvalidOperationException("期望 exe 消息");
                     long exeSize = exeMsg.GetProperty("s").GetInt64();
+                    long? exeMtime = exeMsg.TryGetProperty("t", out var tEl) ? tEl.GetInt64() : null;
 
                     string workDir = AppPaths.ExeDir();
                     string batPath = Path.Combine(workDir, "Update_BBKSync.bat");
@@ -408,6 +412,8 @@ public sealed class PeerServer : IDisposable
                             remaining -= toRead;
                         }
                     }
+                    if (exeMtime.HasValue)
+                        try { File.SetLastWriteTimeUtc(newExePath, new DateTime(exeMtime.Value, DateTimeKind.Utc)); } catch { }
                     _log("更新文件接收完成，正在执行更新脚本...");
 
                     await conn.SendJsonAsync(new { op = "ok", msg = "文件已接收，即将执行更新" }, ct);

@@ -273,7 +273,8 @@ public partial class MainWindow : Window
             MaxWidth = double.PositiveInfinity;
             MaxHeight = double.PositiveInfinity;
         }
-        if (WindowState == WindowState.Minimized && _tray != null) Hide();
+        // 勾选开机自启后：启动时后台驻留托盘，正常最小化到任务栏，点击关闭再最小化到托盘。
+        // 托盘驻留与否由 MainWindow_Loaded 决定；Window_Closing 已处理关闭到托盘。
     }
 
     private void TitleMin_Click(object sender, RoutedEventArgs e) { WindowState = WindowState.Minimized; }

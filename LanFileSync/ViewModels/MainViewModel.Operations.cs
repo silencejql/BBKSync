@@ -433,7 +433,7 @@ public partial class MainViewModel
                     LogDivider();
                     Log($"传输到 {host}:{port}({(updateMode ? "更新模式" : "拷贝模式")})...");
                     await client.TransferAsync(itemPath, isDir, TransferSameSkip, updateMode, localDevice,
-                        Log, OnFileProgress, OnTotal, m => LogError("远端电脑: " + m), ct);
+                        TransferDeleteSameName, Log, OnFileProgress, OnTotal, m => LogError("远端电脑: " + m), ct);
                     okIps.Add(host);
                     LogSuccess($"传输完成: {host}");
                 }
@@ -497,7 +497,7 @@ public partial class MainViewModel
                     await client.ConnectAsync(host, port, Constants.RoleTransferPull, ct);
                     LogDivider();
                     Log($"从 {host}:{port} 拉取文件(远端路径: {itemPath}，{(updateMode ? "更新模式" : "拷贝模式")})...");
-                    await client.TransferFromRemoteAsync(itemPath, updateMode, deviceName, localDevice,
+                    await client.TransferFromRemoteAsync(itemPath, updateMode, deviceName, localDevice, TransferDeleteSameName,
                         Log, OnFileProgress, OnTotal, m => LogError("远端电脑: " + m), ct);
                     okIps.Add(host);
                     LogSuccess($"拉取完成: {host}");

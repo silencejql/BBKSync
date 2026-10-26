@@ -164,13 +164,14 @@ public sealed class PeerClient : IDisposable
         bool sameSkip,
         bool updateMode,
         string deviceTag,
+        bool deleteSameName,
         Action<string> log,
         Action<string, long> onFile,
         Action<int> onTotal,
         Action<string> onError,
         CancellationToken ct)
     {
-        await TransferSide.SendTransferManifestAsync(_conn!, itemPath, isDir, sameSkip, updateMode, deviceTag, ct);
+        await TransferSide.SendTransferManifestAsync(_conn!, itemPath, isDir, sameSkip, updateMode, deviceTag, deleteSameName, ct);
         log("传输文件清单已发送，等待远端按相同路径计算...");
 
         var frame = await RecvNeedFrameAsync(ct, log);
@@ -198,6 +199,7 @@ public sealed class PeerClient : IDisposable
         bool updateMode,
         string remoteDevice,
         string localDevice,
+        bool deleteSameName,
         Action<string> log,
         Action<string, long> onFile,
         Action<int> onTotal,
@@ -217,7 +219,7 @@ public sealed class PeerClient : IDisposable
         onTotal(needPaths.Count);
         log(needPaths.Count == 0 ? "远端无匹配文件。" : $"准备拉取 {needPaths.Count} 个文件...");
 
-        string dateStr = DateTime.Now.ToString("yyyyMMdd");
+        string dateStr = DateTime.Now.ToString("yyyyMMdd_HHmmss");
         string normRemote = remotePath.Replace('/', Path.DirectorySeparatorChar).TrimEnd(Path.DirectorySeparatorChar);
         bool dirMode = list.Count != 1
             || !string.Equals(list[0].RelPath.Replace('/', Path.DirectorySeparatorChar), normRemote, StringComparison.OrdinalIgnoreCase);
@@ -228,7 +230,7 @@ public sealed class PeerClient : IDisposable
         if (updateMode)
         {
             string localTag = FileHelper.SanitizeName(string.IsNullOrWhiteSpace(localDevice) ? Environment.MachineName : localDevice);
-            RenameLocalForUpdate(normRemote, dirMode, localTag, dateStr, log);
+            RenameLocalForUpdate(normRemote, dirMode, localTag, dateStr, log, deleteSameName);
             saveRoot = normRemote;
         }
         else
@@ -267,6 +269,7 @@ public sealed class PeerClient : IDisposable
 
             string path = frame.GetProperty("p").GetString()!;
             long size = frame.GetProperty("s").GetInt64();
+            long mtimeTicks = frame.TryGetProperty("t", out var tEl) ? tEl.GetInt64() : 0;
             string localPath = path.Replace('/', Path.DirectorySeparatorChar);
 
             string savedPath;
@@ -304,6 +307,9 @@ public sealed class PeerClient : IDisposable
                 }
             }
 
+            if (mtimeTicks > 0)
+                try { File.SetLastWriteTimeUtc(savedPath, new DateTime(mtimeTicks, DateTimeKind.Utc)); } catch { }
+
             received++;
             onFile?.Invoke(savedPath, size);
             if (received % 10 == 0 || received == needPaths.Count)
@@ -322,17 +328,32 @@ public sealed class PeerClient : IDisposable
         log($"从远端拉取完成({received} 个文件保存到 {saveRoot})");
     }
 
-    /// <summary>更新模式拉取前，将本地已有文件/文件夹重命名为 名称_设备_日期。</summary>
-    private static void RenameLocalForUpdate(string itemPath, bool isDir, string deviceTag, string date, Action<string> log)
+    /// <summary>更新模式拉取前，处理本地已有文件/文件夹：deleteSame=true 时直接删除旧备份（保持原始路径）；false 时重命名为 名称_时分秒 保留。</summary>
+    private static void RenameLocalForUpdate(string itemPath, bool isDir, string deviceTag, string date, Action<string> log, bool deleteSame)
     {
+        // itemPath 里 _HHmmss 后缀已经带上（调用方传入的 date 已改带时分秒）
         if (isDir)
         {
             if (!Directory.Exists(itemPath)) { log("本地文件夹不存在，无需重命名: " + itemPath); return; }
             string parent = Path.GetDirectoryName(itemPath) ?? "";
             string folder = Path.GetFileName(itemPath);
-            string renamed = FileHelper.UniquePath(Path.Combine(parent, $"{folder}_AutoBackup_{date}"), isDir: true);
-            log($"更新前重命名本地文件夹: {itemPath} → {renamed}");
-            Directory.Move(itemPath, renamed);
+            string renameTo = Path.Combine(parent, $"{folder}_AutoBackup_{date}");
+            if (Directory.Exists(renameTo))
+            {
+                if (deleteSame)
+                {
+                    log("存在同名备份，先删除: " + renameTo);
+                    Directory.Delete(renameTo, recursive: true);
+                }
+                else
+                {
+                    string unique = FileHelper.UniquePath(renameTo, isDir: true);
+                    log("重命名目标已存在，改用唯一名: " + renameTo + " → " + unique);
+                    renameTo = unique;
+                }
+            }
+            log($"更新前重命名本地文件夹: {itemPath} → {renameTo}");
+            Directory.Move(itemPath, renameTo);
         }
         else
         {
@@ -340,9 +361,23 @@ public sealed class PeerClient : IDisposable
             string dirOf = Path.GetDirectoryName(itemPath) ?? "";
             string baseName = Path.GetFileNameWithoutExtension(itemPath);
             string ext = Path.GetExtension(itemPath);
-            string renamed = FileHelper.UniquePath(Path.Combine(dirOf, $"{baseName}_AutoBackup_{date}{ext}"), isDir: false);
-            log($"更新前重命名本地文件: {itemPath} → {renamed}");
-            File.Move(itemPath, renamed);
+            string renameTo = Path.Combine(dirOf, $"{baseName}_AutoBackup_{date}{ext}");
+            if (File.Exists(renameTo))
+            {
+                if (deleteSame)
+                {
+                    log("存在同名备份，先删除: " + renameTo);
+                    File.Delete(renameTo);
+                }
+                else
+                {
+                    string unique = FileHelper.UniquePath(renameTo, isDir: false);
+                    log("重命名目标已存在，改用唯一名: " + renameTo + " → " + unique);
+                    renameTo = unique;
+                }
+            }
+            log($"更新前重命名本地文件: {itemPath} → {renameTo}");
+            File.Move(itemPath, renameTo);
         }
     }
 
@@ -411,7 +446,7 @@ public sealed class PeerClient : IDisposable
         log("正在发送程序文件...");
         var fi = new FileInfo(exePath);
         long size = fi.Length;
-        await _conn.SendJsonAsync(new { op = "exe", s = size }, ct);
+        await _conn.SendJsonAsync(new { op = "exe", s = size, t = fi.LastWriteTimeUtc.Ticks }, ct);
 
         var buf = new byte[128 * 1024];
         using (var fs = new FileStream(exePath, FileMode.Open, FileAccess.Read, FileShare.ReadWrite, 128 * 1024, FileOptions.SequentialScan))

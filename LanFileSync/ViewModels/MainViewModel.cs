@@ -79,6 +79,7 @@ public partial class MainViewModel : ObservableObject
     private string _transferPath = "";
     private bool _transferUpdate = true;
     private bool _transferSameSkip = true;
+    private bool _transferDeleteSameName;
     private string _processPath = "";
     private string _processFileSuffixes = "";
     private string _processKillNames = "";
@@ -124,6 +125,7 @@ public partial class MainViewModel : ObservableObject
         _backupBeforeSync = s.Backup.BeforeSync;
         _transferPath = s.Transfer.Path;
         _transferSameSkip = s.Transfer.SameSkip;
+        _transferDeleteSameName = s.Transfer.DeleteSameNameBackup;
         _processPath = s.Process.ProcessPath;
         _processKillNames = s.Process.ProcessKillNames;
         _processFileSuffixes = s.Process.ProcessFileSuffixes;
@@ -349,6 +351,7 @@ public partial class MainViewModel : ObservableObject
     }
 
     public bool TransferSameSkip { get => _transferSameSkip; set => SetProperty(ref _transferSameSkip, value); }
+    public bool TransferDeleteSameName { get => _transferDeleteSameName; set => SetProperty(ref _transferDeleteSameName, value); }
     public bool IsTransferSameSkipEnabled => _transferUpdate;
     public string TransferModeHint => _transferUpdate
         ? "更新模式：同步前自动备份原文件，再覆盖到原路径。备份命名：文件名_AutoBackup_日期。"
@@ -698,6 +701,7 @@ public partial class MainViewModel : ObservableObject
         _settings.Settings.Backup.AutoFetchComputerName = AutoFetchName;
         _settings.Settings.Transfer.Path = TransferPath.Trim();
         _settings.Settings.Transfer.SameSkip = TransferSameSkip;
+        _settings.Settings.Transfer.DeleteSameNameBackup = TransferDeleteSameName;
         _settings.Settings.Process.ProcessPath = ProcessPath.Trim();
         _settings.Settings.Process.ProcessKillNames = ProcessKillNames.Trim();
         _settings.Settings.Process.ProcessFileSuffixes = ProcessFileSuffixes.Trim();

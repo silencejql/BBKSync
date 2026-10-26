@@ -35,6 +35,8 @@ public sealed class TransferSection
 {
     public string Path { get; set; } = @"D:\BBK\FAS\Always.xmlFreeForm";
     public bool SameSkip { get; set; } = true;
+    /// <summary>更新模式/从远端同步：存在同名备份时 true=先删除旧备份再备份；false=先重命名旧备份再加时分秒后缀保留。</summary>
+    public bool DeleteSameNameBackup { get; set; } = false;
 }
 
 public sealed class ProcessSection
@@ -115,6 +117,7 @@ public sealed class SettingsStore
             {
                 Path = legacy.TransferPath,
                 SameSkip = legacy.TransferSameSkip,
+                DeleteSameNameBackup = legacy.TransferDeleteSameName,
             },
             Process =
             {
@@ -158,6 +161,7 @@ public sealed class SettingsStore
         public bool AutoFetchComputerName { get; set; } = true;
         public string TransferPath { get; set; } = "";
         public bool TransferSameSkip { get; set; } = true;
+        public bool TransferDeleteSameName { get; set; } = false;
         public bool TransferKillFreeForm { get; set; } = true;
         public string FreeFormProcessPrefix { get; set; } = "FreeFormsAlways";
         public List<ComputerMapping> Computers { get; set; } = new();
