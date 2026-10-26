@@ -219,7 +219,8 @@ public sealed class PeerClient : IDisposable
         onTotal(needPaths.Count);
         log(needPaths.Count == 0 ? "远端无匹配文件。" : $"准备拉取 {needPaths.Count} 个文件...");
 
-        string dateStr = DateTime.Now.ToString("yyyyMMdd_HHmmss");
+        // 正常命名只带到年月日；仅备份命名重复时，旧备份才追加 _HHmmss 后缀
+        string dateStr = DateTime.Now.ToString("yyyyMMdd");
         string normRemote = remotePath.Replace('/', Path.DirectorySeparatorChar).TrimEnd(Path.DirectorySeparatorChar);
         bool dirMode = list.Count != 1
             || !string.Equals(list[0].RelPath.Replace('/', Path.DirectorySeparatorChar), normRemote, StringComparison.OrdinalIgnoreCase);
@@ -328,10 +329,10 @@ public sealed class PeerClient : IDisposable
         log($"从远端拉取完成({received} 个文件保存到 {saveRoot})");
     }
 
-    /// <summary>更新模式拉取前，处理本地已有文件/文件夹：deleteSame=true 时直接删除旧备份（保持原始路径）；false 时重命名为 名称_时分秒 保留。</summary>
+    /// <summary>更新模式拉取前，处理本地已有文件/文件夹：deleteSame=true 时直接删除旧备份（保持原始路径）；false 时把同名旧备份重命名为 _HHmmss 后缀保留。</summary>
     private static void RenameLocalForUpdate(string itemPath, bool isDir, string deviceTag, string date, Action<string> log, bool deleteSame)
     {
-        // itemPath 里 _HHmmss 后缀已经带上（调用方传入的 date 已改带时分秒）
+        // date 只到年月日；仅备份命名重复时才给旧备份追加 _HHmmss 后缀
         if (isDir)
         {
             if (!Directory.Exists(itemPath)) { log("本地文件夹不存在，无需重命名: " + itemPath); return; }
@@ -347,9 +348,11 @@ public sealed class PeerClient : IDisposable
                 }
                 else
                 {
-                    string unique = FileHelper.UniquePath(renameTo, isDir: true);
-                    log("重命名目标已存在，改用唯一名: " + renameTo + " → " + unique);
-                    renameTo = unique;
+                    string oldBackup = renameTo;
+                    string newBackup = FileHelper.UniquePath(
+                        Path.Combine(parent, $"{folder}_AutoBackup_{DateTime.Now:yyyyMMdd_HHmmss}"), isDir: true);
+                    log("存在同名备份，重命名旧备份保留: " + oldBackup + " → " + newBackup);
+                    Directory.Move(oldBackup, newBackup);
                 }
             }
             log($"更新前重命名本地文件夹: {itemPath} → {renameTo}");
@@ -371,9 +374,11 @@ public sealed class PeerClient : IDisposable
                 }
                 else
                 {
-                    string unique = FileHelper.UniquePath(renameTo, isDir: false);
-                    log("重命名目标已存在，改用唯一名: " + renameTo + " → " + unique);
-                    renameTo = unique;
+                    string oldBackup = renameTo;
+                    string newBackup = FileHelper.UniquePath(
+                        Path.Combine(dirOf, $"{baseName}_AutoBackup_{DateTime.Now:yyyyMMdd_HHmmss}{ext}"), isDir: false);
+                    log("存在同名备份，重命名旧备份保留: " + oldBackup + " → " + newBackup);
+                    File.Move(oldBackup, newBackup);
                 }
             }
             log($"更新前重命名本地文件: {itemPath} → {renameTo}");

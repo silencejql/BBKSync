@@ -33,7 +33,8 @@ public sealed class BackupEngine
         if (!Directory.Exists(Source))
             throw new DirectoryNotFoundException("源文件夹不存在: " + Source);
 
-        DateTime cut = DateTime.UtcNow.AddDays(-Options.LogRetentionDays);
+        // Log 规则按本地日期计算：1=只备份当天，2=当天及前一天，以此类推
+        DateTime logCut = DateTime.Today.AddDays(-(Options.LogRetentionDays - 1));
         var list = new List<string>();
 
         foreach (string file in Directory.EnumerateFiles(Source, "*", SearchOption.AllDirectories))
@@ -52,7 +53,7 @@ public sealed class BackupEngine
                     if (Options.LogRetentionDays <= 0)
                         continue;
                     var fi = new FileInfo(file);
-                    if (fi.LastWriteTimeUtc < cut)
+                    if (fi.LastWriteTime.Date < logCut)
                         continue;
                 }
 

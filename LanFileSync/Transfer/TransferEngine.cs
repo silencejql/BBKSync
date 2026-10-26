@@ -22,8 +22,8 @@ public sealed class TransferEngine
         _updateMode = updateMode;
         _deviceTag = FileHelper.SanitizeName(string.IsNullOrWhiteSpace(deviceTag) ? "远端" : deviceTag);
         _deleteSameName = deleteSameName;
-        // 时分秒后缀：取消勾选删除时，用带时分秒的重命名代替计数后缀
-        _date = DateTime.Now.ToString("yyyyMMdd_HHmmss");
+        // 正常备份命名只带到年月日；仅当备份命名重复时，才给旧备份追加 _HHmmss 后缀
+        _date = DateTime.Now.ToString("yyyyMMdd");
 
         // 拷贝模式的落盘根目录(与原项目同级，命名为 文件夹名_设备信息_日期)
         if (!_updateMode && _itemIsDir)

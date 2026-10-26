@@ -258,7 +258,7 @@
                                                 <CheckBox x:Name="cbBackupLogRule" Content="Log 文件夹只备份最近" VerticalAlignment="Center"
                                                           IsChecked="{Binding BackupLogRule}" />
                                                 <TextBox x:Name="txtBackupLogDays" Width="50" Height="20" Margin="6,0" VerticalContentAlignment="Center"
-                                                         ToolTip="设置 0 时不备份 Log 文件夹"
+                                                         ToolTip="设置 0 时不备份 Log 文件夹；1 表示只备份当天的 Log，2 表示当天及前一天，以此类推"
                                                          Text="{Binding BackupLogDaysText, UpdateSourceTrigger=PropertyChanged}" />
                                                 <TextBlock Text="天" VerticalAlignment="Center" />
                                             </StackPanel>

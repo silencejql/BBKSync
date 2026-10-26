@@ -23,7 +23,8 @@ public sealed class BackupSyncEngine
         _remote.Clear();
         _remote.AddRange(remote);
 
-        DateTime cut = DateTime.UtcNow.AddDays(-Options.LogRetentionDays);
+        // Log 规则按本地日期计算：1=只备份当天，2=当天及前一天，以此类推
+        DateTime logCut = DateTime.Today.AddDays(-(Options.LogRetentionDays - 1));
 
         _needed.Clear();
         foreach (var f in _remote)
@@ -37,7 +38,7 @@ public sealed class BackupSyncEngine
                 // 保留天数为 0 表示完全不备份 Log 文件夹
                 if (Options.LogRetentionDays <= 0)
                     continue;
-                if (f.MTimeUtcTicks < cut.Ticks)
+                if (new DateTime(f.MTimeUtcTicks, DateTimeKind.Utc).ToLocalTime().Date < logCut)
                     continue;
             }
             if (NeedsFetch(f))
