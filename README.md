@@ -95,11 +95,12 @@ BBK 文件同步与备份工具（程序名 **BBKSync**）是一款局域网内�
 
 1. 直接双击 `BBKSync.exe` 运行。
 2. 程序启动后会**自动尝试启动本机服务**（端口被占用时静默跳过，可手动启动）。
-3. 首次运行在程序同目录自动生成：
+3. 首次运行在程序同目录的 `BBKSyncConfig` 文件夹自动生成：
    - `settings.json` — 全部设置
+   - `history.json` — 连接历史
    - `Update_BBKSync.bat` — 程序升级时远端执行的替换脚本
    - `PostgreSQL_Backup.bat` — 备份前数据库脚本模板（已有内容时不会覆盖）
-4. 如果程序目录没有写入权限，配置与历史文件改存到 `%LocalAppData%\BBKFileSync\`。
+4. 旧版本散放在程序目录的上述文件会自动迁移到 `BBKSyncConfig`；程序目录不可写时，配置与历史文件改存到 `%LocalAppData%\BBKFileSync\`。
 5. 同时只能运行一个实例，重复启动会提示「BBKSync 已在运行中」。
 
 ---
@@ -297,7 +298,7 @@ IP/范围解析出多台电脑时，操作**逐台串行执行**：每台独立�
 
 ### PostgreSQL 备份脚本
 
-勾选「备份前先执行 PostgreSQL 备份脚本」后，程序在程序目录寻找 `PostgreSQL_Backup.bat`
+勾选「备份前先执行 PostgreSQL 备份脚本」后，程序在程序目录的 `BBKSyncConfig` 文件夹寻找 `PostgreSQL_Backup.bat`
 并执行其内容；脚本不存在或为空时跳过（首次运行会生成默认模板，默认调用
 `pg_dump` 备份 `LocalDB` 到 `D:\BBK\DataBase`，可按需修改，**程序不会覆盖已有内容**）。
 脚本失败只记录警告，备份仍会继续。
@@ -443,8 +444,8 @@ BBK 更新**自动跳过 `Log` 文件夹，以及 Bin 之外的 `Config` 文件�
 - 共用的「文件夹」选择框：待整理的备份根目录，留空时默认使用「备份到」目录；
 - **递归扫描全部子文件夹**（带日期命名的备份文件夹视为整体，不再深入；自动跳过 junction 防止循环），
   按备份**所在的文件夹分别分组**，列表名称列显示相对路径（如 `PC1\BBK_20260901.zip`）；
-- 识别对象：名称结尾带日期段的文件夹或 `.zip` / `.rar` / `.7z` 压缩包，
-  日期格式支持 `yyyyMMdd`（`BBK_AutoBackup_20260918`）与 `yyyy-MM-dd`（`BBK_PC1_2026-09-10`）；
+- 识别对象：名称以日期段结尾的文件夹或 `.zip` / `.rar` / `.7z` 压缩包（日期前不要求下划线），
+  日期格式支持 `yyyyMMdd`（如 `BBK_AutoBackup_20260918`、`BBKPIC20260918`）与 `yyyy-MM-dd`（如 `BBK_PC1_2026-09-10`）；
 - 列表按相对路径排序（同组相邻），**不按操作排序**，便于对比每组保留/删除了哪个；
 - 所有删除/替换下来的旧项目一律**移入回收站**，可随时还原。
 
@@ -460,7 +461,7 @@ BBK 更新**自动跳过 `Log` 文件夹，以及 Bin 之外的 `Config` 文件�
 
 ### 删除日期命名
 
-在剔除旧备份的基础上，进一步把保留项名称结尾的「_日期」段去掉：
+在剔除旧备份的基础上，进一步把保留项名称结尾的日期段去掉：
 
 - 目标名称不存在：组内名称日期最新的一项执行**重命名**（如 `BBK_PC1_20260918.zip → BBK_PC1.zip`），
   其余旧项移入回收站；
@@ -565,11 +566,11 @@ UNC 路径按 `\\IP\共享路径` 自动拼接（如 `\\192.168.1.8\c$\BBK`）�
 | 文件 | 说明 |
 |------|------|
 | `BBKSync.exe` | 主程序（单文件自包含） |
-| `settings.json` | 设置文件，首次运行生成 |
-| `history.json` | 连接历史，首次成功操作后生成 |
-| `Update_BBKSync.bat` | 程序升级替换脚本，每次启动自动重写 |
-| `PostgreSQL_Backup.bat` | 备份前数据库脚本模板，已有非空内容时不覆盖 |
-| `crash.log` | 未处理异常崩溃日志（出现错误时生成） |
+| `BBKSyncConfig\settings.json` | 设置文件，首次运行生成 |
+| `BBKSyncConfig\history.json` | 连接历史，首次成功操作后生成 |
+| `BBKSyncConfig\Update_BBKSync.bat` | 程序升级替换脚本，每次启动自动重写 |
+| `BBKSyncConfig\PostgreSQL_Backup.bat` | 备份前数据库脚本模板，已有非空内容时不覆盖 |
+| `BBKSyncConfig\crash.log` | 未处理异常崩溃日志（出现错误时生成） |
 
 程序目录不可写时，`settings.json` 与 `history.json` 改存 `%LocalAppData%\BBKFileSync\`。
 
@@ -584,7 +585,7 @@ UNC 路径按 `\\IP\共享路径` 自动拼接（如 `\\192.168.1.8\c$\BBK`）�
 
 ## 设置文件说明
 
-配置文件 `settings.json` 位于程序同目录（无写入权限时位于 `%LocalAppData%\BBKFileSync\`），
+配置文件 `settings.json` 位于程序目录的 `BBKSyncConfig` 文件夹（无写入权限时位于 `%LocalAppData%\BBKFileSync\`），
 关闭窗口时自动保存；程序也支持从旧版扁平结构自动迁移（`Version: 2`）。
 
 ### 完整结构与默认值
@@ -822,11 +823,11 @@ BBK 更新、文件同步与进程管理的密码保护。默认密码是 `BBK12
 解锁后切走标签页会立即重新加锁；停留在页面内连续 5 分钟无键盘/鼠标操作也会自动重新上锁。
 
 ### Q：如何自定义 PostgreSQL 备份脚本？
-**A：** 程序目录下编辑 `PostgreSQL_Backup.bat`（首次运行自动生成模板）。
+**A：** 在程序目录的 `BBKSyncConfig` 文件夹中编辑 `PostgreSQL_Backup.bat`（首次运行自动生成模板）。
 程序不会覆盖已有非空内容；脚本执行失败只警告，不会中断备份。
 
 ### Q：程序升级后远端没有更新成功？
-**A：** 检查远端程序目录下的 `Update_BBKSync.bat` 与 `BBKSync_New.exe`：
+**A：** 检查远端程序目录的 `BBKSyncConfig\Update_BBKSync.bat` 与程序目录下的 `BBKSync_New.exe`：
 - 脚本在程序启动时自动生成，若 exe 被放在无写入权限的目录会生成失败；
 - 升级需要远端能在本目录删除/重命名 exe；
 - 远端旧程序必须是本程序（靠脚本 taskkill 同名进程）。
@@ -834,10 +835,10 @@ BBK 更新、文件同步与进程管理的密码保护。默认密码是 `BBK12
 
 ### Q：日志在哪里？能导出吗？
 **A：** 界面底部日志区实时显示（右下角悬浮「清空日志」，区域高度可拖拽），
-程序崩溃时还会在程序目录写 `crash.log`。
+程序崩溃时还会在程序目录的 `BBKSyncConfig` 中写 `crash.log`。
 
 ### Q：设置文件在哪？程序目录不可写怎么办？
-**A：** 默认在 `BBKSync.exe` 同目录的 `settings.json` / `history.json`；
+**A：** 默认在 `BBKSync.exe` 同级 `BBKSyncConfig` 文件夹中的 `settings.json` / `history.json`；
 目录不可写时自动改存 `%LocalAppData%\BBKFileSync\`。
 
 ### Q：如何完全卸载？

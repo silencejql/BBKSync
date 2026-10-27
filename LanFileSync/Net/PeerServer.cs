@@ -67,7 +67,7 @@ public sealed class PeerServer : IDisposable
 
     private string? RunPreBackupScript(Action<string> log)
     {
-        string batPath = Path.Combine(AppPaths.ExeDir(), "PostgreSQL_Backup.bat");
+        string batPath = AppPaths.ConfigFile("PostgreSQL_Backup.bat");
         if (!File.Exists(batPath) || new FileInfo(batPath).Length == 0)
         {
             log("PostgreSQL_Backup.bat 不存在或为空，跳过备份前脚本");
@@ -175,7 +175,7 @@ public sealed class PeerServer : IDisposable
                 {
                     if (hello.TryGetProperty("preBackupBat", out var pb) && pb.GetBoolean())
                     {
-                        string batPath = Path.Combine(AppPaths.ExeDir(), "PostgreSQL_Backup.bat");
+                        string batPath = AppPaths.ConfigFile("PostgreSQL_Backup.bat");
                         if (!File.Exists(batPath) || new FileInfo(batPath).Length == 0)
                         {
                             _log("远端要求先执行备份前脚本，本机 PostgreSQL_Backup.bat 不存在或为空，跳过");
@@ -396,7 +396,7 @@ public sealed class PeerServer : IDisposable
                     long? exeMtime = exeMsg.TryGetProperty("t", out var tEl) ? tEl.GetInt64() : null;
 
                     string workDir = AppPaths.ExeDir();
-                    string batPath = Path.Combine(workDir, "Update_BBKSync.bat");
+                    string batPath = AppPaths.ConfigFile("Update_BBKSync.bat");
                     string newExePath = Path.Combine(workDir, "BBKSync_New.exe");
                     string curExePath = Environment.ProcessPath ?? Path.Combine(workDir, "BBKSync.exe");
 

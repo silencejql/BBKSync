@@ -22,7 +22,7 @@ public sealed class HistoryStore
 
     public HistoryStore()
     {
-        _file = AppPaths.ResolveFile("history.json");
+        _file = AppPaths.ResolveConfigFile("history.json");
         Entries = Load();
     }
 

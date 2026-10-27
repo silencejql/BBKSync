@@ -66,7 +66,7 @@ public sealed class SettingsStore
 
     public SettingsStore()
     {
-        _file = AppPaths.ResolveFile("settings.json");
+        _file = AppPaths.ResolveConfigFile("settings.json");
         Settings = Load();
     }
 

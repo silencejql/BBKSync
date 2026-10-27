@@ -27,9 +27,9 @@ public partial class MainViewModel
         public string GroupKey => DirPath + '\u0001' + Key;
     }
 
-    // 结尾日期段：下划线开头，yyyyMMdd（也兼容 yyyy-MM-dd / yyyy_MM_dd），可选 6 位时间
+    // 结尾日期段：yyyyMMdd（也兼容 yyyy-MM-dd / yyyy_MM_dd），可选 6 位时间；不要求日期前必须有下划线
     private static readonly Regex DateSuffixRegex = new(
-        @"_(?<date>(?:19|20)\d{2}(?:[-_]?\d{2}){2}(?:[-_]?\d{2}(?:[-_]?\d{2}){2})?)$",
+        @"(?<date>(?:19|20)\d{2}(?:[-_]?\d{2}){2}(?:[-_]?\d{2}(?:[-_]?\d{2}){2})?)$",
         RegexOptions.Compiled);
 
     private static readonly HashSet<string> ArchiveExtensions = new(StringComparer.OrdinalIgnoreCase)
@@ -91,7 +91,7 @@ public partial class MainViewModel
             return;
         }
         if (!_dialogs.Confirm(
-                $"确认执行？\n\n重命名 {toRename.Count} 项（去掉名称结尾的「_日期」段）" +
+                $"确认执行？\n\n重命名 {toRename.Count} 项（去掉名称结尾的日期段）" +
                 (toReplace > 0 ? $"，其中 {toReplace} 项替换修改日期更旧的已有目标（旧目标移入回收站）" : "") + "；\n" +
                 $"同名的 {toDelete.Count} 个旧备份移入回收站。\n\n删除项可在回收站中还原。",
                 "确认删除日期命名")) return;
@@ -276,7 +276,7 @@ public partial class MainViewModel
         }
     }
 
-    /// <summary>判断文件夹/文件名（压缩包不含扩展名部分）是否以合法「_日期」段结尾。</summary>
+    /// <summary>判断文件夹/文件名（压缩包不含扩展名部分）是否以合法日期段结尾。</summary>
     private static bool IsDatedName(string fullPath, bool isDir)
     {
         string nameNoExt = isDir ? Path.GetFileName(fullPath) : Path.GetFileNameWithoutExtension(fullPath);
@@ -295,7 +295,9 @@ public partial class MainViewModel
         string dateToken = m.Groups["date"].Value;
         if (!TryParseDateToken(dateToken, out var nameDate)) return;
 
-        string key = nameNoExt[..m.Index] + ext;
+        string key = nameNoExt[..m.Index].TrimEnd('_', '-', ' ', '.') + ext;
+        // 去掉日期段后名称为空时不算备份（例如文件夹本身就叫 20261026）
+        if (key.Length <= ext.Length) return;
         // 名称日期展示：带时间段的显示到秒，仅日期的显示到日
         string dateText = dateToken.Count(char.IsDigit) > 8
             ? nameDate.ToString("yyyy-MM-dd HH:mm:ss")

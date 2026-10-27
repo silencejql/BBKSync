@@ -104,7 +104,7 @@ public partial class App : Application
         try
         {
             File.AppendAllText(
-                Path.Combine(AppPaths.ExeDir(), "crash.log"),
+                Path.Combine(AppPaths.ConfigDir(), "crash.log"),
                 $"[{DateTime.Now:yyyy-MM-dd HH:mm:ss}]{Environment.NewLine}{ex}{Environment.NewLine}{new string('-', 80)}{Environment.NewLine}");
         }
         catch { }

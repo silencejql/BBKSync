@@ -202,7 +202,8 @@ public partial class MainViewModel : ObservableObject
     /// <summary>确保程序升级脚本存在（远端更新后由脚本替换并重启程序）。</summary>
     private static void EnsureUpdateBat()
     {
-        string batPath = Path.Combine(AppPaths.ExeDir(), "Update_BBKSync.bat");
+        // 同时把旧版本放在 exe 同级目录的脚本迁移到 BBKSyncConfig
+        string batPath = AppPaths.ResolveConfigFile("Update_BBKSync.bat");
         string exeDir = AppPaths.ExeDir();
         string exeName = Path.GetFileName(Environment.ProcessPath ?? "BBKSync.exe");
         string content =
@@ -223,7 +224,8 @@ public partial class MainViewModel : ObservableObject
     /// <summary>首次运行时生成 PostgreSQL 备份脚本模板（已存在且非空则保留用户脚本）。</summary>
     private static void EnsurePostBackupBat()
     {
-        string batPath = Path.Combine(AppPaths.ExeDir(), "PostgreSQL_Backup.bat");
+        // 同时把旧版本放在 exe 同级目录的脚本迁移到 BBKSyncConfig
+        string batPath = AppPaths.ResolveConfigFile("PostgreSQL_Backup.bat");
         if (File.Exists(batPath))
         {
             string existing = File.ReadAllText(batPath);
@@ -943,7 +945,7 @@ public partial class MainViewModel : ObservableObject
     private async Task<bool> RunPreBackupBatAsync()
     {
         if (!RunPreBackupBat) return true;
-        string batPath = Path.Combine(AppPaths.ExeDir(), "PostgreSQL_Backup.bat");
+        string batPath = AppPaths.ConfigFile("PostgreSQL_Backup.bat");
         if (!File.Exists(batPath) || new FileInfo(batPath).Length == 0)
         {
             LogError("PostgreSQL_Backup.bat 不存在或为空，跳过备份前脚本");
