@@ -517,6 +517,7 @@ public sealed class PeerServer : IDisposable
         catch (Exception ex)
         {
             _log("处理连接失败: " + ex.Message);
+            _onError(ex.Message);
         }
         finally
         {
