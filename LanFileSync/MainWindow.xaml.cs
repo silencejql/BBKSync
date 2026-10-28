@@ -297,6 +297,8 @@ public partial class MainWindow : Window
         var snapshot = CaptureSnapshot();
 
         ThemeManager.Toggle();
+        // 主题固定到配置文件，下次启动直接读取
+        _vm.SaveSettings();
         RestoreLogScroll(offset);
         SpinThemeIcon();
         FadeOutSnapshot(snapshot);

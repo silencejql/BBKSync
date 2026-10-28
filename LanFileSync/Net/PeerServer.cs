@@ -265,7 +265,7 @@ public sealed class PeerServer : IDisposable
                         applyMsgs.Add(m);
                         _onError(m);
                     }, ct);
-                    await conn.SendJsonAsync(new { op = "bye", msgs = applyMsgs }, ct);
+                    await conn.SendJsonAsync(new { op = "bye", msgs = applyMsgs, files = engine.Applied }, ct);
                     _log("接收并应用完成");
                 }
                 else if (role == Constants.RoleTransfer)

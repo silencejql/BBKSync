@@ -41,7 +41,7 @@ public sealed class PeerClient : IDisposable
         }
     }
 
-    public async Task PullAsync(
+    public async Task<List<string>> PullAsync(
         string root,
         SyncOptions options,
         Action<string> log,
@@ -66,9 +66,10 @@ public sealed class PeerClient : IDisposable
 
         await _conn!.SendJsonAsync(new { op = "req", paths = engine.NeedList }, ct);
         await engine.ReceiveAndApplyAsync(_conn, onFile, onError, ct);
+        return engine.Applied.ToList();
     }
 
-    public async Task PushAsync(
+    public async Task<List<string>> PushAsync(
         string root,
         SyncOptions options,
         Action<string> log,
@@ -98,7 +99,17 @@ public sealed class PeerClient : IDisposable
         foreach (var m in resp.GetProperty("msgs").EnumerateArray())
             onError?.Invoke(m.GetString() ?? "");
 
+        // 远端实际写入的文件完整路径
+        var applied = new List<string>();
+        if (resp.TryGetProperty("files", out var filesEl))
+            foreach (var f in filesEl.EnumerateArray())
+            {
+                string? p = f.GetString();
+                if (!string.IsNullOrEmpty(p)) applied.Add(p);
+            }
+
         log("远端已应用完成");
+        return applied;
     }
 
     public async Task BackupPullAsync(

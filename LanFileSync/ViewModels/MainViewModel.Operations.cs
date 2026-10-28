@@ -298,11 +298,12 @@ public partial class MainViewModel
                 {
                     using var client = new PeerClient();
                     await client.ConnectAsync(host, port, push ? Constants.RolePush : Constants.RolePull, ct);
+                    List<string> updated;
                     if (push)
                     {
                         LogDivider();
                         Log($"以本机为源连接远端 {host}:{port} 成功，推送 {root} 的文件清单...");
-                        await client.PushAsync(root, options, Log, OnFileProgress, OnTotal,
+                        updated = await client.PushAsync(root, options, Log, OnFileProgress, OnTotal,
                             m => LogError("远端电脑: " + m), ct);
                     }
                     else
@@ -327,11 +328,12 @@ public partial class MainViewModel
                             }
                             catch (Exception ex) { LogError("同步前备份失败: " + ex.Message); }
                         }
-                        await client.PullAsync(root, options, Log, OnFileProgress, OnTotal,
+                        updated = await client.PullAsync(root, options, Log, OnFileProgress, OnTotal,
                             m => LogError("传输失败，跳过: " + m), ct);
                     }
                     okIps.Add(host);
                     LogSuccess($"同步完成: {host}");
+                    LogUpdatedFiles(updated, push ? $"远端 {host}" : "本机");
                 }
                 catch (OperationCanceledException) { throw; }
                 catch (Exception ex)
@@ -374,6 +376,7 @@ public partial class MainViewModel
                 foreach (var p in engine.NeedList) Log("  ← " + p);
             await engine.CopyNeededFromAsync(unc, OnFileProgress, m => LogError("跳过: " + m), ct);
             LogSuccess("共享同步完成");
+            LogUpdatedFiles(engine.Applied, "本机");
             StatusText = "共享同步完成";
         }
         catch (OperationCanceledException) { Log("已取消"); }
@@ -522,6 +525,18 @@ public partial class MainViewModel
             ? $"{what}完成：共 {total} 项，全部与备份目标相同，无需传输。"
             : $"{what}完成：共 {total} 项，复制 {copied} 项" +
               (skipped > 0 ? $"，跳过相同 {skipped} 项" : "") + "。");
+    }
+
+    /// <summary>更新完成后逐条列出本次实际更新的文件完整路径。</summary>
+    private void LogUpdatedFiles(IReadOnlyList<string> updated, string scope)
+    {
+        if (updated.Count == 0)
+        {
+            Log($"{scope}没有文件需要更新。");
+            return;
+        }
+        Log($"{scope}共更新 {updated.Count} 个文件，完整路径如下：");
+        foreach (var path in updated) Log("  " + path);
     }
 
     /// <summary>多主机操作收尾：状态栏结果、失败弹窗、带设备名的日志汇总。</summary>

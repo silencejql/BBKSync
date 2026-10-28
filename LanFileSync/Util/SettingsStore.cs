@@ -50,6 +50,8 @@ public sealed class ProcessSection
 public sealed class AppSettings
 {
     public int Version { get; set; } = 2;
+    /// <summary>界面主题：true=暗色，false=亮色（启动时先读取并应用）。</summary>
+    public bool DarkTheme { get; set; } = false;
     public ServerSection Server { get; set; } = new();
     public BackupSection Backup { get; set; } = new();
     public TransferSection Transfer { get; set; } = new();

@@ -707,6 +707,7 @@ public partial class MainViewModel : ObservableObject
         _settings.Settings.Process.ProcessPath = ProcessPath.Trim();
         _settings.Settings.Process.ProcessKillNames = ProcessKillNames.Trim();
         _settings.Settings.Process.ProcessFileSuffixes = ProcessFileSuffixes.Trim();
+        _settings.Settings.DarkTheme = ThemeManager.IsDark;
         _settings.Save();
     }
 

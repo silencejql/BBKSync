@@ -20,6 +20,10 @@ public partial class App : Application
             new RoutedEventHandler(OnToolTipOpened));
 
         RenderOptions.ProcessRenderMode = RenderMode.SoftwareOnly;
+
+        // 启动时先应用上次保存的主题，避免窗口先以默认亮色渲染再切换
+        ThemeManager.Apply(new SettingsStore().Settings.DarkTheme);
+
         _mutex = new Mutex(true, "BBKSync_SingleInstance", out bool createdNew);
         if (!createdNew)
         {

@@ -9,6 +9,7 @@ public sealed class SyncEngine
 
     private readonly List<FileEntry> _remote = new();
     private readonly List<string> _needed = new();
+    private readonly List<string> _applied = new();
 
     public SyncEngine(string root, SyncOptions options)
     {
@@ -17,6 +18,9 @@ public sealed class SyncEngine
     }
 
     public IReadOnlyList<string> NeedList => _needed;
+
+    /// <summary>本次实际写入(更新)的文件完整路径。</summary>
+    public IReadOnlyList<string> Applied => _applied;
 
     public void Plan(IEnumerable<FileEntry> remote)
     {
@@ -35,6 +39,7 @@ public sealed class SyncEngine
         }
 
         _needed.Clear();
+        _applied.Clear();
         foreach (var f in _remote)
         {
             if (UploadRules.IsSkippedSync(f.RelPath))
@@ -50,8 +55,7 @@ public sealed class SyncEngine
         var fi = new FileInfo(local);
         if (!fi.Exists)
             return true;
-        if (fi.Length != remote.Size)
-            return true;
+        // 只对比修改日期：日期不同才更新
         long diff = Math.Abs(fi.LastWriteTimeUtc.Ticks - remote.MTimeUtcTicks);
         return diff > Constants.TimeTolerance.Ticks;
     }
@@ -86,6 +90,7 @@ public sealed class SyncEngine
             try
             {
                 await DownloadAndApplyAsync(peer, rel, size, mtime, ct);
+                _applied.Add(Path.Combine(Root, rel.Replace('/', Path.DirectorySeparatorChar)));
                 received += size;
                 onFile?.Invoke(rel, size);
             }
@@ -128,6 +133,7 @@ public sealed class SyncEngine
                     File.SetLastWriteTimeUtc(target, fi.LastWriteTimeUtc);
                 }
                 catch { }
+                _applied.Add(target);
                 onFile?.Invoke(rel, size);
             }
             catch (Exception)
