@@ -319,7 +319,7 @@
                                                Foreground="{DynamicResource TextSubBrush}" Margin="0,0,0,6" />
                                             <CheckBox x:Name="cbBinReplace" Content="Bin 整体替换（不勾则按日期增量）" Margin="0,3,0,0"
                                               IsChecked="{Binding BinReplace}"
-                                              ToolTip="勾选：先删除本地 Bin 再整体拷贝。不勾选：按修改日期只同步不同的文件。" />
+                                              ToolTip="勾选：先删除本地 Bin 再整体拷贝。不勾选：修改日期和文件大小都相同才跳过，其余更新。" />
 
                                             <CheckBox x:Name="cbBackupBeforeSync" Margin="0,10,0,0"
                                               Content="同步前先备份被更新电脑的 BBK"

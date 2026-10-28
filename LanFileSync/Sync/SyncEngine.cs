@@ -55,7 +55,9 @@ public sealed class SyncEngine
         var fi = new FileInfo(local);
         if (!fi.Exists)
             return true;
-        // 只对比修改日期：日期不同才更新
+        // 修改日期与文件大小都相同才视为一致，其余情况都需要更新
+        if (fi.Length != remote.Size)
+            return true;
         long diff = Math.Abs(fi.LastWriteTimeUtc.Ticks - remote.MTimeUtcTicks);
         return diff > Constants.TimeTolerance.Ticks;
     }
