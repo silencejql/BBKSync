@@ -179,6 +179,8 @@ public sealed class TransferEngine
             string op = frame.GetProperty("op").GetString()!;
             if (op == "done")
                 break;
+            if (op == "cancel")
+                throw new OperationCanceledException("主控端已取消操作");
             if (op == "err")
                 throw new InvalidOperationException(frame.GetProperty("msg").GetString());
             if (op == "skip")

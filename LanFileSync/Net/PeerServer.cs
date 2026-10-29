@@ -3,6 +3,7 @@ using System.IO;
 using System.IO.Compression;
 using System.Net;
 using System.Net.Sockets;
+using System.Text.Json;
 
 namespace LanFileSync;
 
@@ -18,15 +19,18 @@ public sealed class PeerServer : IDisposable
     private readonly Action<string, long> _onFile;
     private readonly Action<int> _onTotal;
     private readonly Action<string> _onError;
+    private readonly Action<bool> _onBusy;
     private readonly bool _compressUpdateZip;
+    private int _activeOps;
     private CancellationTokenSource _cts = new();
 
     public bool Running { get; private set; }
 
     public PeerServer(string root, int port, SyncOptions options, Action<string> log, Action<string, long> onFile, Action<int> onTotal,
         Action<string> onError, bool backupBeforeSync, string backupDest, BackupOptions backupOptions,
-        bool compressUpdateZip)
+        bool compressUpdateZip, Action<bool> onBusy)
     {
+        _onBusy = onBusy;
         _root = root;
         _options = options;
         _backupBeforeSync = backupBeforeSync;
@@ -142,9 +146,43 @@ public sealed class PeerServer : IDisposable
         return (LogLocal, LogSync);
     }
 
+    /// <summary>远端(主控端)正在本机执行任务时，通知界面禁用输入与按钮；多个连接用计数汇总。</summary>
+    private void SetRemoteBusy(bool busy)
+    {
+        if (busy)
+        {
+            if (Interlocked.Increment(ref _activeOps) == 1)
+                _onBusy(true);
+        }
+        else
+        {
+            if (Interlocked.Decrement(ref _activeOps) <= 0)
+            {
+                Interlocked.Exchange(ref _activeOps, 0);
+                _onBusy(false);
+            }
+        }
+    }
+
+    /// <summary>读取主控端下发的备份过滤规则；未下发时回退到本机设置(兼容旧版本)。</summary>
+    private static BackupOptions ParseBackupFilter(JsonElement hello, BackupOptions fallback)
+    {
+        if (!hello.TryGetProperty("backupFilter", out var f) || f.ValueKind != JsonValueKind.Object || f.ValueKind == JsonValueKind.Null)
+            return fallback;
+        bool logRule = !f.TryGetProperty("logRule", out var lr) || lr.ValueKind != JsonValueKind.False;
+        int days = f.TryGetProperty("logDays", out var ld) && ld.ValueKind == JsonValueKind.Number ? ld.GetInt32() : fallback.LogRetentionDays;
+        var ignores = new List<string>();
+        if (f.TryGetProperty("ignore", out var ig) && ig.ValueKind == JsonValueKind.Array)
+            foreach (var x in ig.EnumerateArray())
+                if (x.GetString() is { Length: > 0 } s)
+                    ignores.Add(s);
+        return new BackupOptions { ApplyLogRule = logRule, LogRetentionDays = days, IgnoreRegexes = ignores };
+    }
+
     private async Task HandleClientAsync(TcpClient tcp, CancellationToken ct)
     {
         using var conn = new PeerConnection(tcp);
+        bool remoteWork = false;
         try
         {
             var hello = await conn.RecvJsonAsync(ct)
@@ -158,10 +196,25 @@ public sealed class PeerServer : IDisposable
                 Constants.RoleProcessClose => "关闭远端进程",
                 Constants.RoleProcessOpen => "启动远端进程",
                 Constants.RoleTransferPull => "本机为传输源(远端拉取)",
+                Constants.RoleUpdate => "接收程序更新",
                 _ => "本机为文件源",
             };
             _log("------------------------------------------------");
             _log($"收到连接(角色: {roleDesc}){tcp.Client.RemoteEndPoint}");
+
+            // 更新规则由主控端下发：Bin 整体替换、同步前备份均按主控端勾选执行
+            bool clientBinReplace = hello.TryGetProperty("binReplace", out var brEl) && brEl.ValueKind == JsonValueKind.True;
+            bool clientBackupBeforeSync = hello.TryGetProperty("backupBeforeSync", out var bbEl)
+                ? bbEl.ValueKind == JsonValueKind.True
+                : _backupBeforeSync;
+
+            remoteWork = role is Constants.RolePush or Constants.RolePull or Constants.RoleTransfer
+                or Constants.RoleTransferPull or Constants.RoleUpdate;
+            if (remoteWork)
+            {
+                SetRemoteBusy(true);
+                _log("远端正在本机执行任务，界面操作已暂时禁用");
+            }
 
             if (role == Constants.RoleProbe)
             {
@@ -197,7 +250,11 @@ public sealed class PeerServer : IDisposable
                             }
                         }
                     }
-                    await SourceSide.SendManifestAsync(conn, _root, ct);
+                    // 备份时由主控端下发 Log 日期/忽略规则，本机先筛选再发送，减少传输文件数
+                    BackupOptions? backupFilter = hello.TryGetProperty("backupFilter", out var bfEl) && bfEl.ValueKind == JsonValueKind.Object
+                        ? ParseBackupFilter(hello, _backupOptions)
+                        : null;
+                    await SourceSide.SendManifestAsync(conn, _root, ct, backupFilter, _log);
                     _log("文件清单已发送，等待远端选择需要更新的文件...");
 
                     var req = await conn.RecvJsonAsync(ct)
@@ -217,12 +274,20 @@ public sealed class PeerServer : IDisposable
                 {
                     var list = new List<FileEntry>();
                     await TargetSide.ReceiveManifestAsync(conn, ct, list);
-                    _log($"已收到远端文件清单({list.Count} 项)，按本机规则计算需要更新的文件...");
+                    _log($"已收到远端文件清单({list.Count} 项)，按主控端下发的更新规则计算需要更新的文件...");
 
-                    var engine = new SyncEngine(_root, _options);
+                    // 规则以主控端勾选为准(收到老版本连接时回退本机设置)
+                    var clientOptions = hello.TryGetProperty("binReplace", out _)
+                        ? new SyncOptions { FullReplaceBin = clientBinReplace }
+                        : _options;
+                    var clientBackupOptions = ParseBackupFilter(hello, _backupOptions);
+                    var engine = new SyncEngine(_root, clientOptions);
                     engine.Plan(list);
 
-                    if (engine.NeedList.Count > 0 && _backupBeforeSync && !string.IsNullOrWhiteSpace(_backupDest))
+                    if (engine.NeedList.Count == 0)
+                        _log("本机没有需要更新的文件：现有文件与主控端清单完全一致。");
+
+                    if (engine.NeedList.Count > 0 && clientBackupBeforeSync && !string.IsNullOrWhiteSpace(_backupDest))
                     {
                         // 备份阶段日志：logSync 实时回传主控端，logLocal 仅写本机
                         var (logLocal, logSync) = CreateLogRelay(conn, ct);
@@ -230,7 +295,7 @@ public sealed class PeerServer : IDisposable
                         logSync($"远端需要 {engine.NeedList.Count} 个文件，先备份本机 BBK 到 {dest}");
                         try
                         {
-                            var be = new BackupEngine(_root, dest, _backupOptions);
+                            var be = new BackupEngine(_root, dest, clientBackupOptions);
                             var files = be.Plan();
                             await be.RunAsync(null, m =>
                             {
@@ -295,6 +360,9 @@ public sealed class PeerServer : IDisposable
 
                     var engine = new TransferEngine(itemPath, isDir, sameSkip, updateMode, deviceTag, deleteSame);
                     engine.Plan(list);
+
+                    if (engine.NeedList.Count == 0)
+                        _log("本机没有需要写入的文件：目标文件与主控端清单一致。");
 
                     if (updateMode && engine.NeedList.Count > 0)
                     {
@@ -513,7 +581,18 @@ public sealed class PeerServer : IDisposable
                 }
             }
         }
-        catch (OperationCanceledException) { }
+        catch (OperationCanceledException)
+        {
+            _log("主控端已取消操作，本机已中止本次任务");
+        }
+        catch (EndOfStreamException)
+        {
+            _log("与主控端的连接已断开(可能是主控端取消或网络中断)，本机已中止本次任务");
+        }
+        catch (IOException ex)
+        {
+            _log("与主控端的连接中断(可能是主控端取消或网络中断)，本机已中止本次任务：" + ex.Message);
+        }
         catch (Exception ex)
         {
             _log("处理连接失败: " + ex.Message);
@@ -521,6 +600,8 @@ public sealed class PeerServer : IDisposable
         }
         finally
         {
+            if (remoteWork)
+                SetRemoteBusy(false);
             _log("执行完成，关闭连接");
             try { tcp.Close(); } catch { }
         }

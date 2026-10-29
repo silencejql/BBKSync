@@ -12,7 +12,7 @@ public partial class MainViewModel
         string savedText = ProcessPath;
         ProcessPathItems = null;
         ProcessStatusText = "正在获取文件列表...";
-        StartBusy();
+        StartBusy("正在获取远端文件列表...");
         var ct = _coordinator.Token;
         _opLabel = "获取文件列表";
         var okIps = new List<string>();
@@ -22,6 +22,11 @@ public partial class MainViewModel
         {
             foreach (var host in hosts)
             {
+                if (!await EnsureRemoteReadyAsync(host, port))
+                {
+                    failed.Add($"{host} - 连接测试失败");
+                    continue;
+                }
                 try
                 {
                     using var client = new PeerClient();
@@ -42,7 +47,11 @@ public partial class MainViewModel
                 }
             }
         }
-        catch (OperationCanceledException) { Log("已取消"); }
+        catch (OperationCanceledException)
+        {
+            Log("已取消");
+            StatusText = "获取文件列表已取消";
+        }
         finally { EndBusy(); }
 
         if (allPaths.Count > 0)
@@ -54,6 +63,7 @@ public partial class MainViewModel
             IsProcessPathDropDownOpen = true;
             ProcessStatusText = $"共 {distinct.Count} 个文件，已在下拉列表中供选择";
             Log($"文件列表完成: {distinct.Count} 个文件");
+            StatusText = $"文件列表获取完成（{distinct.Count} 个文件）";
         }
         else
         {
@@ -61,6 +71,7 @@ public partial class MainViewModel
             ProcessPath = savedText;
             ProcessStatusText = "未找到匹配文件";
             Log("未找到匹配文件");
+            StatusText = "文件列表获取完成（未找到匹配文件）";
         }
         if (failed.Count > 0)
             _dialogs.Warning("以下电脑获取失败：\n" + string.Join("\n", failed), "部分失败");
@@ -77,7 +88,7 @@ public partial class MainViewModel
         string[] killNames = ProcessKillNames
             .Split(new[] { ',', '，', ';', '；' }, StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries)
             .Where(s => s.Length > 0).ToArray();
-        StartBusy();
+        StartBusy("正在关闭远端应用程序...");
         var ct = _coordinator.Token;
         _opLabel = "关闭FreeForm";
         var okIps = new List<string>();
@@ -86,6 +97,11 @@ public partial class MainViewModel
         {
             foreach (var host in hosts)
             {
+                if (!await EnsureRemoteReadyAsync(host, port))
+                {
+                    failed.Add($"{host} - 连接测试失败");
+                    continue;
+                }
                 try
                 {
                     using var client = new PeerClient();
@@ -105,7 +121,11 @@ public partial class MainViewModel
                 }
             }
         }
-        catch (OperationCanceledException) { Log("已取消"); }
+        catch (OperationCanceledException)
+        {
+            Log("已取消，已通知远端中止");
+            StatusText = "关闭操作已取消";
+        }
         finally
         {
             if (okIps.Count > 0) SaveIpHistory(port);
@@ -113,6 +133,8 @@ public partial class MainViewModel
         }
         if (okIps.Count > 0)
             StatusText = hosts.Count > 1 ? $"关闭完成({okIps.Count}/{hosts.Count} 台)" : "关闭完成";
+        else if (failed.Count > 0)
+            StatusText = $"关闭失败({failed.Count} 台未完成)";
         if (failed.Count > 0)
             _dialogs.Warning("以下电脑失败：\n" + string.Join("\n", failed), "部分失败");
         await LogHostSummaryAsync("关闭进程", okIps, failed, port);
@@ -138,7 +160,7 @@ public partial class MainViewModel
                               "\n\n程序路径：" + exePath + "。", "确认")) return;
 
         _processOpenCooldownUntil = DateTime.Now.AddSeconds(5);
-        StartBusy();
+        StartBusy("正在启动远端应用程序...");
         var ct = _coordinator.Token;
         _opLabel = "启动FreeForm";
         var okIps = new List<string>();
@@ -147,6 +169,11 @@ public partial class MainViewModel
         {
             foreach (var host in hosts)
             {
+                if (!await EnsureRemoteReadyAsync(host, port))
+                {
+                    failed.Add($"{host} - 连接测试失败");
+                    continue;
+                }
                 try
                 {
                     using var client = new PeerClient();
@@ -166,7 +193,11 @@ public partial class MainViewModel
                 }
             }
         }
-        catch (OperationCanceledException) { Log("已取消"); }
+        catch (OperationCanceledException)
+        {
+            Log("已取消，已通知远端中止");
+            StatusText = "启动操作已取消";
+        }
         finally
         {
             if (okIps.Count > 0) SaveIpHistory(port);
@@ -174,6 +205,8 @@ public partial class MainViewModel
         }
         if (okIps.Count > 0)
             StatusText = hosts.Count > 1 ? $"启动完成({okIps.Count}/{hosts.Count} 台)" : "启动完成";
+        else if (failed.Count > 0)
+            StatusText = $"启动失败({failed.Count} 台未完成)";
         if (failed.Count > 0)
             _dialogs.Warning("以下电脑失败：\n" + string.Join("\n", failed), "部分失败");
         await LogHostSummaryAsync("启动进程", okIps, failed, port);

@@ -50,6 +50,7 @@ public partial class MainViewModel : ObservableObject
     private string _opLabel = "更新";
     private bool _isBusy;
     private bool _isTestRunning;
+    private int _remoteBusyCount;
 
     private string _statusText = "就绪";
     private string _localIpText = "未启动服务";
@@ -315,8 +316,8 @@ public partial class MainViewModel : ObservableObject
     public string UpdateHint => _syncDirection switch
     {
         SyncDirection.Share => "本机为目标：从共享连接直接读取远端文件并更新到本机，远端免安装。更新规则按本机设置执行。",
-        SyncDirection.Push => "本机为源：远端需先启动服务。推送时规则以远端界面设置为准。",
-        _ => "本机为目标：远端需先启动服务并告知 IP/端口。更新规则按本机界面设置执行。",
+        SyncDirection.Push => "本机为源：远端需先启动服务。推送时按本机更新规则执行：Bin 整体替换、同步前备份、备份的 Log/忽略规则都会下发给远端执行。",
+        _ => "本机为目标：远端需先启动服务并告知 IP/端口。接收更新与同步前备份均按本机界面设置执行。",
     };
 
     public bool BinReplace { get => _binReplace; set => SetProperty(ref _binReplace, value); }
@@ -446,7 +447,10 @@ public partial class MainViewModel : ObservableObject
         }
     }
 
-    public bool IsNotBusy => !_isBusy;
+    /// <summary>远端(主控端)正在本机执行传输/同步/更新，界面输入与按钮需禁用。</summary>
+    public bool IsRemoteBusy => _remoteBusyCount > 0;
+
+    public bool IsNotBusy => !_isBusy && !IsRemoteBusy;
 
     public bool IsUpdateUnlocked => _isUpdateUnlocked;
     public bool IsTransferUnlocked => _isTransferUnlocked;
@@ -454,8 +458,8 @@ public partial class MainViewModel : ObservableObject
     public bool IsUpdateLocked => !_isUpdateUnlocked;
     public bool IsTransferLocked => !_isTransferUnlocked;
     public bool IsProcessLocked => !_isProcessUnlocked;
-    public bool IsTransferContentEnabled => _isTransferUnlocked && !_isBusy;
-    public bool IsProcessContentEnabled => _isProcessUnlocked && !_isBusy;
+    public bool IsTransferContentEnabled => _isTransferUnlocked && !_isBusy && !IsRemoteBusy;
+    public bool IsProcessContentEnabled => _isProcessUnlocked && !_isBusy && !IsRemoteBusy;
 
     public bool ShowShareGroup => _backupSource == BackupSource.Share || _syncDirection == SyncDirection.Share;
     public bool ShowSyncProgress => _isBusy || _selectedTabIndex != (int)MainTab.Tools;
@@ -465,8 +469,8 @@ public partial class MainViewModel : ObservableObject
                                      || (_selectedTabIndex == (int)MainTab.Transfer && _isTransferUnlocked));
     public bool CanUpdateProgram => IsIdle && _selectedTabIndex == (int)MainTab.UpdateProgram;
     public bool CanCancel => _isBusy;
-    public bool CanTestConnection => !_isTestRunning && !_isBusy;
-    public bool CanShareTest => !_isBusy;
+    public bool CanTestConnection => !_isTestRunning && !_isBusy && !IsRemoteBusy;
+    public bool CanShareTest => !_isBusy && !IsRemoteBusy;
     public bool CanStartServer => !_isBusy && _server == null;
     public bool CanStopServer => !_isBusy && _server != null;
     public bool CanRunProcess => !_isBusy;
@@ -474,7 +478,7 @@ public partial class MainViewModel : ObservableObject
     public bool CanPurgeRun => !_toolsBusy && (_purgeItems?.Any(i => i.Action == "删除") ?? false);
     public bool CanRenameRun => !_toolsBusy && (_renameItems?.Any(i => i.Action == "删除" || i.Action == "重命名") ?? false);
 
-    private bool IsIdle => !_isBusy && !_opEntered;
+    private bool IsIdle => !_isBusy && !_opEntered && !IsRemoteBusy;
 
     public RelayCommand BrowseRootCommand { get; }
     public RelayCommand BrowseBackupDestCommand { get; }
@@ -658,7 +662,8 @@ public partial class MainViewModel : ObservableObject
         }
         string root = RootPath.Trim();
         _server = new PeerServer(root, port, ReadSyncOptions(), Log, OnFileProgress, OnTotal,
-            m => LogError("执行失败: " + m), BackupBeforeSync, BackupDestPath.Trim(), ReadBackupOptions(), UpdateCompressZip);
+            m => LogError("执行失败: " + m), BackupBeforeSync, BackupDestPath.Trim(), ReadBackupOptions(), UpdateCompressZip,
+            SetRemoteBusy);
         try
         {
             _server.Start();
@@ -873,14 +878,17 @@ public partial class MainViewModel : ObservableObject
     {
         _doneCount++;
         ProgressValue = _doneCount;
+        StatusText = _totalCount > 0 ? $"正在{_opLabel}... {_doneCount}/{_totalCount}" : $"正在{_opLabel}...";
         CurrentFileText = $"文件 {_doneCount}/{_totalCount}: {relativePath} ({FormatSize(size)})";
     });
 
-    private void StartBusy()
+    /// <summary>左下角状态：操作开始时显示当前工作内容，结束后由各完成分支写入完成状态。</summary>
+    private void StartBusy(string status)
     {
         _coordinator.StartBusy();
         _doneCount = 0;
         _totalCount = 0;
+        StatusText = status;
         IsBusy = true;
     }
 
@@ -888,7 +896,28 @@ public partial class MainViewModel : ObservableObject
     {
         _coordinator.EndBusy();
         IsBusy = false;
-        StatusText = "就绪";
+    }
+
+    /// <summary>远端开始/结束在本机执行任务：联动禁用/恢复界面，并更新左下角状态。</summary>
+    private void SetRemoteBusy(bool busy)
+    {
+        _ui.Invoke(() =>
+        {
+            _remoteBusyCount = busy ? _remoteBusyCount + 1 : Math.Max(0, _remoteBusyCount - 1);
+            OnPropertyChanged(nameof(IsRemoteBusy));
+            OnPropertyChanged(nameof(IsNotBusy));
+            OnPropertyChanged(nameof(IsTransferContentEnabled));
+            OnPropertyChanged(nameof(IsProcessContentEnabled));
+            NotifyCommandState();
+            if (busy)
+            {
+                StatusText = "远端正在执行传输/同步，界面操作已暂时禁用...";
+            }
+            else if (!_isBusy)
+            {
+                StatusText = "远端操作已完成";
+            }
+        });
     }
 
     // 主操作（备份/更新）的同步重入保护：点击后立即占用并禁用按钮，直到整个流程

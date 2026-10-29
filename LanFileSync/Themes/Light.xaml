@@ -11,6 +11,20 @@
     <SolidColorBrush x:Key="CardBgBrush2" Color="#FFFFFF" />
     <SolidColorBrush x:Key="OverlayBgBrush" Color="#CCF2F4F8" />
 
+    <!-- 按钮配色：切换主题后由 DynamicResource 重新解析，保证按钮颜色跟随 -->
+    <SolidColorBrush x:Key="ButtonBgBrush" Color="#FFFFFF" />
+    <SolidColorBrush x:Key="ButtonHoverBgBrush" Color="#EEF4FF" />
+    <SolidColorBrush x:Key="ButtonHoverBorderBrush" Color="#9DB9ED" />
+    <SolidColorBrush x:Key="ButtonPressBgBrush" Color="#E2EAFB" />
+    <!-- GradientStop.Color 需要 Color 本身，不能是 Brush -->
+    <Color x:Key="AccentFromColor">#3B82F6</Color>
+    <Color x:Key="AccentToColor">#2563EB</Color>
+    <SolidColorBrush x:Key="AccentFgBrush" Color="#FFFFFF" />
+    <SolidColorBrush x:Key="TitleBtnHoverBrush" Color="#DCE7FA" />
+    <SolidColorBrush x:Key="TitleBtnPressBrush" Color="#B7CDF4" />
+    <SolidColorBrush x:Key="ThemeToggleHoverBrush" Color="#E9ECF2" />
+    <SolidColorBrush x:Key="ThemeIconBrush" Color="#D4A017" />
+
     <!--  仅弹层使用投影（下拉框/工具提示），常驻界面不使用 Effect 以保证交互流畅  -->
     <DropShadowEffect x:Key="PopShadow" Color="#1E293B" ShadowDepth="3" BlurRadius="18" Opacity="0.14" />
 
@@ -22,7 +36,7 @@
     <!-- 按钮：底色 + 悬浮/按压分层 + 轻微缩放反馈 -->
     <Style TargetType="Button">
         <Setter Property="Foreground" Value="{DynamicResource TextMainBrush}" />
-        <Setter Property="Background" Value="#FFFFFF" />
+        <Setter Property="Background" Value="{DynamicResource ButtonBgBrush}" />
         <Setter Property="BorderBrush" Value="{DynamicResource InputBorderBrush}" />
         <Setter Property="BorderThickness" Value="1" />
         <Setter Property="Padding" Value="14,6" />
@@ -44,9 +58,9 @@
                             </TransformGroup>
                         </Border.RenderTransform>
                         <Grid>
-                            <Border x:Name="hoverLayer" CornerRadius="7" Background="#EEF4FF"
-                                    BorderBrush="#9DB9ED" BorderThickness="1" Opacity="0" />
-                            <Border x:Name="pressLayer" CornerRadius="7" Background="#E2EAFB" Opacity="0" />
+                            <Border x:Name="hoverLayer" CornerRadius="7" Background="{DynamicResource ButtonHoverBgBrush}"
+                                    BorderBrush="{DynamicResource ButtonHoverBorderBrush}" BorderThickness="1" Opacity="0" />
+                            <Border x:Name="pressLayer" CornerRadius="7" Background="{DynamicResource ButtonPressBgBrush}" Opacity="0" />
                             <ContentPresenter HorizontalAlignment="{TemplateBinding HorizontalContentAlignment}"
                                               VerticalAlignment="{TemplateBinding VerticalContentAlignment}"
                                               RecognizesAccessKey="True" />
@@ -134,7 +148,7 @@
 
     <!-- 主按钮：蓝色渐变 + 柔影 -->
     <Style x:Key="AccentButton" TargetType="Button">
-        <Setter Property="Foreground" Value="White" />
+        <Setter Property="Foreground" Value="{DynamicResource AccentFgBrush}" />
         <Setter Property="BorderThickness" Value="1" />
         <Setter Property="Padding" Value="20,7" />
         <Setter Property="MinHeight" Value="32" />
@@ -149,14 +163,14 @@
                             RenderTransformOrigin="0.5,0.5">
                         <Border.BorderBrush>
                             <LinearGradientBrush StartPoint="0,0" EndPoint="0,1">
-                                <GradientStop Color="#3B82F6" Offset="0" />
-                                <GradientStop Color="#2563EB" Offset="1" />
+                                <GradientStop Color="{DynamicResource AccentFromColor}" Offset="0" />
+                                <GradientStop Color="{DynamicResource AccentToColor}" Offset="1" />
                             </LinearGradientBrush>
                         </Border.BorderBrush>
                         <Border.Background>
                             <LinearGradientBrush StartPoint="0,0" EndPoint="0,1">
-                                <GradientStop Color="#3B82F6" Offset="0" />
-                                <GradientStop Color="#2563EB" Offset="1" />
+                                <GradientStop Color="{DynamicResource AccentFromColor}" Offset="0" />
+                                <GradientStop Color="{DynamicResource AccentToColor}" Offset="1" />
                             </LinearGradientBrush>
                         </Border.Background>
                         <Border.RenderTransform>
@@ -193,7 +207,7 @@
                                 <ContentPresenter.Resources>
                                     <!--  隐式 TextBlock 样式会覆盖按钮继承的前景色，这里强制白色  -->
                                     <Style TargetType="TextBlock">
-                                        <Setter Property="Foreground" Value="White" />
+                                        <Setter Property="Foreground" Value="{DynamicResource AccentFgBrush}" />
                                     </Style>
                                 </ContentPresenter.Resources>
                             </ContentPresenter>
@@ -1240,10 +1254,10 @@
                     </Border>
                     <ControlTemplate.Triggers>
                         <Trigger Property="IsMouseOver" Value="True">
-                            <Setter TargetName="bd" Property="Background" Value="#DCE7FA" />
+                            <Setter TargetName="bd" Property="Background" Value="{DynamicResource TitleBtnHoverBrush}" />
                         </Trigger>
                         <Trigger Property="IsPressed" Value="True">
-                            <Setter TargetName="bd" Property="Background" Value="#B7CDF4" />
+                            <Setter TargetName="bd" Property="Background" Value="{DynamicResource TitleBtnPressBrush}" />
                         </Trigger>
                     </ControlTemplate.Triggers>
                 </ControlTemplate>
@@ -1293,11 +1307,11 @@
                             CornerRadius="6" Padding="4">
                         <TextBlock x:Name="icon" Text="☀" FontSize="14"
                                    HorizontalAlignment="Center" VerticalAlignment="Center"
-                                   Foreground="#D4A017" />
+                                   Foreground="{DynamicResource ThemeIconBrush}" />
                     </Border>
                     <ControlTemplate.Triggers>
                         <Trigger Property="IsMouseOver" Value="True">
-                            <Setter TargetName="bd" Property="Background" Value="#E9ECF2" />
+                            <Setter TargetName="bd" Property="Background" Value="{DynamicResource ThemeToggleHoverBrush}" />
                         </Trigger>
                     </ControlTemplate.Triggers>
                 </ControlTemplate>
@@ -1305,3 +1319,4 @@
         </Setter>
     </Style>
 </ResourceDictionary>
+

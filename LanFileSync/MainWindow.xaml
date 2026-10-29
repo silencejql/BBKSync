@@ -315,16 +315,16 @@
                                         </StackPanel>
                                         <Rectangle Grid.Column="1" Width="1" Fill="{DynamicResource CardBorderBrush}" Margin="14,0" />
                                         <StackPanel Grid.Column="2" Margin="14,0,0,0">
-                                            <TextBlock Text="更新规则（接收 / 从共享时生效）" FontWeight="SemiBold"
+                                            <TextBlock Text="更新规则（接收 / 推送 / 从共享时均按本机勾选生效）" FontWeight="SemiBold"
                                                Foreground="{DynamicResource TextSubBrush}" Margin="0,0,0,6" />
                                             <CheckBox x:Name="cbBinReplace" Content="Bin 整体替换（不勾则按日期增量）" Margin="0,3,0,0"
                                               IsChecked="{Binding BinReplace}"
-                                              ToolTip="勾选：先删除本地 Bin 再整体拷贝。不勾选：修改日期和文件大小都相同才跳过，其余更新。" />
+                                              ToolTip="勾选：先删除本地 Bin 再整体拷贝。不勾选：修改日期和文件大小都相同才跳过，其余更新。推送更新时本勾选会下发给远端按此执行。" />
 
                                             <CheckBox x:Name="cbBackupBeforeSync" Margin="0,10,0,0"
                                               Content="同步前先备份被更新电脑的 BBK"
                                               IsChecked="{Binding BackupBeforeSync}"
-                                              ToolTip="TCP 接收更新、从共享更新本机、或远端推送更新时，都会先把被更新那台电脑的 BBK 备份到「备份目录」再开始同步。" />
+                                              ToolTip="接收更新、从共享更新本机时备份本机；推送更新时该勾选下发给远端，由远端先备份它自己的 BBK 再接收更新（使用远端的「备份目录」）。" />
                                             <CheckBox x:Name="cbUpdateCompressZip" Margin="0,6,0,0"
                                               Content="备份完成后自动压缩为 zip（删除文件夹）"
                                               IsChecked="{Binding UpdateCompressZip}"

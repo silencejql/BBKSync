@@ -67,7 +67,7 @@ public partial class MainViewModel
         try { engine = new BackupEngine(src, target, ReadBackupOptions()); }
         catch (Exception ex) { _dialogs.Warning(ex.Message, "错误"); return; }
 
-        StartBusy();
+        StartBusy("正在备份本机 BBK...");
         try
         {
             var files = engine.Plan();
@@ -76,12 +76,17 @@ public partial class MainViewModel
             OnTotal(files.Count);
             LogDivider();
             Log($"开始备份 {src} → {target}(共 {files.Count} 项)...");
+            if (files.Count == 0) Log("没有需要备份的文件：目标位置已是最新。");
             await engine.RunAsync(OnFileProgress, m => LogError("跳过: " + m), _coordinator.Token);
             LogBackupSummary("备份", engine, files.Count);
-            StatusText = "备份完成";
+            StatusText = files.Count == 0 ? "备份完成（无需备份文件）" : "备份完成";
             await CompressAndRemoveFolderAsync(target, ShouldCompress);
         }
-        catch (OperationCanceledException) { Log("备份已取消"); }
+        catch (OperationCanceledException)
+        {
+            Log("备份已取消");
+            StatusText = "备份已取消";
+        }
         catch (Exception ex)
         {
             LogError("备份失败: " + ex.Message);
@@ -101,7 +106,7 @@ public partial class MainViewModel
         if (!_dialogs.Confirm("确认开始备份远端 BBK 程序？\n\n远端电脑：" + string.Join("、", hosts) + deviceInfo +
                               "\n备份到：" + dest + "。", "确认")) return;
 
-        StartBusy();
+        StartBusy("正在备份远端 BBK...");
         var ct = _coordinator.Token;
         _opLabel = "备份";
         var okIps = new List<string>();
@@ -110,6 +115,11 @@ public partial class MainViewModel
         {
             foreach (var host in hosts)
             {
+                if (!await EnsureRemoteReadyAsync(host, port))
+                {
+                    failed.Add($"{host} - 连接测试失败");
+                    continue;
+                }
                 string target;
                 if (AutoFetchName)
                 {
@@ -135,12 +145,14 @@ public partial class MainViewModel
                 {
                     bool preBackupBat = RunPreBackupBat;
                     using var client = new PeerClient();
-                    await client.ConnectAsync(host, port, Constants.RolePull, ct, preBackupBat);
+                    await client.ConnectAsync(host, port, Constants.RolePull, ct, preBackupBat,
+                        backupFilter: ReadBackupOptions());
                     LogDivider();
                     Log($"已连接远端 {host}:{port}，开始拉取备份 → {target} ...");
                     _opLabel = "备份";
+                    // Log 日期与忽略规则已随握手下发，远端先筛选；本地不再重复筛选
                     await client.BackupPullAsync(target, ReadBackupOptions(), preBackupBat, Log, OnFileProgress, OnTotal,
-                        m => LogError("跳过: " + m), ct, LogError);
+                        m => LogError("跳过: " + m), ct, sourceFiltered: true, LogError);
                     okIps.Add(host);
                     LogSuccess($"备份完成: {host}");
                     await CompressAndRemoveFolderAsync(target, ShouldCompress);
@@ -153,7 +165,11 @@ public partial class MainViewModel
                 }
             }
         }
-        catch (OperationCanceledException) { Log("备份已取消"); }
+        catch (OperationCanceledException)
+        {
+            Log("备份已取消，已通知远端中止");
+            StatusText = "备份已取消";
+        }
         finally { EndHostOperation(okIps, port); }
         await FinishHostOperationAsync("远程备份", "远程备份", okIps, failed, hosts.Count, port, "备份");
     }
@@ -182,7 +198,7 @@ public partial class MainViewModel
         try { engine = new BackupEngine(unc, target, ReadBackupOptions()); }
         catch (Exception ex) { _dialogs.Warning(ex.Message, "错误"); return; }
 
-        StartBusy();
+        StartBusy("正在从共享备份 BBK...");
         try
         {
             var files = engine.Plan();
@@ -191,12 +207,17 @@ public partial class MainViewModel
             OnTotal(files.Count);
             LogDivider();
             Log($"开始从共享 {unc} 备份 → {target}(共 {files.Count} 项)...");
+            if (files.Count == 0) Log("没有需要备份的文件：目标位置已是最新。");
             await engine.RunAsync(OnFileProgress, m => LogError("跳过: " + m), _coordinator.Token);
             LogBackupSummary("共享备份", engine, files.Count);
-            StatusText = "备份完成";
+            StatusText = files.Count == 0 ? "备份完成（无需备份文件）" : "备份完成";
             await CompressAndRemoveFolderAsync(target, ShouldCompress);
         }
-        catch (OperationCanceledException) { Log("备份已取消"); }
+        catch (OperationCanceledException)
+        {
+            Log("备份已取消");
+            StatusText = "备份已取消";
+        }
         catch (Exception ex)
         {
             LogError("备份失败: " + ex.Message);
@@ -278,13 +299,13 @@ public partial class MainViewModel
         if (hosts == null) return;
         bool push = IsPushSelected;
         string deviceInfo = hosts.Count == 1 ? await GetDeviceInfo(hosts[0]) : "";
-        string msgPush = $"将本机BBK按规则推送更新至远端电脑[{PeerIp}]{deviceInfo}";
-        string msgPull = $"将远端电脑[{PeerIp}]{deviceInfo}的BBK按规则拉取更新至本机";
+        string msgPush = $"将本机BBK按本机更新规则推送更新至远端电脑[{PeerIp}]{deviceInfo}\n（Bin 整体替换、同步前备份、备份的 Log/忽略规则均按本机勾选执行）";
+        string msgPull = $"将远端电脑[{PeerIp}]{deviceInfo}的BBK按本机更新规则拉取更新至本机\n（接收更新与同步前备份均按本机勾选执行）";
         if (!_dialogs.Confirm("确认开始更新？\n\n" + (push ? msgPush : msgPull), "确认")) return;
 
         string root = RootPath.Trim();
         var options = ReadSyncOptions();
-        StartBusy();
+        StartBusy(push ? "正在推送更新到远端..." : "正在从远端更新本机...");
         var ct = _coordinator.Token;
         _opLabel = "更新";
         if (!push) await RunPreBackupBatAsync();
@@ -294,10 +315,19 @@ public partial class MainViewModel
         {
             foreach (var host in hosts)
             {
+                if (!await EnsureRemoteReadyAsync(host, port))
+                {
+                    failed.Add($"{host} - 连接测试失败");
+                    continue;
+                }
                 try
                 {
                     using var client = new PeerClient();
-                    await client.ConnectAsync(host, port, push ? Constants.RolePush : Constants.RolePull, ct);
+                    // 推送时把本机更新规则下发给远端执行；接收更新时本地引擎已按本机规则计算
+                    await client.ConnectAsync(host, port, push ? Constants.RolePush : Constants.RolePull, ct,
+                        binReplace: push && options.FullReplaceBin,
+                        backupBeforeSync: push && BackupBeforeSync,
+                        backupFilter: push ? ReadBackupOptions() : null);
                     List<string> updated;
                     if (push)
                     {
@@ -343,7 +373,11 @@ public partial class MainViewModel
                 }
             }
         }
-        catch (OperationCanceledException) { Log("已取消"); }
+        catch (OperationCanceledException)
+        {
+            Log("已取消，已通知远端中止本次更新");
+            StatusText = "更新已取消";
+        }
         finally { EndHostOperation(okIps, port); }
         await FinishHostOperationAsync("远端同步", "同步", okIps, failed, hosts.Count, port);
     }
@@ -354,7 +388,7 @@ public partial class MainViewModel
         if (unc == null) return;
         string root = RootPath.Trim();
         var options = ReadSyncOptions();
-        StartBusy();
+        StartBusy("正在从共享更新本机...");
         var ct = _coordinator.Token;
         _opLabel = "更新";
         try
@@ -379,7 +413,11 @@ public partial class MainViewModel
             LogUpdatedFiles(engine.Applied, "本机");
             StatusText = "共享同步完成";
         }
-        catch (OperationCanceledException) { Log("已取消"); }
+        catch (OperationCanceledException)
+        {
+            Log("已取消");
+            StatusText = "更新已取消";
+        }
         catch (Exception ex)
         {
             LogError("共享同步失败: " + ex.Message);
@@ -420,7 +458,7 @@ public partial class MainViewModel
         if (!_dialogs.Confirm("确认开始同步？\n\n远端：" + PeerIp + deviceInfo + "\n同步内容：" + itemPath +
                               "（" + (isDir ? "文件夹" : "文件") + "）\n\n" + modeDesc, "确认")) return;
 
-        StartBusy();
+        StartBusy("正在传输文件到远端...");
         var ct = _coordinator.Token;
         _opLabel = "传输";
         var okIps = new List<string>();
@@ -429,6 +467,11 @@ public partial class MainViewModel
         {
             foreach (var host in hosts)
             {
+                if (!await EnsureRemoteReadyAsync(host, port))
+                {
+                    failed.Add($"{host} - 连接测试失败");
+                    continue;
+                }
                 try
                 {
                     using var client = new PeerClient();
@@ -448,7 +491,11 @@ public partial class MainViewModel
                 }
             }
         }
-        catch (OperationCanceledException) { Log("已取消"); }
+        catch (OperationCanceledException)
+        {
+            Log("已取消，已通知远端中止本次传输");
+            StatusText = "传输已取消";
+        }
         finally { EndHostOperation(okIps, port); }
         await FinishHostOperationAsync("文件传输", "传输", okIps, failed, hosts.Count, port);
     }
@@ -485,7 +532,7 @@ public partial class MainViewModel
         if (!_dialogs.Confirm("确认从远端同步？\n\n远端：" + PeerIp + deviceInfo + "\n拉取内容：" + itemPath +
                               "\n\n" + modeDesc, "确认")) return;
 
-        StartBusy();
+        StartBusy("正在从远端拉取文件...");
         var ct = _coordinator.Token;
         _opLabel = "拉取";
         var okIps = new List<string>();
@@ -494,6 +541,11 @@ public partial class MainViewModel
         {
             foreach (var host in hosts)
             {
+                if (!await EnsureRemoteReadyAsync(host, port))
+                {
+                    failed.Add($"{host} - 连接测试失败");
+                    continue;
+                }
                 try
                 {
                     using var client = new PeerClient();
@@ -513,7 +565,11 @@ public partial class MainViewModel
                 }
             }
         }
-        catch (OperationCanceledException) { Log("已取消"); }
+        catch (OperationCanceledException)
+        {
+            Log("已取消，已通知远端中止本次拉取");
+            StatusText = "拉取已取消";
+        }
         finally { EndHostOperation(okIps, port); }
         await FinishHostOperationAsync("文件拉取", "拉取", okIps, failed, hosts.Count, port);
     }
@@ -545,6 +601,8 @@ public partial class MainViewModel
     {
         if (okIps.Count > 0)
             StatusText = hostCount > 1 ? $"{statusLabel}完成({okIps.Count}/{hostCount} 台)" : $"{statusLabel}完成";
+        else if (failed.Count > 0)
+            StatusText = $"{statusLabel}失败({failed.Count} 台未完成)";
         if (failed.Count > 0)
             _dialogs.Warning($"以下电脑{failNoun ?? statusLabel}失败：\n" + string.Join("\n", failed), "部分失败");
         await LogHostSummaryAsync(opName, okIps, failed, port);
@@ -585,14 +643,18 @@ public partial class MainViewModel
         var failed = new List<string>();
         var okIps = new List<string>();
 
-        StartBusy();
-        StatusText = "正在更新远端程序...";
+        StartBusy("正在更新远端程序...");
         Log("========== 开始更新远端程序 ==========");
         Log($"目标: {host}，端口: {port}");
         try
         {
             foreach (string h in hosts)
             {
+                if (!await EnsureRemoteReadyAsync(h, port))
+                {
+                    failed.Add(h);
+                    continue;
+                }
                 try
                 {
                     Log($"--- 连接 {h}:{port} ---");
@@ -611,9 +673,22 @@ public partial class MainViewModel
                 }
             }
         }
-        catch (OperationCanceledException) { Log("操作已取消"); }
+        catch (OperationCanceledException)
+        {
+            Log("操作已取消，已通知远端中止");
+            StatusText = "程序更新已取消";
+        }
         finally { EndHostOperation(okIps, port); }
         await FinishHostOperationAsync("程序升级", "更新", okIps, failed, hosts.Count, port);
+    }
+
+    /// <summary>远端操作前先测试连接；失败时记录日志并取消对该电脑的操作。</summary>
+    private async Task<bool> EnsureRemoteReadyAsync(string host, int port)
+    {
+        var (ok, detail) = await TestOneHostAsync(host, port);
+        if (ok) return true;
+        LogError($"[连接测试失败] {host}:{port} {detail}，已取消对该电脑的操作。");
+        return false;
     }
 
     private async Task TestConnectionAsync()
