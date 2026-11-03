@@ -95,9 +95,10 @@ public sealed class PeerClient : IDisposable
         Action<string> onError,
         CancellationToken ct)
     {
+        SyncEngine? engine = null;
         try
         {
-            var engine = new SyncEngine(root, options);
+            engine = new SyncEngine(root, options, log);
             var list = new List<FileEntry>();
 
             await TargetSide.ReceiveManifestAsync(_conn!, ct, list);
@@ -117,6 +118,7 @@ public sealed class PeerClient : IDisposable
         }
         catch (OperationCanceledException)
         {
+            engine?.Rollback();
             await SendCancelAsync();
             throw;
         }
@@ -186,6 +188,7 @@ public sealed class PeerClient : IDisposable
         bool sourceFiltered = false,
         Action<string>? logError = null)
     {
+        BackupSyncEngine? engine = null;
         try
         {
             if (runPreBackupBat)
@@ -208,7 +211,7 @@ public sealed class PeerClient : IDisposable
             var engineOptions = sourceFiltered
                 ? new BackupOptions { ApplyLogRule = false, IgnoreRegexes = Array.Empty<string>() }
                 : options;
-            var engine = new BackupSyncEngine(dest, engineOptions);
+            engine = new BackupSyncEngine(dest, engineOptions, log);
             var list = new List<FileEntry>();
 
             await TargetSide.ReceiveManifestAsync(_conn!, ct, list);
@@ -227,6 +230,7 @@ public sealed class PeerClient : IDisposable
         }
         catch (OperationCanceledException)
         {
+            engine?.Rollback();
             await SendCancelAsync();
             throw;
         }
@@ -304,6 +308,8 @@ public sealed class PeerClient : IDisposable
         Action<string> onError,
         CancellationToken ct)
     {
+        var guard = new RollbackGuard();
+        PullSavePlan? plan = null;
         try
         {
             // 请求远端发送文件清单(isDir 由远端根据其文件系统自行判断)
@@ -322,31 +328,36 @@ public sealed class PeerClient : IDisposable
             string normRemote = remotePath.Replace('/', Path.DirectorySeparatorChar).TrimEnd(Path.DirectorySeparatorChar);
             bool dirMode = list.Count != 1
                 || !string.Equals(list[0].RelPath.Replace('/', Path.DirectorySeparatorChar), normRemote, StringComparison.OrdinalIgnoreCase);
-            var plan = BuildPullSavePlan(normRemote, dirMode, updateMode, remoteDevice, localDevice,
+            plan = BuildPullSavePlan(normRemote, dirMode, updateMode, remoteDevice, localDevice,
                 DateTime.Now.ToString("yyyyMMdd"), log, deleteSameName);
-            Directory.CreateDirectory(plan.DirMode ? plan.Root : (Path.GetDirectoryName(plan.Root) ?? plan.Root));
+            guard.EnsureDirectory(plan.Value.DirMode ? plan.Value.Root : (Path.GetDirectoryName(plan.Value.Root) ?? plan.Value.Root));
 
             // 发送请求列表
             await _conn.SendJsonAsync(new { op = ProtocolOp.Request, paths = needPaths }, ct);
 
-            int received = await ReceivePulledFilesAsync(_conn, needPaths, path => ResolvePulledSavePath(path, plan),
-                log, onFile, onError, ct);
+            int received = await ReceivePulledFilesAsync(_conn, needPaths, path => ResolvePulledSavePath(path, plan.Value),
+                guard, log, onFile, onError, ct);
 
             var resp = await ReceiveFrameAsync(ct);
             CheckErrorAndRelayMessages(resp, onError);
 
-            log($"从远端拉取完成({received} 个文件保存到 {plan.Root})");
+            log($"从远端拉取完成({received} 个文件保存到 {plan.Value.Root})");
         }
         catch (OperationCanceledException)
         {
+            int removed = guard.Rollback();
+            if (plan is { } p)
+                RestoreLocalForUpdate(p, log);
+            if (removed > 0)
+                log($"取消清理：已删除本次已拉取的 {removed} 个文件");
             await SendCancelAsync();
             throw;
         }
     }
 
-    /// <summary>拉取落盘方案：保存根目录、原始远端路径、是否保留目录结构、是否更新模式。</summary>
+    /// <summary>拉取落盘方案：保存根目录、原始远端路径、是否保留目录结构、是否更新模式、更新前的本地备份路径。</summary>
     private readonly record struct PullSavePlan(
-        string Root, string NormalizedRemote, bool DirMode, bool UpdateMode, string SourceTag, string Date);
+        string Root, string NormalizedRemote, bool DirMode, bool UpdateMode, string SourceTag, string Date, string? LocalBackup);
 
     /// <summary>更新模式先重命名本地原文件/文件夹为备份；拷贝模式只计算另存目录。</summary>
     private static PullSavePlan BuildPullSavePlan(string normRemote, bool dirMode, bool updateMode,
@@ -355,8 +366,8 @@ public sealed class PeerClient : IDisposable
         if (updateMode)
         {
             string localTag = FileHelper.SanitizeName(string.IsNullOrWhiteSpace(localDevice) ? Environment.MachineName : localDevice);
-            RenameLocalForUpdate(normRemote, dirMode, localTag, dateStr, log, deleteSameName);
-            return new PullSavePlan(normRemote, normRemote, dirMode, true, "", dateStr);
+            string? backup = RenameLocalForUpdate(normRemote, dirMode, localTag, dateStr, log, deleteSameName);
+            return new PullSavePlan(normRemote, normRemote, dirMode, true, "", dateStr, backup);
         }
 
         string sourceTag = FileHelper.SanitizeName(string.IsNullOrWhiteSpace(remoteDevice) ? "远端" : remoteDevice);
@@ -371,7 +382,38 @@ public sealed class PeerClient : IDisposable
         {
             saveRoot = Path.GetDirectoryName(normRemote) ?? "";
         }
-        return new PullSavePlan(saveRoot, normRemote, dirMode, false, sourceTag, dateStr);
+        return new PullSavePlan(saveRoot, normRemote, dirMode, false, sourceTag, dateStr, null);
+    }
+
+    /// <summary>取消时把更新模式重命名的本地原文件/文件夹还原回原位。</summary>
+    private static void RestoreLocalForUpdate(PullSavePlan plan, Action<string> log)
+    {
+        if (plan.LocalBackup == null)
+            return;
+
+        try
+        {
+            if (plan.DirMode)
+            {
+                if (Directory.Exists(plan.NormalizedRemote))
+                    Directory.Delete(plan.NormalizedRemote, recursive: true);
+                if (Directory.Exists(plan.LocalBackup))
+                    Directory.Move(plan.LocalBackup, plan.NormalizedRemote);
+                log("取消清理：已恢复更新前的本地文件夹");
+            }
+            else
+            {
+                if (File.Exists(plan.LocalBackup))
+                {
+                    File.Move(plan.LocalBackup, plan.NormalizedRemote, overwrite: true);
+                    log("取消清理：已恢复更新前的本地文件");
+                }
+            }
+        }
+        catch (Exception ex)
+        {
+            log($"取消清理：恢复原内容失败: {ex.Message}，备份保留在 {plan.LocalBackup}");
+        }
     }
 
     /// <summary>计算单个远端文件在本机的落盘路径。</summary>
@@ -396,7 +438,7 @@ public sealed class PeerClient : IDisposable
 
     /// <summary>接收 data 帧并逐文件落盘，返回实际写入的文件数。</summary>
     private async Task<int> ReceivePulledFilesAsync(PeerConnection conn, IReadOnlyList<string> needPaths,
-        Func<string, string> resolveSavePath, Action<string> log,
+        Func<string, string> resolveSavePath, RollbackGuard guard, Action<string> log,
         Action<string, long>? onFile, Action<string>? onError, CancellationToken ct)
     {
         int received = 0;
@@ -420,7 +462,8 @@ public sealed class PeerClient : IDisposable
             string savedPath = resolveSavePath(path);
 
             string? savedDir = Path.GetDirectoryName(savedPath);
-            if (!string.IsNullOrEmpty(savedDir)) Directory.CreateDirectory(savedDir);
+            if (!string.IsNullOrEmpty(savedDir)) guard.EnsureDirectory(savedDir);
+            guard.MarkWritten(savedPath);
             using (var fs = new FileStream(savedPath, FileMode.Create, FileAccess.Write, FileShare.None, 128 * 1024))
             {
                 var buf = new byte[128 * 1024];
@@ -445,13 +488,13 @@ public sealed class PeerClient : IDisposable
         return received;
     }
 
-    /// <summary>更新模式拉取前，处理本地已有文件/文件夹：deleteSame=true 时直接删除旧备份（保持原始路径）；false 时把同名旧备份重命名为 _HHmmss 后缀保留。</summary>
-    private static void RenameLocalForUpdate(string itemPath, bool isDir, string deviceTag, string date, Action<string> log, bool deleteSame)
+    /// <summary>更新模式拉取前，处理本地已有文件/文件夹：deleteSame=true 时直接删除旧备份（保持原始路径）；false 时把同名旧备份重命名为 _HHmmss 后缀保留。返回本次重命名得到的备份路径，用于取消时还原。</summary>
+    private static string? RenameLocalForUpdate(string itemPath, bool isDir, string deviceTag, string date, Action<string> log, bool deleteSame)
     {
         // date 只到年月日；仅备份命名重复时才给旧备份追加 _HHmmss 后缀
         if (isDir)
         {
-            if (!Directory.Exists(itemPath)) { log("本地文件夹不存在，无需重命名: " + itemPath); return; }
+            if (!Directory.Exists(itemPath)) { log("本地文件夹不存在，无需重命名: " + itemPath); return null; }
             string parent = Path.GetDirectoryName(itemPath) ?? "";
             string folder = Path.GetFileName(itemPath);
             string renameTo = Path.Combine(parent, $"{folder}_AutoBackup_{date}");
@@ -473,10 +516,11 @@ public sealed class PeerClient : IDisposable
             }
             log($"更新前重命名本地文件夹: {itemPath} → {renameTo}");
             Directory.Move(itemPath, renameTo);
+            return renameTo;
         }
         else
         {
-            if (!File.Exists(itemPath)) { log("本地文件不存在，无需重命名: " + itemPath); return; }
+            if (!File.Exists(itemPath)) { log("本地文件不存在，无需重命名: " + itemPath); return null; }
             string dirOf = Path.GetDirectoryName(itemPath) ?? "";
             string baseName = Path.GetFileNameWithoutExtension(itemPath);
             string ext = Path.GetExtension(itemPath);
@@ -499,6 +543,7 @@ public sealed class PeerClient : IDisposable
             }
             log($"更新前重命名本地文件: {itemPath} → {renameTo}");
             File.Move(itemPath, renameTo);
+            return renameTo;
         }
     }
 

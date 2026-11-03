@@ -9,12 +9,15 @@ public sealed class BackupEngine
     public BackupOptions Options { get; }
 
     private List<string>? _plan;
+    private readonly RollbackGuard _guard = new();
+    private readonly Action<string>? _log;
 
-    public BackupEngine(string source, string dest, BackupOptions options)
+    public BackupEngine(string source, string dest, BackupOptions options, Action<string>? log = null)
     {
         Source = Path.GetFullPath(source);
         Dest = Path.GetFullPath(dest);
         Options = options;
+        _log = log;
 
         if (string.Equals(Trim(Source), Trim(Dest), StringComparison.OrdinalIgnoreCase))
             throw new ArgumentException("备份目标不能和源文件夹相同。");
@@ -73,56 +76,76 @@ public sealed class BackupEngine
         var files = Plan();
         var buf = new byte[Constants.StreamBufferSize];
 
-        foreach (var rel in files)
+        try
         {
-            ct.ThrowIfCancellationRequested();
-
-            string srcPath = Path.Combine(Source, rel);
-            string dstPath = Path.Combine(Dest, rel);
-
-            long size;
-            try { size = new FileInfo(srcPath).Length; }
-            catch (Exception ex)
+            foreach (var rel in files)
             {
-                onError?.Invoke(rel + "  无法读取(文件被占用等): " + ex.Message);
-                onFile?.Invoke(rel, 0);
-                continue;
-            }
+                ct.ThrowIfCancellationRequested();
 
-            if (!NeedsCopy(srcPath, dstPath))
-            {
-                SkippedCount++;
-                onFile?.Invoke(rel, size);
-                continue;
-            }
+                string srcPath = Path.Combine(Source, rel);
+                string dstPath = Path.Combine(Dest, rel);
 
-            Directory.CreateDirectory(Path.GetDirectoryName(dstPath)!);
-            string tmp = dstPath + "." + Guid.NewGuid().ToString("N") + ".tmp";
-            bool copied = false;
-            try
-            {
-                await using (var src = new FileStream(srcPath, FileMode.Open, FileAccess.Read, FileShare.ReadWrite, Constants.StreamBufferSize, FileOptions.SequentialScan))
-                await using (var dst = new FileStream(tmp, FileMode.Create, FileAccess.Write, FileShare.None, Constants.StreamBufferSize, FileOptions.SequentialScan))
+                long size;
+                try { size = new FileInfo(srcPath).Length; }
+                catch (Exception ex)
                 {
-                    int n;
-                    while ((n = await src.ReadAsync(buf.AsMemory(), ct)) > 0)
-                        await dst.WriteAsync(buf.AsMemory(0, n), ct);
+                    onError?.Invoke(rel + "  无法读取(文件被占用等): " + ex.Message);
+                    onFile?.Invoke(rel, 0);
+                    continue;
                 }
 
-                File.Move(tmp, dstPath, overwrite: true);
-                try { File.SetLastWriteTimeUtc(dstPath, File.GetLastWriteTimeUtc(srcPath)); } catch { }
-                copied = true;
-            }
-            catch (Exception ex)
-            {
-                try { if (File.Exists(tmp)) File.Delete(tmp); } catch { }
-                onError?.Invoke(rel + "  复制失败(文件被占用等，已跳过): " + ex.Message);
-            }
+                if (!NeedsCopy(srcPath, dstPath))
+                {
+                    SkippedCount++;
+                    onFile?.Invoke(rel, size);
+                    continue;
+                }
 
-            if (copied)
-                CopiedCount++;
-            onFile?.Invoke(rel, size);
+                _guard.EnsureDirectory(Path.GetDirectoryName(dstPath)!);
+                string tmp = dstPath + "." + Guid.NewGuid().ToString("N") + ".tmp";
+                bool copied = false;
+                try
+                {
+                    await using (var src = new FileStream(srcPath, FileMode.Open, FileAccess.Read, FileShare.ReadWrite, Constants.StreamBufferSize, FileOptions.SequentialScan))
+                    await using (var dst = new FileStream(tmp, FileMode.Create, FileAccess.Write, FileShare.None, Constants.StreamBufferSize, FileOptions.SequentialScan))
+                    {
+                        int n;
+                        while ((n = await src.ReadAsync(buf.AsMemory(), ct)) > 0)
+                            await dst.WriteAsync(buf.AsMemory(0, n), ct);
+                    }
+
+                    File.Move(tmp, dstPath, overwrite: true);
+                    try { File.SetLastWriteTimeUtc(dstPath, File.GetLastWriteTimeUtc(srcPath)); } catch { }
+                    copied = true;
+                }
+                catch (OperationCanceledException)
+                {
+                    try { if (File.Exists(tmp)) File.Delete(tmp); } catch { }
+                    throw;
+                }
+                catch (Exception ex)
+                {
+                    try { if (File.Exists(tmp)) File.Delete(tmp); } catch { }
+                    onError?.Invoke(rel + "  复制失败(文件被占用等，已跳过): " + ex.Message);
+                }
+
+                if (copied)
+                {
+                    _guard.MarkWritten(dstPath);
+                    CopiedCount++;
+                }
+                onFile?.Invoke(rel, size);
+            }
         }
+        catch (OperationCanceledException)
+        {
+            int removed = _guard.Rollback();
+            if (removed > 0)
+                _log?.Invoke($"取消清理：已删除本次已备份的 {removed} 个文件");
+            throw;
+        }
+
+        _guard.Commit();
     }
 
     private static bool NeedsCopy(string src, string dst)

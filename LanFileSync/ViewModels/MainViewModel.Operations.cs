@@ -94,7 +94,7 @@ public partial class MainViewModel
         string name = BackupNameFor(Environment.MachineName);
         string target = BackupTargetPath(dest, name);
         BackupEngine engine;
-        try { engine = new BackupEngine(src, target, ReadBackupOptions()); }
+        try { engine = new BackupEngine(src, target, ReadBackupOptions(), Log); }
         catch (Exception ex) { _dialogs.Warning(ex.Message, "错误"); return; }
 
         StartBusy("正在备份本机 BBK...");
@@ -215,7 +215,7 @@ public partial class MainViewModel
         else target = BackupTargetPath(dest, ComputerNameFor(ShareIp.Trim()));
 
         BackupEngine engine;
-        try { engine = new BackupEngine(unc, target, ReadBackupOptions()); }
+        try { engine = new BackupEngine(unc, target, ReadBackupOptions(), Log); }
         catch (Exception ex) { _dialogs.Warning(ex.Message, "错误"); return; }
 
         StartBusy("正在从共享备份 BBK...");
@@ -392,7 +392,7 @@ public partial class MainViewModel
         Log($"先备份本机 BBK 到 {dest}");
         try
         {
-            var be = new BackupEngine(root, dest, ReadBackupOptions());
+            var be = new BackupEngine(root, dest, ReadBackupOptions(), Log);
             var bakFiles = be.Plan();
             await be.RunAsync(OnFileProgress, m => LogError("同步前备份跳过: " + m), ct);
             Log($"同步前备份完成({bakFiles.Count} 项)");
@@ -418,7 +418,7 @@ public partial class MainViewModel
         {
             await RunPreBackupBatAsync();
             var remote = FileLister.ListFiles(unc);
-            var engine = new SyncEngine(root, options);
+            var engine = new SyncEngine(root, options, Log);
             engine.Plan(remote);
             OnTotal(engine.NeedList.Count);
             LogDivider();

@@ -14,8 +14,14 @@ public sealed class TransferEngine
     private readonly bool _deleteSameName;
     private readonly string? _copyRoot;
     private readonly List<string> _needed = new();
+    private readonly RollbackGuard _guard = new();
+    private readonly Action<string>? _log;
+    private string? _backupPath;
+    private bool _backupIsDir;
+    private bool _backupReady;
 
-    public TransferEngine(string itemPath, bool isDir, bool sameSkip, bool updateMode, string deviceTag, bool deleteSameName = false)
+    public TransferEngine(string itemPath, bool isDir, bool sameSkip, bool updateMode, string deviceTag,
+        bool deleteSameName = false, Action<string>? log = null)
     {
         _itemPath = itemPath.Replace('/', Path.DirectorySeparatorChar);
         _itemIsDir = isDir;
@@ -23,6 +29,7 @@ public sealed class TransferEngine
         _updateMode = updateMode;
         _deviceTag = FileHelper.SanitizeName(string.IsNullOrWhiteSpace(deviceTag) ? "远端" : deviceTag);
         _deleteSameName = deleteSameName;
+        _log = log;
         // 正常备份命名只带到年月日；仅当备份命名重复时，才给旧备份追加 _HHmmss 后缀
         _date = DateTime.Now.ToString("yyyyMMdd");
 
@@ -120,6 +127,9 @@ public sealed class TransferEngine
             try
             {
                 CopyDirectory(_itemPath, backupPath);
+                _backupPath = backupPath;
+                _backupIsDir = true;
+                _backupReady = true;
                 log("备份完成: " + backupPath);
                 return true;
             }
@@ -141,6 +151,9 @@ public sealed class TransferEngine
             {
                 Directory.CreateDirectory(Path.GetDirectoryName(backupPath)!);
                 File.Move(_itemPath, backupPath);
+                _backupPath = backupPath;
+                _backupIsDir = false;
+                _backupReady = true;
                 log("已重命名备份原文件: " + backupPath);
                 return true;
             }
@@ -171,6 +184,21 @@ public sealed class TransferEngine
     }
 
     public async Task ReceiveAndApplyAsync(PeerConnection peer, Action<string> log, Action<string, long>? onFile, Action<string> onError, CancellationToken ct)
+    {
+        try
+        {
+            await ReceiveLoopAsync(peer, log, onFile, onError, ct);
+        }
+        catch (OperationCanceledException)
+        {
+            Rollback();
+            throw;
+        }
+
+        Commit();
+    }
+
+    private async Task ReceiveLoopAsync(PeerConnection peer, Action<string> log, Action<string, long>? onFile, Action<string> onError, CancellationToken ct)
     {
         while (true)
         {
@@ -248,7 +276,7 @@ public sealed class TransferEngine
     private async Task WriteOneAsync(PeerConnection peer, string p, long size, long mtimeTicks, Action<string> log, Action<string> onError, CancellationToken ct)
     {
         WriteOneAsyncTarget(p, out string target);
-        Directory.CreateDirectory(Path.GetDirectoryName(target)!);
+        _guard.EnsureDirectory(Path.GetDirectoryName(target)!);
         string tmp = target + "." + Guid.NewGuid().ToString("N") + ".tmp";
 
         long consumed = 0;
@@ -266,15 +294,26 @@ public sealed class TransferEngine
                 }
             }
         }
+        catch (OperationCanceledException)
+        {
+            try { if (File.Exists(tmp)) File.Delete(tmp); } catch { }
+            throw;
+        }
         catch (IOException)
         {
-            while (consumed < size)
+            try
             {
-                int n = (int)Math.Min(buf.LongLength, size - consumed);
-                await peer.ReadRawAsync(buf, n, ct);
-                consumed += n;
+                while (consumed < size)
+                {
+                    int n = (int)Math.Min(buf.LongLength, size - consumed);
+                    await peer.ReadRawAsync(buf, n, ct);
+                    consumed += n;
+                }
             }
-            try { if (File.Exists(tmp)) File.Delete(tmp); } catch { }
+            finally
+            {
+                try { if (File.Exists(tmp)) File.Delete(tmp); } catch { }
+            }
             ReceiveMessage(target + "  写入失败，已跳过", onError);
             return;
         }
@@ -286,6 +325,63 @@ public sealed class TransferEngine
         }
 
         try { File.SetLastWriteTimeUtc(target, new DateTime(mtimeTicks, DateTimeKind.Utc)); } catch { }
+        _guard.MarkWritten(target);
+    }
+
+    /// <summary>取消时删除本次传输写入的文件，并在更新模式下恢复传输前的原文件/文件夹。</summary>
+    public int Rollback()
+    {
+        var written = _guard.Written.ToList();
+        int removed = _guard.Rollback();
+        RestoreBackup(written);
+        if (removed > 0)
+            _log?.Invoke($"取消清理：已删除本次已传输的 {removed} 个文件");
+        return removed;
+    }
+
+    /// <summary>正常完成传输后清理覆盖前的临时记录。</summary>
+    public void Commit() => _guard.Commit();
+
+    /// <summary>更新模式下把 BackupItem 产生的备份还原回原位，再删除该备份。</summary>
+    private void RestoreBackup(IReadOnlyList<string> written)
+    {
+        if (!_updateMode || !_backupReady || _backupPath == null)
+            return;
+
+        try
+        {
+            if (_backupIsDir)
+            {
+                string root = _itemPath.TrimEnd(Path.DirectorySeparatorChar);
+                foreach (string target in written)
+                {
+                    string rel = target.StartsWith(root + Path.DirectorySeparatorChar, StringComparison.OrdinalIgnoreCase)
+                        ? Path.GetRelativePath(root, target)
+                        : Path.GetFileName(target);
+                    string source = Path.Combine(_backupPath, rel);
+                    if (!File.Exists(source))
+                        continue;
+                    Directory.CreateDirectory(Path.GetDirectoryName(target)!);
+                    File.Copy(source, target, overwrite: true);
+                }
+                if (Directory.Exists(_backupPath))
+                    Directory.Delete(_backupPath, recursive: true);
+                _log?.Invoke("取消清理：已恢复更新前的原文件夹");
+            }
+            else
+            {
+                if (File.Exists(_backupPath))
+                {
+                    File.Move(_backupPath, _itemPath, overwrite: true);
+                    _log?.Invoke("取消清理：已恢复更新前的原文件");
+                }
+            }
+            _backupReady = false;
+        }
+        catch (Exception ex)
+        {
+            _log?.Invoke($"取消清理：恢复原内容失败: {ex.Message}，备份保留在 {_backupPath}");
+        }
     }
 
     private bool MoveIntoPlace(string tmp, string target, Action<string> log, Action<string> onError)

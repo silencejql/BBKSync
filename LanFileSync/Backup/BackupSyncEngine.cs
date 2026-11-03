@@ -10,11 +10,14 @@ public sealed class BackupSyncEngine
 
     private readonly List<FileEntry> _remote = new();
     private readonly List<string> _needed = new();
+    private readonly RollbackGuard _guard = new();
+    private readonly Action<string>? _log;
 
-    public BackupSyncEngine(string dest, BackupOptions options)
+    public BackupSyncEngine(string dest, BackupOptions options, Action<string>? log = null)
     {
         Dest = dest;
         Options = options;
+        _log = log;
     }
 
     public IReadOnlyList<string> NeedList => _needed;
@@ -61,41 +64,60 @@ public sealed class BackupSyncEngine
 
     public async Task ReceiveAndApplyAsync(PeerConnection peer, Action<string, long>? onFile, Action<string>? onError, CancellationToken ct)
     {
-        while (true)
+        try
         {
-            var frame = await peer.RecvJsonAsync(ct)
-                ?? throw new EndOfStreamException("连接已断开");
-
-            string op = frame.GetProperty("op").GetString()!;
-            if (op == ProtocolOp.Done)
-                break;
-            if (op == ProtocolOp.Cancel)
-                throw new OperationCanceledException("主控端已取消操作");
-            if (op == ProtocolOp.Error)
-                throw new InvalidOperationException(frame.GetProperty("msg").GetString());
-            if (op == ProtocolOp.Skip)
+            while (true)
             {
-                string sp = frame.GetProperty("p").GetString() ?? "";
-                string sm = frame.GetProperty("msg").GetString() ?? "";
-                onError?.Invoke($"{sp}  源文件读取失败，已跳过: {sm}");
-                continue;
+                var frame = await peer.RecvJsonAsync(ct)
+                    ?? throw new EndOfStreamException("连接已断开");
+
+                string op = frame.GetProperty("op").GetString()!;
+                if (op == ProtocolOp.Done)
+                    break;
+                if (op == ProtocolOp.Cancel)
+                    throw new OperationCanceledException("主控端已取消操作");
+                if (op == ProtocolOp.Error)
+                    throw new InvalidOperationException(frame.GetProperty("msg").GetString());
+                if (op == ProtocolOp.Skip)
+                {
+                    string sp = frame.GetProperty("p").GetString() ?? "";
+                    string sm = frame.GetProperty("msg").GetString() ?? "";
+                    onError?.Invoke($"{sp}  源文件读取失败，已跳过: {sm}");
+                    continue;
+                }
+                if (op != ProtocolOp.Data)
+                    throw new InvalidOperationException("未知消息: " + op);
+
+                string rel = frame.GetProperty("p").GetString()!;
+                long size = frame.GetProperty("s").GetInt64();
+                long mtime = frame.GetProperty("t").GetInt64();
+
+                await WriteOneAsync(peer, rel, size, mtime, onError, ct);
+                onFile?.Invoke(rel, size);
             }
-            if (op != ProtocolOp.Data)
-                throw new InvalidOperationException("未知消息: " + op);
-
-            string rel = frame.GetProperty("p").GetString()!;
-            long size = frame.GetProperty("s").GetInt64();
-            long mtime = frame.GetProperty("t").GetInt64();
-
-            await WriteOneAsync(peer, rel, size, mtime, onError, ct);
-            onFile?.Invoke(rel, size);
         }
+        catch (OperationCanceledException)
+        {
+            Rollback();
+            throw;
+        }
+
+        _guard.Commit();
+    }
+
+    /// <summary>取消时删除本次已接收的备份文件，返回删除的文件数。</summary>
+    public int Rollback()
+    {
+        int removed = _guard.Rollback();
+        if (removed > 0)
+            _log?.Invoke($"取消清理：已删除本次已接收的 {removed} 个备份文件");
+        return removed;
     }
 
     private async Task WriteOneAsync(PeerConnection peer, string rel, long size, long mtimeTicks, Action<string>? onError, CancellationToken ct)
     {
         string target = Path.Combine(Dest, rel);
-        Directory.CreateDirectory(Path.GetDirectoryName(target)!);
+        _guard.EnsureDirectory(Path.GetDirectoryName(target)!);
         string tmp = target + "." + Guid.NewGuid().ToString("N") + ".tmp";
 
         long consumed = 0;
@@ -113,6 +135,11 @@ public sealed class BackupSyncEngine
                     await fs.WriteAsync(buf.AsMemory(0, n), ct);
                 }
             }
+        }
+        catch (OperationCanceledException)
+        {
+            try { if (File.Exists(tmp)) File.Delete(tmp); } catch { }
+            throw;
         }
         catch (IOException)
         {
@@ -139,5 +166,6 @@ public sealed class BackupSyncEngine
         }
 
         try { File.SetLastWriteTimeUtc(target, new DateTime(mtimeTicks, DateTimeKind.Utc)); } catch { }
+        _guard.MarkWritten(target);
     }
 }

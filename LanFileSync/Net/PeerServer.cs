@@ -356,27 +356,35 @@ public sealed class PeerServer : IDisposable
             ? new SyncOptions { FullReplaceBin = clientBinReplace }
             : _options;
         var clientBackupOptions = ParseBackupFilter(hello, _backupOptions);
-        var engine = new SyncEngine(_root, clientOptions);
-        engine.Plan(list);
-
-        if (engine.NeedList.Count == 0)
-            _log("本机没有需要更新的文件：现有文件与主控端清单完全一致。");
-
-        if (engine.NeedList.Count > 0 && clientBackupBeforeSync && !string.IsNullOrWhiteSpace(_backupDest))
-            await BackupLocalBeforeApplyAsync(conn, engine.NeedList.Count, clientBackupOptions, ct);
-
-        _onTotal(engine.NeedList.Count);
-        if (engine.NeedList.Count > 0 && engine.NeedList.Count < 10)
-            foreach (var p in engine.NeedList) _log("  ← " + p);
-
-        var applyMsgs = new List<string>();
-        await conn.SendJsonAsync(new { op = ProtocolOp.Need, paths = engine.NeedList }, ct);
-        await engine.ReceiveAndApplyAsync(conn, _onFile, m =>
+        var engine = new SyncEngine(_root, clientOptions, _log);
+        try
         {
-            applyMsgs.Add(m);
-            _onError(m);
-        }, ct);
-        await conn.SendJsonAsync(new { op = ProtocolOp.Bye, msgs = applyMsgs, files = engine.Applied }, ct);
+            engine.Plan(list);
+
+            if (engine.NeedList.Count == 0)
+                _log("本机没有需要更新的文件：现有文件与主控端清单完全一致。");
+
+            if (engine.NeedList.Count > 0 && clientBackupBeforeSync && !string.IsNullOrWhiteSpace(_backupDest))
+                await BackupLocalBeforeApplyAsync(conn, engine.NeedList.Count, clientBackupOptions, ct);
+
+            _onTotal(engine.NeedList.Count);
+            if (engine.NeedList.Count > 0 && engine.NeedList.Count < 10)
+                foreach (var p in engine.NeedList) _log("  ← " + p);
+
+            var applyMsgs = new List<string>();
+            await conn.SendJsonAsync(new { op = ProtocolOp.Need, paths = engine.NeedList }, ct);
+            await engine.ReceiveAndApplyAsync(conn, _onFile, m =>
+            {
+                applyMsgs.Add(m);
+                _onError(m);
+            }, ct);
+            await conn.SendJsonAsync(new { op = ProtocolOp.Bye, msgs = applyMsgs, files = engine.Applied }, ct);
+        }
+        catch (OperationCanceledException)
+        {
+            engine.Rollback();
+            throw;
+        }
         _log("接收并应用完成");
     }
 
@@ -389,7 +397,7 @@ public sealed class PeerServer : IDisposable
         logSync($"远端需要 {needCount} 个文件，先备份本机 BBK 到 {dest}");
         try
         {
-            var be = new BackupEngine(_root, dest, options);
+            var be = new BackupEngine(_root, dest, options, logSync);
             var files = be.Plan();
             await be.RunAsync(null, m =>
             {
@@ -438,22 +446,30 @@ public sealed class PeerServer : IDisposable
             ? $"已收到远端文件清单({list.Count} 项)，按本机相同路径计算需要更新的文件..."
             : $"已收到远端文件清单({list.Count} 项)，拷贝模式全部保存为重命名副本...");
 
-        var engine = new TransferEngine(itemPath, isDir, sameSkip, updateMode, deviceTag, deleteSame);
-        engine.Plan(list);
+        var engine = new TransferEngine(itemPath, isDir, sameSkip, updateMode, deviceTag, deleteSame, _log);
+        try
+        {
+            engine.Plan(list);
 
-        if (engine.NeedList.Count == 0)
-            _log("本机没有需要写入的文件：目标文件与主控端清单一致。");
+            if (engine.NeedList.Count == 0)
+                _log("本机没有需要写入的文件：目标文件与主控端清单一致。");
 
-        if (updateMode && engine.NeedList.Count > 0)
-            await BackupTransferTargetAsync(conn, engine, ct);
+            if (updateMode && engine.NeedList.Count > 0)
+                await BackupTransferTargetAsync(conn, engine, ct);
 
-        if (!updateMode && engine.NeedList.Count > 0)
-            _log($"拷贝文件将保存到: {engine.EffectiveTarget}");
+            if (!updateMode && engine.NeedList.Count > 0)
+                _log($"拷贝文件将保存到: {engine.EffectiveTarget}");
 
-        _onTotal(engine.NeedList.Count);
-        await conn.SendJsonAsync(new { op = ProtocolOp.Need, paths = engine.NeedList }, ct);
-        await engine.ReceiveAndApplyAsync(conn, _log, _onFile, _onError, ct);
-        await conn.SendJsonAsync(new { op = ProtocolOp.Bye, msgs = engine.TransferMessages }, ct);
+            _onTotal(engine.NeedList.Count);
+            await conn.SendJsonAsync(new { op = ProtocolOp.Need, paths = engine.NeedList }, ct);
+            await engine.ReceiveAndApplyAsync(conn, _log, _onFile, _onError, ct);
+            await conn.SendJsonAsync(new { op = ProtocolOp.Bye, msgs = engine.TransferMessages }, ct);
+        }
+        catch (OperationCanceledException)
+        {
+            engine.Rollback();
+            throw;
+        }
         _log("传输应用完成");
     }
 
