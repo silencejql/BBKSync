@@ -2,11 +2,12 @@ using System.IO;
 
 namespace LanFileSync;
 
+/// <summary>传输发起端：发送传输请求清单，并按远端请求发送文件。</summary>
 public static class TransferSide
 {
     public static async Task SendTransferManifestAsync(PeerConnection peer, string itemPath, bool isDir, bool sameSkip, bool updateMode, string deviceTag, bool deleteSameName, CancellationToken ct)
     {
-        await peer.SendJsonAsync(new { op = "tinit", p = ToFwdSlash(itemPath), isDir, sameSkip, update = updateMode, dev = deviceTag, delSame = deleteSameName }, ct);
+        await peer.SendJsonAsync(new { op = ProtocolOp.TransferInit, p = ToFwdSlash(itemPath), isDir, sameSkip, update = updateMode, dev = deviceTag, delSame = deleteSameName }, ct);
 
         if (isDir)
         {
@@ -15,7 +16,7 @@ public static class TransferSide
                 try
                 {
                     var fi = new FileInfo(file);
-                    await peer.SendJsonAsync(new { op = "f", p = ToFwdSlash(file), s = fi.Length, t = fi.LastWriteTimeUtc.Ticks }, ct);
+                    await peer.SendJsonAsync(new { op = ProtocolOp.ManifestEntry, p = ToFwdSlash(file), s = fi.Length, t = fi.LastWriteTimeUtc.Ticks }, ct);
                 }
                 catch { }
             }
@@ -24,10 +25,10 @@ public static class TransferSide
         {
             var fi = new FileInfo(itemPath);
             if (fi.Exists)
-                await peer.SendJsonAsync(new { op = "f", p = ToFwdSlash(itemPath), s = fi.Length, t = fi.LastWriteTimeUtc.Ticks }, ct);
+                await peer.SendJsonAsync(new { op = ProtocolOp.ManifestEntry, p = ToFwdSlash(itemPath), s = fi.Length, t = fi.LastWriteTimeUtc.Ticks }, ct);
         }
 
-        await peer.SendJsonAsync(new { op = "mend" }, ct);
+        await peer.SendJsonAsync(new { op = ProtocolOp.ManifestEnd }, ct);
     }
 
     public static async Task SendRequestedFilesAsync(
@@ -51,7 +52,7 @@ public static class TransferSide
             {
                 try
                 {
-                    await peer.SendJsonAsync(new { op = "skip", p = path, msg = ex.Message }, ct);
+                    await peer.SendJsonAsync(new { op = ProtocolOp.Skip, p = path, msg = ex.Message }, ct);
                 }
                 catch { }
                 continue;
@@ -62,7 +63,7 @@ public static class TransferSide
                 long size = fs.Length;
                 var fi = new FileInfo(file);
 
-                await peer.SendJsonAsync(new { op = "data", p = path, s = size, t = fi.LastWriteTimeUtc.Ticks }, ct);
+                await peer.SendJsonAsync(new { op = ProtocolOp.Data, p = path, s = size, t = fi.LastWriteTimeUtc.Ticks }, ct);
 
                 long remaining = size;
                 while (remaining > 0)
@@ -78,7 +79,7 @@ public static class TransferSide
             }
         }
 
-        await peer.SendJsonAsync(new { op = "done" }, ct);
+        await peer.SendJsonAsync(new { op = ProtocolOp.Done }, ct);
     }
 
     private static string ToFwdSlash(string path) => path.Replace('\\', '/');

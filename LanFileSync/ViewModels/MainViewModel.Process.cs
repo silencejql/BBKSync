@@ -20,14 +20,9 @@ public partial class MainViewModel
         var allPaths = new List<string>();
         try
         {
-            foreach (var host in hosts)
-            {
-                if (!await EnsureRemoteReadyAsync(host, port))
-                {
-                    failed.Add($"{host} - 连接测试失败");
-                    continue;
-                }
-                try
+            await RunForEachHostAsync(hosts, port, okIps, failed,
+                (host, ex) => $"获取列表失败 {host}: {ex.Message}",
+                async host =>
                 {
                     using var client = new PeerClient();
                     await client.ConnectAsync(host, port, Constants.RoleFileList, ct);
@@ -35,17 +30,9 @@ public partial class MainViewModel
                     Log($"连接 {host}:{port}，获取远端文件列表...");
                     var paths = await client.FileListAsync(ProcessFileSuffixes, ct);
                     allPaths.AddRange(paths);
-                    okIps.Add(host);
                     ProcessStatusText = $"{host}: 找到 {paths.Count} 个文件";
                     Log($"找到 {paths.Count} 个文件");
-                }
-                catch (OperationCanceledException) { throw; }
-                catch (Exception ex)
-                {
-                    failed.Add($"{host} - {ex.Message}");
-                    LogError($"获取列表失败 {host}: {ex.Message}");
-                }
-            }
+                });
         }
         catch (OperationCanceledException)
         {
@@ -95,31 +82,18 @@ public partial class MainViewModel
         var failed = new List<string>();
         try
         {
-            foreach (var host in hosts)
-            {
-                if (!await EnsureRemoteReadyAsync(host, port))
-                {
-                    failed.Add($"{host} - 连接测试失败");
-                    continue;
-                }
-                try
+            await RunForEachHostAsync(hosts, port, okIps, failed,
+                (host, ex) => $"失败 {host}: {ex.Message}",
+                async host =>
                 {
                     using var client = new PeerClient();
                     await client.ConnectAsync(host, port, Constants.RoleProcessClose, ct);
                     LogDivider();
                     Log($"连接 {host}:{port}，关闭远端进程...");
                     var (msg, _) = await client.ProcessCloseAsync(killNames, ct);
-                    okIps.Add(host);
                     LogError($"{host}: {msg}");
                     ProcessStatusText = $"[完成] {host}: {msg}";
-                }
-                catch (OperationCanceledException) { throw; }
-                catch (Exception ex)
-                {
-                    failed.Add($"{host} - {ex.Message}");
-                    LogError($"失败 {host}: {ex.Message}");
-                }
-            }
+                });
         }
         catch (OperationCanceledException)
         {
@@ -167,31 +141,18 @@ public partial class MainViewModel
         var failed = new List<string>();
         try
         {
-            foreach (var host in hosts)
-            {
-                if (!await EnsureRemoteReadyAsync(host, port))
-                {
-                    failed.Add($"{host} - 连接测试失败");
-                    continue;
-                }
-                try
+            await RunForEachHostAsync(hosts, port, okIps, failed,
+                (host, ex) => $"失败 {host}: {ex.Message}",
+                async host =>
                 {
                     using var client = new PeerClient();
                     await client.ConnectAsync(host, port, Constants.RoleProcessOpen, ct);
                     LogDivider();
                     Log($"连接 {host}:{port}[{deviceInfo}]，启动远端应用程序...");
                     var (msg, _) = await client.ProcessOpenAsync(exePath, ct);
-                    okIps.Add(host);
                     LogSuccess($"{host}: {msg}");
                     ProcessStatusText = $"[完成] {host}: {msg}";
-                }
-                catch (OperationCanceledException) { throw; }
-                catch (Exception ex)
-                {
-                    failed.Add($"{host} - {ex.Message}");
-                    LogError($"失败 {host}: {ex.Message}");
-                }
-            }
+                });
         }
         catch (OperationCanceledException)
         {

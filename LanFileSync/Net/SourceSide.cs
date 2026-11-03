@@ -20,7 +20,7 @@ public static class SourceSide
                 excluded++;
                 continue;
             }
-            await peer.SendJsonAsync(new { op = "f", p = f.RelPath, s = f.Size, t = f.MTimeUtcTicks }, ct);
+            await peer.SendJsonAsync(new { op = ProtocolOp.ManifestEntry, p = f.RelPath, s = f.Size, t = f.MTimeUtcTicks }, ct);
         }
         if (filter != null)
         {
@@ -28,7 +28,7 @@ public static class SourceSide
                 ? $"已按主控端备份规则排除 {excluded} 个文件(Log 日期/忽略规则)，实际发送 {files.Count - excluded} 项。"
                 : $"主控端备份规则未排除文件，共发送 {files.Count} 项。");
         }
-        await peer.SendJsonAsync(new { op = "mend" }, ct);
+        await peer.SendJsonAsync(new { op = ProtocolOp.ManifestEnd }, ct);
     }
 
     /// <summary>与本地备份引擎相同的排除口径：临时文件、忽略规则、Log 保留天数。</summary>
@@ -71,7 +71,7 @@ public static class SourceSide
             {
                 try
                 {
-                    await peer.SendJsonAsync(new { op = "skip", p = path, msg = ex.Message }, ct);
+                    await peer.SendJsonAsync(new { op = ProtocolOp.Skip, p = path, msg = ex.Message }, ct);
                 }
                 catch { }
                 continue;
@@ -82,7 +82,7 @@ public static class SourceSide
                 long size = fs.Length;
                 var fi = new FileInfo(file);
 
-                await peer.SendJsonAsync(new { op = "data", p = path, s = size, t = fi.LastWriteTimeUtc.Ticks }, ct);
+                await peer.SendJsonAsync(new { op = ProtocolOp.Data, p = path, s = size, t = fi.LastWriteTimeUtc.Ticks }, ct);
 
                 long remaining = size;
                 while (remaining > 0)
@@ -98,6 +98,6 @@ public static class SourceSide
             }
         }
 
-        await peer.SendJsonAsync(new { op = "done" }, ct);
+        await peer.SendJsonAsync(new { op = ProtocolOp.Done }, ct);
     }
 }

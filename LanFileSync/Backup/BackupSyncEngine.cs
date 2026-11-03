@@ -2,6 +2,7 @@ using System.IO;
 
 namespace LanFileSync;
 
+/// <summary>远端备份引擎：按 Log 日期与忽略规则筛选远端文件，拉取到备份目录。</summary>
 public sealed class BackupSyncEngine
 {
     public string Dest { get; }
@@ -66,20 +67,20 @@ public sealed class BackupSyncEngine
                 ?? throw new EndOfStreamException("连接已断开");
 
             string op = frame.GetProperty("op").GetString()!;
-            if (op == "done")
+            if (op == ProtocolOp.Done)
                 break;
-            if (op == "cancel")
+            if (op == ProtocolOp.Cancel)
                 throw new OperationCanceledException("主控端已取消操作");
-            if (op == "err")
+            if (op == ProtocolOp.Error)
                 throw new InvalidOperationException(frame.GetProperty("msg").GetString());
-            if (op == "skip")
+            if (op == ProtocolOp.Skip)
             {
                 string sp = frame.GetProperty("p").GetString() ?? "";
                 string sm = frame.GetProperty("msg").GetString() ?? "";
                 onError?.Invoke($"{sp}  源文件读取失败，已跳过: {sm}");
                 continue;
             }
-            if (op != "data")
+            if (op != ProtocolOp.Data)
                 throw new InvalidOperationException("未知消息: " + op);
 
             string rel = frame.GetProperty("p").GetString()!;

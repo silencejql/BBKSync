@@ -2,6 +2,7 @@ using System.IO;
 
 namespace LanFileSync;
 
+/// <summary>更新目标端：接收远端文件清单与数据帧。</summary>
 public static class TargetSide
 {
     public static async Task ReceiveManifestAsync(PeerConnection peer, CancellationToken ct, List<FileEntry> output)
@@ -12,13 +13,13 @@ public static class TargetSide
                 ?? throw new EndOfStreamException("连接已断开");
 
             string op = frame.GetProperty("op").GetString()!;
-            if (op == "mend")
+            if (op == ProtocolOp.ManifestEnd)
                 return;
-            if (op == "cancel")
+            if (op == ProtocolOp.Cancel)
                 throw new OperationCanceledException("主控端已取消操作");
-            if (op == "err")
+            if (op == ProtocolOp.Error)
                 throw new InvalidOperationException(frame.GetProperty("msg").GetString());
-            if (op == "f")
+            if (op == ProtocolOp.ManifestEntry)
             {
                 output.Add(new FileEntry(
                     frame.GetProperty("p").GetString()!,

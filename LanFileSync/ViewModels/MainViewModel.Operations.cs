@@ -31,6 +31,36 @@ public partial class MainViewModel
         return true;
     }
 
+    /// <summary>
+    /// 依次对多台远端主机执行操作：每台先测试连接，成功则执行 body，失败记入 failed 并输出日志。
+    /// 取消异常向上抛出，由调用方统一处理状态栏与忙碌状态。
+    /// </summary>
+    /// <param name="failureLog">失败日志文本：主机 + 异常 → 完整日志。</param>
+    /// <param name="conciseFailure">failed 中只记录主机 IP(程序升级沿用旧格式)；默认记录「IP - 原因」。</param>
+    private async Task RunForEachHostAsync(List<string> hosts, int port, List<string> okIps, List<string> failed,
+        Func<string, Exception, string> failureLog, Func<string, Task> body, bool conciseFailure = false)
+    {
+        foreach (var host in hosts)
+        {
+            if (!await EnsureRemoteReadyAsync(host, port))
+            {
+                failed.Add(conciseFailure ? host : $"{host} - 连接测试失败");
+                continue;
+            }
+            try
+            {
+                await body(host);
+                okIps.Add(host);
+            }
+            catch (OperationCanceledException) { throw; }
+            catch (Exception ex)
+            {
+                failed.Add(conciseFailure ? host : $"{host} - {ex.Message}");
+                LogError(failureLog(host, ex));
+            }
+        }
+    }
+
     private async Task BackupAsync()
     {
         if (!TryEnterOperation()) return;
@@ -113,57 +143,23 @@ public partial class MainViewModel
         var failed = new List<string>();
         try
         {
-            foreach (var host in hosts)
-            {
-                if (!await EnsureRemoteReadyAsync(host, port))
+            await RunForEachHostAsync(hosts, port, okIps, failed,
+                (host, ex) => $"备份失败 {host}: {ex.Message}",
+                async host =>
                 {
-                    failed.Add($"{host} - 连接测试失败");
-                    continue;
-                }
-                string target;
-                if (AutoFetchName)
-                {
-                    string name = "", line = "";
-                    try
-                    {
-                        using var probe = new PeerClient();
-                        await probe.ConnectAsync(host, port, Constants.RoleProbe, ct);
-                        (name, line) = await probe.ProbeDeviceAsync(ct);
-                    }
-                    catch (Exception ex) { LogError($"从 {host} 读取设备配置失败: {ex.Message}"); }
-                    if (string.IsNullOrWhiteSpace(name))
-                    {
-                        LogError($"未能从 {host} 的 BBK 配置获取电脑名称，使用默认名称。");
-                        name = ComputerNameFor(host);
-                    }
-                    else Log($"已从 {host} 获取设备配置：DeviceNo={name}，LineNo={line}");
-                    target = BackupTargetPath(dest, name, line);
-                }
-                else target = BackupTargetPath(dest, ComputerNameFor(host));
-
-                try
-                {
+                    string target = await ResolveRemoteBackupTargetAsync(dest, host, port, ct);
                     bool preBackupBat = RunPreBackupBat;
                     using var client = new PeerClient();
                     await client.ConnectAsync(host, port, Constants.RolePull, ct, preBackupBat,
                         backupFilter: ReadBackupOptions());
                     LogDivider();
                     Log($"已连接远端 {host}:{port}，开始拉取备份 → {target} ...");
-                    _opLabel = "备份";
                     // Log 日期与忽略规则已随握手下发，远端先筛选；本地不再重复筛选
                     await client.BackupPullAsync(target, ReadBackupOptions(), preBackupBat, Log, OnFileProgress, OnTotal,
                         m => LogError("跳过: " + m), ct, sourceFiltered: true, LogError);
-                    okIps.Add(host);
                     LogSuccess($"备份完成: {host}");
                     await CompressAndRemoveFolderAsync(target, ShouldCompress);
-                }
-                catch (OperationCanceledException) { throw; }
-                catch (Exception ex)
-                {
-                    failed.Add($"{host} - {ex.Message}");
-                    LogError($"备份失败 {host}: {ex.Message}");
-                }
-            }
+                });
         }
         catch (OperationCanceledException)
         {
@@ -172,6 +168,30 @@ public partial class MainViewModel
         }
         finally { EndHostOperation(okIps, port); }
         await FinishHostOperationAsync("远程备份", "远程备份", okIps, failed, hosts.Count, port, "备份");
+    }
+
+    /// <summary>确定远端备份目标目录：按设置从远端 BBK 配置读取设备名，失败则回退到 IP 对应名称。</summary>
+    private async Task<string> ResolveRemoteBackupTargetAsync(string dest, string host, int port, CancellationToken ct)
+    {
+        if (!AutoFetchName)
+            return BackupTargetPath(dest, ComputerNameFor(host));
+
+        string name = "", line = "";
+        try
+        {
+            using var probe = new PeerClient();
+            await probe.ConnectAsync(host, port, Constants.RoleProbe, ct);
+            (name, line) = await probe.ProbeDeviceAsync(ct);
+        }
+        catch (Exception ex) { LogError($"从 {host} 读取设备配置失败: {ex.Message}"); }
+
+        if (string.IsNullOrWhiteSpace(name))
+        {
+            LogError($"未能从 {host} 的 BBK 配置获取电脑名称，使用默认名称。");
+            name = ComputerNameFor(host);
+        }
+        else Log($"已从 {host} 获取设备配置：DeviceNo={name}，LineNo={line}");
+        return BackupTargetPath(dest, name, line);
     }
 
     private async Task BackupFromShareAsync(string dest)
@@ -313,65 +333,16 @@ public partial class MainViewModel
         var failed = new List<string>();
         try
         {
-            foreach (var host in hosts)
-            {
-                if (!await EnsureRemoteReadyAsync(host, port))
+            await RunForEachHostAsync(hosts, port, okIps, failed,
+                (host, ex) => $"同步失败 {host}: {ex.Message}",
+                async host =>
                 {
-                    failed.Add($"{host} - 连接测试失败");
-                    continue;
-                }
-                try
-                {
-                    using var client = new PeerClient();
-                    // 推送时把本机更新规则下发给远端执行；接收更新时本地引擎已按本机规则计算
-                    await client.ConnectAsync(host, port, push ? Constants.RolePush : Constants.RolePull, ct,
-                        binReplace: push && options.FullReplaceBin,
-                        backupBeforeSync: push && BackupBeforeSync,
-                        backupFilter: push ? ReadBackupOptions() : null);
-                    List<string> updated;
-                    if (push)
-                    {
-                        LogDivider();
-                        Log($"以本机为源连接远端 {host}:{port} 成功，推送 {root} 的文件清单...");
-                        updated = await client.PushAsync(root, options, Log, OnFileProgress, OnTotal,
-                            m => LogError("远端电脑: " + m), ct);
-                    }
-                    else
-                    {
-                        LogDivider();
-                        Log($"以远端为源连接远端 {host}:{port} 成功，更新到本机 {root} ...");
-                        if (BackupBeforeSync && !string.IsNullOrWhiteSpace(BackupDestPath.Trim()))
-                        {
-                            string dest = Path.Combine(BackupDestPath.Trim(), $"BBK_AutoBackup_{DateTime.Now:yyyyMMdd}");
-                            Log($"先备份本机 BBK 到 {dest}");
-                            try
-                            {
-                                var be = new BackupEngine(root, dest, ReadBackupOptions());
-                                var bakFiles = be.Plan();
-                                await be.RunAsync(OnFileProgress, m => LogError("同步前备份跳过: " + m), ct);
-                                Log($"同步前备份完成({bakFiles.Count} 项)");
-                                await CompressAndRemoveFolderAsync(dest, ShouldCompress);
-                            }
-                            catch (ArgumentException)
-                            {
-                                Log($"{BackupDestPath.Trim()} 为空或与同步目录相同，跳过同步前备份。");
-                            }
-                            catch (Exception ex) { LogError("同步前备份失败: " + ex.Message); }
-                        }
-                        updated = await client.PullAsync(root, options, Log, OnFileProgress, OnTotal,
-                            m => LogError("传输失败，跳过: " + m), ct);
-                    }
-                    okIps.Add(host);
+                    List<string> updated = push
+                        ? await PushUpdateToHostAsync(host, port, root, options, ct)
+                        : await PullUpdateToHostAsync(host, port, root, options, ct);
                     LogSuccess($"同步完成: {host}");
                     LogUpdatedFiles(updated, push ? $"远端 {host}" : "本机");
-                }
-                catch (OperationCanceledException) { throw; }
-                catch (Exception ex)
-                {
-                    failed.Add($"{host} - {ex.Message}");
-                    LogError($"同步失败 {host}: {ex.Message}");
-                }
-            }
+                });
         }
         catch (OperationCanceledException)
         {
@@ -380,6 +351,58 @@ public partial class MainViewModel
         }
         finally { EndHostOperation(okIps, port); }
         await FinishHostOperationAsync("远端同步", "同步", okIps, failed, hosts.Count, port);
+    }
+
+    /// <summary>推送更新：连接远端并下发本机更新规则，由远端计算差异后接收并回传已更新的文件。</summary>
+    private async Task<List<string>> PushUpdateToHostAsync(string host, int port, string root, SyncOptions options,
+        CancellationToken ct)
+    {
+        using var client = new PeerClient();
+        // 推送时把本机更新规则下发给远端执行
+        await client.ConnectAsync(host, port, Constants.RolePush, ct,
+            binReplace: options.FullReplaceBin,
+            backupBeforeSync: BackupBeforeSync,
+            backupFilter: ReadBackupOptions());
+        LogDivider();
+        Log($"以本机为源连接远端 {host}:{port} 成功，推送 {root} 的文件清单...");
+        return await client.PushAsync(root, options, Log, OnFileProgress, OnTotal,
+            m => LogError("远端电脑: " + m), ct);
+    }
+
+    /// <summary>接收更新：按本机规则先备份本机 BBK，再从远端拉取差异文件。</summary>
+    private async Task<List<string>> PullUpdateToHostAsync(string host, int port, string root, SyncOptions options,
+        CancellationToken ct)
+    {
+        using var client = new PeerClient();
+        await client.ConnectAsync(host, port, Constants.RolePull, ct);
+        LogDivider();
+        Log($"以远端为源连接远端 {host}:{port} 成功，更新到本机 {root} ...");
+        await BackupLocalBeforeSyncAsync(root, ct);
+        return await client.PullAsync(root, options, Log, OnFileProgress, OnTotal,
+            m => LogError("传输失败，跳过: " + m), ct);
+    }
+
+    /// <summary>接收更新前按本机勾选备份本机 BBK；未勾选或目标为空时跳过。</summary>
+    private async Task BackupLocalBeforeSyncAsync(string root, CancellationToken ct)
+    {
+        if (!BackupBeforeSync || string.IsNullOrWhiteSpace(BackupDestPath.Trim()))
+            return;
+
+        string dest = Path.Combine(BackupDestPath.Trim(), $"BBK_AutoBackup_{DateTime.Now:yyyyMMdd}");
+        Log($"先备份本机 BBK 到 {dest}");
+        try
+        {
+            var be = new BackupEngine(root, dest, ReadBackupOptions());
+            var bakFiles = be.Plan();
+            await be.RunAsync(OnFileProgress, m => LogError("同步前备份跳过: " + m), ct);
+            Log($"同步前备份完成({bakFiles.Count} 项)");
+            await CompressAndRemoveFolderAsync(dest, ShouldCompress);
+        }
+        catch (ArgumentException)
+        {
+            Log($"{BackupDestPath.Trim()} 为空或与同步目录相同，跳过同步前备份。");
+        }
+        catch (Exception ex) { LogError("同步前备份失败: " + ex.Message); }
     }
 
     private async Task SyncFromShareAsync()
@@ -465,14 +488,9 @@ public partial class MainViewModel
         var failed = new List<string>();
         try
         {
-            foreach (var host in hosts)
-            {
-                if (!await EnsureRemoteReadyAsync(host, port))
-                {
-                    failed.Add($"{host} - 连接测试失败");
-                    continue;
-                }
-                try
+            await RunForEachHostAsync(hosts, port, okIps, failed,
+                (host, ex) => $"传输失败 {host}: {ex.Message}",
+                async host =>
                 {
                     using var client = new PeerClient();
                     await client.ConnectAsync(host, port, Constants.RoleTransfer, ct);
@@ -480,16 +498,8 @@ public partial class MainViewModel
                     Log($"传输到 {host}:{port}({(updateMode ? "更新模式" : "拷贝模式")})...");
                     await client.TransferAsync(itemPath, isDir, TransferSameSkip, updateMode, localDevice,
                         TransferDeleteSameName, Log, OnFileProgress, OnTotal, m => LogError("远端电脑: " + m), ct);
-                    okIps.Add(host);
                     LogSuccess($"传输完成: {host}");
-                }
-                catch (OperationCanceledException) { throw; }
-                catch (Exception ex)
-                {
-                    failed.Add($"{host} - {ex.Message}");
-                    LogError($"传输失败 {host}: {ex.Message}");
-                }
-            }
+                });
         }
         catch (OperationCanceledException)
         {
@@ -539,14 +549,9 @@ public partial class MainViewModel
         var failed = new List<string>();
         try
         {
-            foreach (var host in hosts)
-            {
-                if (!await EnsureRemoteReadyAsync(host, port))
-                {
-                    failed.Add($"{host} - 连接测试失败");
-                    continue;
-                }
-                try
+            await RunForEachHostAsync(hosts, port, okIps, failed,
+                (host, ex) => $"拉取失败 {host}: {ex.Message}",
+                async host =>
                 {
                     using var client = new PeerClient();
                     await client.ConnectAsync(host, port, Constants.RoleTransferPull, ct);
@@ -554,16 +559,8 @@ public partial class MainViewModel
                     Log($"从 {host}:{port} 拉取文件(远端路径: {itemPath}，{(updateMode ? "更新模式" : "拷贝模式")})...");
                     await client.TransferFromRemoteAsync(itemPath, updateMode, deviceName, localDevice, TransferDeleteSameName,
                         Log, OnFileProgress, OnTotal, m => LogError("远端电脑: " + m), ct);
-                    okIps.Add(host);
                     LogSuccess($"拉取完成: {host}");
-                }
-                catch (OperationCanceledException) { throw; }
-                catch (Exception ex)
-                {
-                    failed.Add($"{host} - {ex.Message}");
-                    LogError($"拉取失败 {host}: {ex.Message}");
-                }
-            }
+                });
         }
         catch (OperationCanceledException)
         {
@@ -648,30 +645,18 @@ public partial class MainViewModel
         Log($"目标: {host}，端口: {port}");
         try
         {
-            foreach (string h in hosts)
-            {
-                if (!await EnsureRemoteReadyAsync(h, port))
-                {
-                    failed.Add(h);
-                    continue;
-                }
-                try
+            await RunForEachHostAsync(hosts, port, okIps, failed,
+                (h, ex) => $"{h} 更新失败: {ex.Message}",
+                async h =>
                 {
                     Log($"--- 连接 {h}:{port} ---");
                     using var client = new PeerClient();
                     await client.ConnectAsync(h, port, Constants.RoleUpdate, _coordinator.Token);
                     Log("已连接，正在发送更新文件...");
                     await client.UpdateAsync(exePath, m => Log(m), _coordinator.Token);
-                    okIps.Add(h);
                     LogSuccess($"{h} 更新完成");
-                }
-                catch (OperationCanceledException) { throw; }
-                catch (Exception ex)
-                {
-                    LogError($"{h} 更新失败: {ex.Message}");
-                    failed.Add(h);
-                }
-            }
+                },
+                conciseFailure: true);
         }
         catch (OperationCanceledException)
         {

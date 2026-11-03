@@ -29,3 +29,40 @@ internal static class Constants
     internal static readonly TimeSpan TimeTolerance = TimeSpan.FromSeconds(1);
     internal const int BackupTagPrefixLength = 4;
 }
+
+/// <summary>
+/// 协议帧中 op 字段的取值。主控端与远端必须共用同一组常量，
+/// 避免字符串字面量散落各处、拼写不一致时出现「未知消息」。
+/// </summary>
+internal static class ProtocolOp
+{
+    // 通用
+    internal const string Cancel = "cancel";
+    internal const string Error = "err";
+    internal const string Request = "req";
+    internal const string ManifestEntry = "f";
+    internal const string ManifestEnd = "mend";
+    internal const string Skip = "skip";
+    internal const string Data = "data";
+    internal const string Done = "done";
+    internal const string Bye = "bye";
+
+    // 更新 / 备份
+    internal const string RemoteLog = "blog";
+    internal const string Need = "need";
+    internal const string Bat = "bat";
+    internal const string TransferInit = "tinit";
+
+    // 设备、进程与文件列表
+    internal const string DeviceConfig = "cfg";
+    internal const string ProcessClose = "aclose";
+    internal const string ProcessOpen = "aopen";
+    internal const string FileList = "flst";
+    internal const string FileListEntry = "fpath";
+    internal const string FileListEnd = "fend";
+    internal const string Ok = "ok";
+
+    // 程序升级
+    internal const string Ready = "ready";
+    internal const string Exe = "exe";
+}

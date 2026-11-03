@@ -2,6 +2,7 @@ using System.IO;
 
 namespace LanFileSync;
 
+/// <summary>文件传输引擎：计算需要传输的文件并落盘；更新模式先重命名原文件，拷贝模式另存副本。</summary>
 public sealed class TransferEngine
 {
     private readonly string _itemPath;
@@ -177,20 +178,20 @@ public sealed class TransferEngine
                 ?? throw new EndOfStreamException("连接已断开");
 
             string op = frame.GetProperty("op").GetString()!;
-            if (op == "done")
+            if (op == ProtocolOp.Done)
                 break;
-            if (op == "cancel")
+            if (op == ProtocolOp.Cancel)
                 throw new OperationCanceledException("主控端已取消操作");
-            if (op == "err")
+            if (op == ProtocolOp.Error)
                 throw new InvalidOperationException(frame.GetProperty("msg").GetString());
-            if (op == "skip")
+            if (op == ProtocolOp.Skip)
             {
                 string sp = frame.GetProperty("p").GetString() ?? "";
                 string sm = frame.GetProperty("msg").GetString() ?? "";
                 ReceiveMessage($"源文件读取失败，已跳过: {sp}({sm})", onError);
                 continue;
             }
-            if (op != "data")
+            if (op != ProtocolOp.Data)
                 throw new InvalidOperationException("未知消息: " + op);
 
             string p = frame.GetProperty("p").GetString()!;
