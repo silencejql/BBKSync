@@ -156,7 +156,7 @@ function Find-GitHubEndpointIp {
         $client = New-Object System.Net.Sockets.TcpClient
         try {
             $task = $client.ConnectAsync($ip, 443)
-            if ($task.Wait(3000) -and $client.Connected) { return $ip }
+            if ($task.Wait(5000) -and $client.Connected) { return $ip }
         }
         catch { }
         finally { $client.Dispose() }
@@ -203,6 +203,7 @@ function New-GitHubReleaseByRest {
     $release = Get-Content $respFile -Raw | ConvertFrom-Json
     Write-Ok "Release 已创建（id=$($release.id)）"
 
+    $assetUploaded = $false
     if ($AssetPath -and (Test-Path $AssetPath)) {
         $uploadIp = Find-GitHubEndpointIp 'uploads.github.com'
         if (-not $uploadIp) {
@@ -221,10 +222,12 @@ function New-GitHubReleaseByRest {
             }
             else {
                 Write-Ok 'BBKSync.exe 已上传到 Release'
+                $assetUploaded = $true
             }
         }
     }
     Remove-Item $bodyFile, $respFile -ErrorAction SilentlyContinue
+    return $assetUploaded
 }
 
 # ---------------------------------------------------------------------------
@@ -395,6 +398,7 @@ try {
             $asset = if (-not $SkipPublish) { Join-Path $PublishDir $ExeName } else { $null }
             $notes = "自动发布 $Tag。产物：$ExeName，可在远端电脑使用「程序升级」批量分发。"
             $releaseDone = $false
+            $releaseAssetUploaded = $false
             if (Get-Command gh -ErrorAction SilentlyContinue) {
                 $releaseArgs = @('release', 'create', $Tag, '--title', $Tag, '--notes', $notes)
                 if ($Version -match '-') { $releaseArgs += '--prerelease' }
@@ -402,6 +406,7 @@ try {
                 gh @releaseArgs
                 if ($LASTEXITCODE -eq 0) {
                     $releaseDone = $true
+                    $releaseAssetUploaded = [bool]($asset -and (Test-Path $asset))
                     Write-Ok "GitHub Release 已发布：$Tag"
                 }
                 else {
@@ -412,7 +417,7 @@ try {
                 if (-not $releaseToken) {
                     Fail '缺少 GitHub 令牌：请先执行 gh auth login，或设置 GH_TOKEN 环境变量后重跑。'
                 }
-                New-GitHubReleaseByRest -Tag $Tag -Version $Version -Token $releaseToken -AssetPath $asset
+                $releaseAssetUploaded = New-GitHubReleaseByRest -Tag $Tag -Version $Version -Token $releaseToken -AssetPath $asset
                 Write-Ok "GitHub Release 已发布：$Tag"
             }
         }
@@ -445,7 +450,8 @@ catch {
 Write-Step "发版完成：$Tag"
 Write-Host "    git 状态   : tag $Tag 已创建$(if ($Push) { ' 并推送至 origin' } else { '（仅本地，确认无误后执行：git push origin ' + $Tag + '）' })"
 if ($Push) {
-    Write-Host "    GitHub     : Release $Tag 已创建并附带 $ExeName"
+    $assetNote = if ($releaseAssetUploaded) { "已创建并附带 $ExeName" } else { "已创建（未附 $ExeName）" }
+    Write-Host "    GitHub     : Release $Tag $assetNote"
 }
 if (-not $SkipPublish) {
     Write-Host "    发布目录   : $PublishDir"
