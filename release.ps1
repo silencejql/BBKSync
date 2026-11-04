@@ -205,25 +205,32 @@ function New-GitHubReleaseByRest {
 
     $assetUploaded = $false
     if ($AssetPath -and (Test-Path $AssetPath)) {
-        $uploadIp = Find-GitHubEndpointIp 'uploads.github.com'
-        if (-not $uploadIp) {
-            Write-Warn 'uploads.github.com 不可达，跳过上传 BBKSync.exe（Release 已创建）。'
+        $assetName = [System.Uri]::EscapeDataString((Split-Path $AssetPath -Leaf))
+        $uploadUrl = "https://uploads.github.com/repos/$slug/releases/$($release.id)/assets?name=$assetName"
+        # 依次尝试默认线路与 DNS 解析出的各 IP：部分网络会屏蔽个别 GitHub IP
+        $targets = @('')
+        try {
+            $targets += Resolve-DnsName 'uploads.github.com' -Type A -ErrorAction Stop |
+                Select-Object -ExpandProperty IPAddress
         }
-        else {
-            $assetName = [System.Uri]::EscapeDataString((Split-Path $AssetPath -Leaf))
-            $uploadUrl = "https://uploads.github.com/repos/$slug/releases/$($release.id)/assets?name=$assetName"
-            $upCode = curl.exe -sS --max-time 300 --resolve "uploads.github.com:443:$uploadIp" `
+        catch { }
+        foreach ($ip in ($targets | Select-Object -Unique)) {
+            $resolveArgs = @()
+            if ($ip) { $resolveArgs = @('--resolve', "uploads.github.com:443:$ip") }
+            $upCode = curl.exe -sS --connect-timeout 20 --max-time 300 @resolveArgs `
                 -X POST $uploadUrl `
                 -H "Authorization: Bearer $Token" `
                 -H "Content-Type: application/octet-stream" `
                 --data-binary "@$AssetPath" -o $respFile -w '%{http_code}'
-            if ($LASTEXITCODE -ne 0 -or "$upCode" -notmatch '^20') {
-                Write-Warn "上传 BBKSync.exe 失败（HTTP $upCode），Release 已创建但未附产物。"
-            }
-            else {
-                Write-Ok 'BBKSync.exe 已上传到 Release'
+            if ($LASTEXITCODE -eq 0 -and "$upCode" -match '^20') {
+                Write-Ok "BBKSync.exe 已上传到 Release（$(if ($ip) { "IP $ip" } else { '默认线路' })）"
                 $assetUploaded = $true
+                break
             }
+            Write-Warn "附件上传失败（$(if ($ip) { "IP $ip" } else { '默认线路' })）：HTTP $upCode"
+        }
+        if (-not $assetUploaded) {
+            Write-Warn 'Release 已创建，但未附上 BBKSync.exe；可稍后手动补传。'
         }
     }
     Remove-Item $bodyFile, $respFile -ErrorAction SilentlyContinue
