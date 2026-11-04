@@ -383,6 +383,7 @@ public partial class MainViewModel : ObservableObject
         set
         {
             if (!SetProperty(ref _purgeItems, value)) return;
+            TrackBackupItems(value);
             NotifyCommandState();
         }
     }
@@ -393,6 +394,7 @@ public partial class MainViewModel : ObservableObject
         set
         {
             if (!SetProperty(ref _renameItems, value)) return;
+            TrackBackupItems(value);
             NotifyCommandState();
         }
     }
@@ -475,8 +477,8 @@ public partial class MainViewModel : ObservableObject
     public bool CanStopServer => !_isBusy && _server != null;
     public bool CanRunProcess => !_isBusy;
     public bool CanToolsScan => !_toolsBusy;
-    public bool CanPurgeRun => !_toolsBusy && (_purgeItems?.Any(i => i.Action == "删除") ?? false);
-    public bool CanRenameRun => !_toolsBusy && (_renameItems?.Any(i => i.Action == "删除" || i.Action == "重命名") ?? false);
+    public bool CanPurgeRun => !_toolsBusy && (_purgeItems?.Any(i => i.IsChecked) ?? false);
+    public bool CanRenameRun => !_toolsBusy && (_renameItems?.Any(i => i.IsChecked || i.Action == "重命名") ?? false);
 
     private bool IsIdle => !_isBusy && !_opEntered && !IsRemoteBusy;
 

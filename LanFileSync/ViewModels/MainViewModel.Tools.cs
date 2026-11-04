@@ -1,3 +1,4 @@
+using System.ComponentModel;
 using System.IO;
 using System.Text.RegularExpressions;
 
@@ -179,26 +180,16 @@ public partial class MainViewModel
                 {
                     if (purge)
                     {
+                        _purgeGroupCount = candidates.Select(c => c.GroupKey)
+                            .Distinct(StringComparer.OrdinalIgnoreCase).Count();
+                        _purgeUndatedCount = undated;
                         PurgeItems = views;
-                        int del = views.Count(v => v.IsChecked);
-                        int keep = views.Count - del;
-                        PurgeSummary = views.Count == 0
-                            ? "未发现带日期命名的备份文件夹或压缩包（含各子文件夹）。"
-                            : $"发现 {candidates.Select(c => c.GroupKey).Distinct(StringComparer.OrdinalIgnoreCase).Count()} 组备份" +
-                              (undated > 0 ? $"（含 {undated} 个同名无日期项，按修改日期比较）" : "") +
-                              $"：默认勾选删除 {del} 项，保留最新 {keep} 项，可手动调整勾选（按所在文件夹分组）。";
+                        UpdatePurgeSummary();
                     }
                     else
                     {
                         RenameItems = views;
-                        int del = views.Count(v => v.IsChecked);
-                        int ren = views.Count(v => v.Action == "重命名");
-                        int keep = views.Count(v => v.Action == "保留");
-                        RenameSummary = views.Count == 0
-                            ? "未发现带日期命名的备份文件夹或压缩包（含各子文件夹）。"
-                            : $"重命名 {ren} 项，默认勾选删除 {del} 项" +
-                              (keep > 0 ? $"，保留无日期最新项 {keep} 项" : "") +
-                              "，可手动调整勾选（按所在文件夹分组）。";
+                        UpdateRenameSummary();
                     }
                     Log(purge
                         ? $"扫描完成（剔除旧备份）：{dir}，命中 {candidates.Count} 项备份"
@@ -373,7 +364,7 @@ public partial class MainViewModel
                 bool keep = i == 0;
                 views.Add(new BackupItemView
                 {
-                    Action = keep ? "保留" : "删除",
+                    BaseAction = "保留",
                     IsChecked = !keep,
                     Name = c.DisplayName,
                     LastWriteText = DateTextOf(c),
@@ -404,31 +395,14 @@ public partial class MainViewModel
             for (int i = 0; i < ordered.Count; i++)
             {
                 var c = ordered[i];
-                string action, newName;
-                bool canCheck = true;
-                if (i == 0 && rename)
-                {
-                    action = "重命名";
-                    newName = targetDisplay;
-                    canCheck = false; // 重命名保留项不可勾选删除
-                }
-                else if (i == 0)
-                {
-                    action = "保留";
-                    newName = "—";
-                }
-                else
-                {
-                    action = "删除";
-                    newName = "—";
-                }
+                bool isRename = i == 0 && rename;
                 views.Add(new BackupItemView
                 {
-                    Action = action,
-                    IsChecked = action == "删除",
-                    CanCheck = canCheck,
+                    BaseAction = isRename ? "重命名" : "保留",
+                    IsChecked = i > 0,
+                    CanCheck = !isRename, // 重命名保留项不可勾选删除
                     Name = c.DisplayName,
-                    NewName = newName,
+                    NewName = isRename ? targetDisplay : "—",
                     LastWriteText = DateTextOf(c),
                     FullPath = c.FullPath,
                     TargetPath = targetPath,
@@ -469,6 +443,57 @@ public partial class MainViewModel
             Microsoft.VisualBasic.FileIO.FileSystem.DeleteFile(path,
                 Microsoft.VisualBasic.FileIO.UIOption.OnlyErrorDialogs,
                 Microsoft.VisualBasic.FileIO.RecycleOption.SendToRecycleBin);
+    }
+
+    /// <summary>最近一次剔除旧备份扫描的分组数与同名无日期项数（勾选变化时重算汇总用）。</summary>
+    private int _purgeGroupCount;
+    private int _purgeUndatedCount;
+
+    /// <summary>订阅预览行的勾选变化，用于即时刷新操作提示、汇总与按钮使能。</summary>
+    private void TrackBackupItems(List<BackupItemView>? items)
+    {
+        if (items is null) return;
+        foreach (var item in items) item.PropertyChanged += BackupItemChanged;
+    }
+
+    private void BackupItemChanged(object? sender, PropertyChangedEventArgs e)
+    {
+        if (e.PropertyName != nameof(BackupItemView.IsChecked)) return;
+        if (sender is not BackupItemView item) return;
+        if (PurgeItems is { } purge && purge.Contains(item)) UpdatePurgeSummary();
+        else if (RenameItems is { } rename && rename.Contains(item)) UpdateRenameSummary();
+        NotifyCommandState();
+    }
+
+    private void UpdatePurgeSummary()
+    {
+        var items = PurgeItems;
+        if (items is null || items.Count == 0)
+        {
+            PurgeSummary = "未发现带日期命名的备份文件夹或压缩包（含各子文件夹）。";
+            return;
+        }
+        int del = items.Count(i => i.IsChecked);
+        int keep = items.Count - del;
+        PurgeSummary = $"发现 {_purgeGroupCount} 组备份" +
+                       (_purgeUndatedCount > 0 ? $"（含 {_purgeUndatedCount} 个同名无日期项，按修改日期比较）" : "") +
+                       $"：勾选删除 {del} 项，保留 {keep} 项，可手动调整勾选（按所在文件夹分组）。";
+    }
+
+    private void UpdateRenameSummary()
+    {
+        var items = RenameItems;
+        if (items is null || items.Count == 0)
+        {
+            RenameSummary = "未发现带日期命名的备份文件夹或压缩包（含各子文件夹）。";
+            return;
+        }
+        int del = items.Count(i => i.IsChecked);
+        int ren = items.Count(i => i.Action == "重命名");
+        int keep = items.Count(i => !i.IsChecked && i.Action != "重命名");
+        RenameSummary = $"重命名 {ren} 项，勾选删除 {del} 项" +
+                        (keep > 0 ? $"，保留 {keep} 项" : "") +
+                        "，可手动调整勾选（按所在文件夹分组）。";
     }
 
     private void RunToolsAction(Func<int> action, bool rescanPurge)

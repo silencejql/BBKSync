@@ -708,7 +708,8 @@
                                                         <RowDefinition Height="Auto" />
                                                     </Grid.RowDefinitions>
                                                     <ListView x:Name="lvPurge" Grid.Row="0" Margin="0,2,0,0" MinHeight="120" FontSize="10"
-                                                              ItemsSource="{Binding PurgeItems}">
+                                                              ItemsSource="{Binding PurgeItems}"
+                                                              SelectionChanged="ToolsListView_SelectionChanged">
                                                         <ListView.View>
                                                             <GridView>
                                                                 <GridViewColumn Header="删除" Width="40">
@@ -779,7 +780,8 @@
                                                         <RowDefinition Height="Auto" />
                                                     </Grid.RowDefinitions>
                                                     <ListView x:Name="lvRename" Grid.Row="0" Margin="0,2,0,0" MinHeight="120" FontSize="10"
-                                                              ItemsSource="{Binding RenameItems}">
+                                                              ItemsSource="{Binding RenameItems}"
+                                                              SelectionChanged="ToolsListView_SelectionChanged">
                                                         <ListView.View>
                                                             <GridView>
                                                                 <GridViewColumn Header="删除" Width="40">

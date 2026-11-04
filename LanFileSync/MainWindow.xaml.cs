@@ -92,6 +92,10 @@ public partial class MainWindow : Window
         _vm.SelectedTabIndex = tabs.SelectedIndex;
     }
 
+    /// <summary>预览列表选中行时标记事件已处理，避免冒泡到外层 TabControl
+    /// 触发其模板里的 Selector.SelectionChanged 动画（表现为整页刷新）。</summary>
+    private void ToolsListView_SelectionChanged(object sender, SelectionChangedEventArgs e) => e.Handled = true;
+
     #region 密码保护
 
     /// <summary>重新上锁密码保护标签页：显示遮罩、清空密码并隐藏错误提示。</summary>
