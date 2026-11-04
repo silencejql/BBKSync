@@ -700,7 +700,7 @@
                                             <TabItem Header="剔除旧备份文件" Width="150">
                                                 <TabItem.ToolTip>
                                                     <TextBlock TextWrapping="Wrap" MaxWidth="420"
-                                                               Text="按备份名称中的日期排序保留最新的一个。" />
+                                                               Text="按备份名称中的日期排序保留最新的一个；同名但无日期后缀的文件/文件夹按修改日期参与比较。预览列表中勾选即删除，旧项默认自动勾选，可手动调整。" />
                                                 </TabItem.ToolTip>
                                                 <Grid>
                                                     <Grid.RowDefinitions>
@@ -711,6 +711,16 @@
                                                               ItemsSource="{Binding PurgeItems}">
                                                         <ListView.View>
                                                             <GridView>
+                                                                <GridViewColumn Header="删除" Width="40">
+                                                                    <GridViewColumn.CellTemplate>
+                                                                        <DataTemplate>
+                                                                            <CheckBox IsChecked="{Binding IsChecked}"
+                                                                                      IsEnabled="{Binding CanCheck}"
+                                                                                      HorizontalAlignment="Center"
+                                                                                      ToolTip="勾选后执行删除时移入回收站" />
+                                                                        </DataTemplate>
+                                                                    </GridViewColumn.CellTemplate>
+                                                                </GridViewColumn>
                                                                 <GridViewColumn Header="操作" Width="70">
                                                                     <GridViewColumn.CellTemplate>
                                                                         <DataTemplate>
@@ -731,9 +741,9 @@
                                                                         </DataTemplate>
                                                                     </GridViewColumn.CellTemplate>
                                                                 </GridViewColumn>
-                                                                <GridViewColumn Header="名称" Width="520"
+                                                                <GridViewColumn Header="名称" Width="480"
                                                                                DisplayMemberBinding="{Binding Name}" />
-                                                                <GridViewColumn Header="名称日期" Width="160"
+                                                                <GridViewColumn Header="日期" Width="190"
                                                                                DisplayMemberBinding="{Binding LastWriteText}" />
                                                             </GridView>
                                                         </ListView.View>
@@ -752,7 +762,7 @@
                                                         <Button x:Name="btnPurgeRun" Grid.Column="2" Content="执行删除"
                                                                 Style="{StaticResource AccentButton}" Padding="14,6"
                                                                 Command="{Binding PurgeRunCommand}"
-                                                                ToolTip="删除的备份会移入回收站，可在回收站还原。" />
+                                                                ToolTip="勾选的备份移入回收站，可在回收站还原。" />
                                                     </Grid>
                                                 </Grid>
                                             </TabItem>
@@ -761,7 +771,7 @@
                                             <TabItem Header="删除日期命名" Width="150">
                                                 <TabItem.ToolTip>
                                                     <TextBlock TextWrapping="Wrap" MaxWidth="420"
-                                                               Text="将备份文件夹或压缩包名称结尾的日期段删除；删除后同名的只保留名称中日期最新的一个，再把保留项重命名为无日期名称。如目标名称已存在，按文件修改日期取舍：候选更新则替换旧目标，目标更新则保留目标。" />
+                                                               Text="将备份文件夹或压缩包名称结尾的日期段删除；删除后同名的只保留日期最新的一个，再把保留项重命名为无日期名称。同名但无日期后缀的文件/文件夹按修改日期参与比较：无日期项更新则保留它。预览列表中勾选即删除，旧项默认自动勾选，可手动调整。" />
                                                 </TabItem.ToolTip>
                                                 <Grid>
                                                     <Grid.RowDefinitions>
@@ -772,6 +782,16 @@
                                                               ItemsSource="{Binding RenameItems}">
                                                         <ListView.View>
                                                             <GridView>
+                                                                <GridViewColumn Header="删除" Width="40">
+                                                                    <GridViewColumn.CellTemplate>
+                                                                        <DataTemplate>
+                                                                            <CheckBox IsChecked="{Binding IsChecked}"
+                                                                                      IsEnabled="{Binding CanCheck}"
+                                                                                      HorizontalAlignment="Center"
+                                                                                      ToolTip="勾选后执行时移入回收站" />
+                                                                        </DataTemplate>
+                                                                    </GridViewColumn.CellTemplate>
+                                                                </GridViewColumn>
                                                                 <GridViewColumn Header="操作" Width="70">
                                                                     <GridViewColumn.CellTemplate>
                                                                         <DataTemplate>
@@ -785,7 +805,7 @@
                                                                                             <DataTrigger Binding="{Binding Action}" Value="重命名">
                                                                                                 <Setter Property="Foreground" Value="{DynamicResource AccentBrush}" />
                                                                                             </DataTrigger>
-                                                                                            <DataTrigger Binding="{Binding Action}" Value="跳过">
+                                                                                            <DataTrigger Binding="{Binding Action}" Value="保留">
                                                                                                 <Setter Property="Foreground" Value="{DynamicResource TextSubBrush}" />
                                                                                             </DataTrigger>
                                                                                         </Style.Triggers>
@@ -795,11 +815,11 @@
                                                                         </DataTemplate>
                                                                     </GridViewColumn.CellTemplate>
                                                                 </GridViewColumn>
-                                                                <GridViewColumn Header="现名称" Width="360"
+                                                                <GridViewColumn Header="现名称" Width="330"
                                                                                DisplayMemberBinding="{Binding Name}" />
-                                                                <GridViewColumn Header="新名称" Width="260"
+                                                                <GridViewColumn Header="新名称" Width="250"
                                                                                DisplayMemberBinding="{Binding NewName}" />
-                                                                <GridViewColumn Header="名称日期" Width="160"
+                                                                <GridViewColumn Header="日期" Width="190"
                                                                                DisplayMemberBinding="{Binding LastWriteText}" />
                                                             </GridView>
                                                         </ListView.View>
@@ -818,7 +838,7 @@
                                                         <Button x:Name="btnRenameRun" Grid.Column="2" Content="执行重命名"
                                                                 Style="{StaticResource AccentButton}" Padding="14,6"
                                                                 Command="{Binding RenameRunCommand}"
-                                                                ToolTip="多余备份移入回收站，保留项重命名为去掉日期段的名称。" />
+                                                                ToolTip="勾选项移入回收站，保留项重命名为去掉日期段的名称。" />
                                                     </Grid>
                                                 </Grid>
                                             </TabItem>

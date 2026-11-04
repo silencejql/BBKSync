@@ -16,13 +16,15 @@ public partial class MainViewModel
         public required string Key { get; init; }
         /// <summary>所在文件夹的绝对路径；与 Key 共同构成分组键（不同子文件夹分别成组）。</summary>
         public required string DirPath { get; init; }
-        /// <summary>名称中日期段解析出的日期（组内按此排序，而非文件修改时间）。</summary>
+        /// <summary>名称中日期段解析出的日期（组内按此排序）；无日期项为修改日期。</summary>
         public required DateTime NameDate { get; init; }
-        /// <summary>文件修改时间（与已存在目标比较新旧用）。</summary>
+        /// <summary>文件修改时间。</summary>
         public required DateTime LastWrite { get; init; }
-        /// <summary>名称日期的展示文本。</summary>
+        /// <summary>名称日期的展示文本（无日期项展示修改日期）。</summary>
         public required string DateText { get; init; }
         public required bool IsDir { get; init; }
+        /// <summary>名称是否带日期段；false 表示同名无日期项，比较时用修改日期。</summary>
+        public required bool IsDated { get; init; }
         /// <summary>分组键：同一子文件夹内日期之前名称相同才算一组。</summary>
         public string GroupKey => DirPath + '\u0001' + Key;
     }
@@ -42,14 +44,14 @@ public partial class MainViewModel
     private void PurgeRun()
     {
         if (PurgeItems is not List<BackupItemView> plan) return;
-        var toDelete = plan.Where(i => i.Action == "删除").ToList();
+        var toDelete = plan.Where(i => i.IsChecked).ToList();
         if (toDelete.Count == 0)
         {
-            _dialogs.Info("没有需要删除的旧备份。", "提示");
+            _dialogs.Info("请先在预览列表中勾选要删除的项。", "提示");
             return;
         }
         if (!_dialogs.Confirm(
-                $"确认将 {toDelete.Count} 个旧备份移入回收站？\n\n每组仅保留名称日期最新的一个。\n删除项可在回收站中还原。",
+                $"确认将勾选的 {toDelete.Count} 项移入回收站？\n\n每组仅保留日期最新的一项（同名无日期项按修改日期比较）。\n删除项可在回收站中还原。",
                 "确认剔除旧备份")) return;
 
         string dir = ToolsDir.Trim();
@@ -82,18 +84,16 @@ public partial class MainViewModel
     private void RenameRun()
     {
         if (RenameItems is not List<BackupItemView> plan) return;
-        var toDelete = plan.Where(i => i.Action == "删除").ToList();
+        var toDelete = plan.Where(i => i.IsChecked).ToList();
         var toRename = plan.Where(i => i.Action == "重命名").ToList();
-        int toReplace = toRename.Count(i => i.ReplaceTarget);
         if (toDelete.Count == 0 && toRename.Count == 0)
         {
-            _dialogs.Info("没有需要处理的备份（可能已整理，或存在名称冲突需人工处理）。", "提示");
+            _dialogs.Info("没有需要处理的备份（可在预览列表中勾选要删除的项）。", "提示");
             return;
         }
         if (!_dialogs.Confirm(
-                $"确认执行？\n\n重命名 {toRename.Count} 项（去掉名称结尾的日期段）" +
-                (toReplace > 0 ? $"，其中 {toReplace} 项替换修改日期更旧的已有目标（旧目标移入回收站）" : "") + "；\n" +
-                $"同名的 {toDelete.Count} 个旧备份移入回收站。\n\n删除项可在回收站中还原。",
+                $"确认执行？\n\n重命名 {toRename.Count} 项（去掉名称结尾的日期段）；\n" +
+                $"勾选的 {toDelete.Count} 项移入回收站。\n\n删除项可在回收站中还原。",
                 "确认删除日期命名")) return;
 
         string dir = ToolsDir.Trim();
@@ -121,29 +121,16 @@ public partial class MainViewModel
             {
                 try
                 {
-                    // 执行前再次确认目标状态，防止扫描后被外部改动
-                    if (item.IsDir ? Directory.Exists(item.TargetPath) : File.Exists(item.TargetPath))
+                    // 执行前再次确认目标状态，防止扫描后被外部改动（或同名旧项未勾选删除）
+                    if (Directory.Exists(item.TargetPath) || File.Exists(item.TargetPath))
                     {
-                        if (!item.ReplaceTarget)
-                        {
-                            LogError("目标名称已存在，跳过重命名: " + item.NewName);
-                            fail++;
-                            continue;
-                        }
-                        // 替换：仅当候选仍比目标新时清走旧目标，否则跳过
-                        if (GetLastWrite(item.TargetPath) >= GetLastWrite(item.FullPath))
-                        {
-                            LogError("目标修改日期不早于候选，跳过替换: " + item.NewName);
-                            fail++;
-                            continue;
-                        }
-                        RecyclePath(item.TargetPath, item.IsDir);
-                        LogSuccess("旧目标已移入回收站: " + item.NewName);
+                        LogError("目标名称已存在，跳过重命名: " + item.NewName);
+                        fail++;
+                        continue;
                     }
                     if (item.IsDir) Directory.Move(item.FullPath, item.TargetPath);
                     else File.Move(item.FullPath, item.TargetPath);
-                    LogSuccess($"重命名: {item.Name}  →  {item.NewName}" +
-                               (item.ReplaceTarget ? "（已替换旧目标）" : ""));
+                    LogSuccess($"重命名: {item.Name}  →  {item.NewName}");
                     ok++;
                 }
                 catch (Exception ex)
@@ -187,28 +174,31 @@ public partial class MainViewModel
             {
                 var candidates = ScanBackupCandidates(dir);
                 List<BackupItemView> views = purge ? BuildPurgePlan(candidates) : BuildRenamePlan(candidates);
+                int undated = candidates.Count(c => !c.IsDated);
                 _ui.Invoke(() =>
                 {
                     if (purge)
                     {
                         PurgeItems = views;
-                        int del = views.Count(v => v.Action == "删除");
+                        int del = views.Count(v => v.IsChecked);
                         int keep = views.Count - del;
                         PurgeSummary = views.Count == 0
                             ? "未发现带日期命名的备份文件夹或压缩包（含各子文件夹）。"
-                            : $"发现 {candidates.Select(c => c.GroupKey).Distinct(StringComparer.OrdinalIgnoreCase).Count()} 组备份：将删除 {del} 项，保留最新 {keep} 项（按所在文件夹分组）。";
+                            : $"发现 {candidates.Select(c => c.GroupKey).Distinct(StringComparer.OrdinalIgnoreCase).Count()} 组备份" +
+                              (undated > 0 ? $"（含 {undated} 个同名无日期项，按修改日期比较）" : "") +
+                              $"：默认勾选删除 {del} 项，保留最新 {keep} 项，可手动调整勾选（按所在文件夹分组）。";
                     }
                     else
                     {
                         RenameItems = views;
-                        int del = views.Count(v => v.Action == "删除");
+                        int del = views.Count(v => v.IsChecked);
                         int ren = views.Count(v => v.Action == "重命名");
-                        int skip = views.Count(v => v.Action == "跳过");
-                        int rep = views.Count(v => v.ReplaceTarget);
+                        int keep = views.Count(v => v.Action == "保留");
                         RenameSummary = views.Count == 0
                             ? "未发现带日期命名的备份文件夹或压缩包（含各子文件夹）。"
-                            : $"重命名 {ren} 项" + (rep > 0 ? $"（替换旧目标 {rep} 项）" : "") +
-                              $"，删除同名旧备份 {del} 项" + (skip > 0 ? $"，冲突跳过 {skip} 项" : "") + "（按所在文件夹分组）。";
+                            : $"重命名 {ren} 项，默认勾选删除 {del} 项" +
+                              (keep > 0 ? $"，保留无日期最新项 {keep} 项" : "") +
+                              "，可手动调整勾选（按所在文件夹分组）。";
                     }
                     Log(purge
                         ? $"扫描完成（剔除旧备份）：{dir}，命中 {candidates.Count} 项备份"
@@ -229,12 +219,44 @@ public partial class MainViewModel
     /// <summary>
     /// 递归枚举备份候选项：普通子文件夹继续深入；名称带日期段的文件夹本身就是一个完整备份单元，
     /// 收录但不再深入（避免父子同时被改名/删除导致路径失效）。压缩包仅识别 .zip/.rar/.7z。
+    /// 最后为每组补充同名但无日期后缀的文件/文件夹（按修改日期参与新旧比较）。
     /// </summary>
     private static List<BackupCandidate> ScanBackupCandidates(string root)
     {
         var result = new List<BackupCandidate>();
         ScanBackupDir(root, root, result);
+        AppendUndatedMembers(root, result);
         return result;
+    }
+
+    /// <summary>为每组带日期命名的备份补充同名无日期后缀的文件/文件夹（无日期项用修改日期参与比较）。</summary>
+    private static void AppendUndatedMembers(string root, List<BackupCandidate> result)
+    {
+        foreach (var group in result.GroupBy(c => c.GroupKey, StringComparer.OrdinalIgnoreCase).ToList())
+        {
+            var first = group.First();
+            string undated = Path.Combine(first.DirPath, first.Key);
+            bool isDir;
+            if (Directory.Exists(undated)) isDir = true;
+            else if (File.Exists(undated)) isDir = false;
+            else continue;
+            DateTime lastWrite = GetLastWrite(undated);
+            string display;
+            try { display = Path.GetRelativePath(root, undated); }
+            catch { display = first.Key; }
+            result.Add(new BackupCandidate
+            {
+                FullPath = undated,
+                DisplayName = display,
+                Key = first.Key,
+                DirPath = first.DirPath,
+                NameDate = lastWrite,
+                LastWrite = lastWrite,
+                DateText = lastWrite.ToString("yyyy-MM-dd HH:mm:ss"),
+                IsDir = isDir,
+                IsDated = false
+            });
+        }
     }
 
     private static void ScanBackupDir(string root, string dir, List<BackupCandidate> result)
@@ -317,7 +339,8 @@ public partial class MainViewModel
             NameDate = nameDate,
             LastWrite = lastWrite,
             DateText = dateText,
-            IsDir = isDir
+            IsDir = isDir,
+            IsDated = true
         });
     }
 
@@ -337,24 +360,23 @@ public partial class MainViewModel
         return false;
     }
 
-    /// <summary>剔除旧备份：每个子文件夹内每组保留修改日期最新的一项，其余标记删除。</summary>
+    /// <summary>剔除旧备份：每个子文件夹内每组保留日期最新的一项（无日期项按修改日期比较），其余默认勾选删除。</summary>
     private static List<BackupItemView> BuildPurgePlan(List<BackupCandidate> candidates)
     {
         var views = new List<BackupItemView>();
         foreach (var group in candidates.GroupBy(c => c.GroupKey, StringComparer.OrdinalIgnoreCase))
         {
-            var ordered = group
-                .OrderByDescending(c => c.NameDate)
-                .ThenBy(c => c.DisplayName, StringComparer.OrdinalIgnoreCase)
-                .ToList();
+            var ordered = OrderByNewest(group);
             for (int i = 0; i < ordered.Count; i++)
             {
                 var c = ordered[i];
+                bool keep = i == 0;
                 views.Add(new BackupItemView
                 {
-                    Action = i == 0 ? "保留" : "删除",
+                    Action = keep ? "保留" : "删除",
+                    IsChecked = !keep,
                     Name = c.DisplayName,
-                    LastWriteText = c.DateText,
+                    LastWriteText = DateTextOf(c),
                     FullPath = c.FullPath,
                     IsDir = c.IsDir
                 });
@@ -364,40 +386,36 @@ public partial class MainViewModel
         return views.OrderBy(v => v.Name, StringComparer.OrdinalIgnoreCase).ToList();
     }
 
-    /// <summary>删除日期命名：同一子文件夹内目标名不存在时最新项重命名、其余删除；
-    /// 目标名已存在时按修改日期取舍——候选更新则替换旧目标（旧目标入回收站），目标更新则保留目标并删除组内旧项。</summary>
+    /// <summary>删除日期命名：组内最新项为带日期命名时重命名为无日期名称，其余项默认勾选删除；
+    /// 同名无日期项最新（修改日期不早于各名称日期）则原样保留，组内带日期旧备份默认勾选删除。</summary>
     private static List<BackupItemView> BuildRenamePlan(List<BackupCandidate> candidates)
     {
         var views = new List<BackupItemView>();
         foreach (var group in candidates.GroupBy(c => c.GroupKey, StringComparer.OrdinalIgnoreCase))
         {
-            var ordered = group
-                .OrderByDescending(c => c.NameDate)
-                .ThenBy(c => c.DisplayName, StringComparer.OrdinalIgnoreCase)
-                .ToList();
-            // 重命名始终在候选项自身所在的文件夹内进行；不同子文件夹分别判定冲突
-            var first = ordered[0];
-            string targetPath = Path.Combine(first.DirPath, first.Key);
-            bool conflict = Directory.Exists(targetPath) || File.Exists(targetPath);
-            // 冲突时按文件修改日期取舍：候选更新→替换；目标更新→跳过候选
-            bool replace = conflict && first.LastWrite > GetLastWrite(targetPath);
-            string relDir = Path.GetDirectoryName(first.DisplayName) ?? "";
-            string targetDisplay = string.IsNullOrEmpty(relDir) ? first.Key : Path.Combine(relDir, first.Key);
+            var ordered = OrderByNewest(group);
+            var keeper = ordered[0];
+            // 重命名始终在候选项自身所在的文件夹内进行；不同子文件夹分别成组
+            bool rename = keeper.IsDated;
+            string targetPath = Path.Combine(keeper.DirPath, keeper.Key);
+            string relDir = Path.GetDirectoryName(keeper.DisplayName) ?? "";
+            string targetDisplay = string.IsNullOrEmpty(relDir) ? keeper.Key : Path.Combine(relDir, keeper.Key);
 
             for (int i = 0; i < ordered.Count; i++)
             {
                 var c = ordered[i];
                 string action, newName;
-                if (conflict && !replace)
-                {
-                    // 目标更新：最新候选原样保留，旧项仍删除
-                    action = i == 0 ? "跳过" : "删除";
-                    newName = i == 0 ? "目标已存在且更新" : "—";
-                }
-                else if (i == 0)
+                bool canCheck = true;
+                if (i == 0 && rename)
                 {
                     action = "重命名";
                     newName = targetDisplay;
+                    canCheck = false; // 重命名保留项不可勾选删除
+                }
+                else if (i == 0)
+                {
+                    action = "保留";
+                    newName = "—";
                 }
                 else
                 {
@@ -407,12 +425,13 @@ public partial class MainViewModel
                 views.Add(new BackupItemView
                 {
                     Action = action,
+                    IsChecked = action == "删除",
+                    CanCheck = canCheck,
                     Name = c.DisplayName,
                     NewName = newName,
-                    LastWriteText = c.DateText,
+                    LastWriteText = DateTextOf(c),
                     FullPath = c.FullPath,
                     TargetPath = targetPath,
-                    ReplaceTarget = i == 0 && replace,
                     IsDir = c.IsDir
                 });
             }
@@ -420,6 +439,17 @@ public partial class MainViewModel
         // 按相对路径（名称）排序，同组相邻便于对比，不按操作排序
         return views.OrderBy(v => v.Name, StringComparer.OrdinalIgnoreCase).ToList();
     }
+
+    /// <summary>组内按新旧排序：带日期项按名称日期，无日期项按修改日期；日期相同时带日期命名的优先保留。</summary>
+    private static List<BackupCandidate> OrderByNewest(IEnumerable<BackupCandidate> group) =>
+        group.OrderByDescending(c => c.NameDate)
+             .ThenByDescending(c => c.IsDated)
+             .ThenBy(c => c.DisplayName, StringComparer.OrdinalIgnoreCase)
+             .ToList();
+
+    /// <summary>日期列展示：带日期项显示名称日期，无日期项显示修改日期并标注。</summary>
+    private static string DateTextOf(BackupCandidate c) =>
+        c.IsDated ? c.DateText : c.DateText + "（修改日期）";
 
     /// <summary>取文件/文件夹的修改时间；异常时返回最小值。</summary>
     private static DateTime GetLastWrite(string path)
