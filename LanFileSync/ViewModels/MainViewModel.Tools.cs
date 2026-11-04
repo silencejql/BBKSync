@@ -58,24 +58,10 @@ public partial class MainViewModel
         string dir = ToolsDir.Trim();
         RunToolsAction(() =>
         {
-            int ok = 0, fail = 0;
             LogDivider();
             Log($"剔除旧备份：{dir}，共 {toDelete.Count} 项待删除");
-            foreach (var item in toDelete)
-            {
-                try
-                {
-                    RecyclePath(item.FullPath, item.IsDir);
-                    LogSuccess("已移入回收站: " + item.Name);
-                    ok++;
-                }
-                catch (Exception ex)
-                {
-                    LogError("删除失败: " + item.Name + " —— " + ex.Message);
-                    fail++;
-                }
-            }
-            LogSuccess($"剔除完成：成功 {ok} 项" + (fail > 0 ? $"，失败 {fail} 项" : ""));
+            var (ok, fail) = RecycleCheckedItems(toDelete);
+            LogSuccess($"剔除完成：成功 {ok} 项" + (fail > 0 ? $"，失败/跳过 {fail} 项" : ""));
             return ok;
         }, rescanPurge: true);
     }
@@ -86,7 +72,7 @@ public partial class MainViewModel
     {
         if (RenameItems is not List<BackupItemView> plan) return;
         var toDelete = plan.Where(i => i.IsChecked).ToList();
-        var toRename = plan.Where(i => i.Action == "重命名").ToList();
+        var toRename = plan.Where(i => i.IsRename).ToList();
         if (toDelete.Count == 0 && toRename.Count == 0)
         {
             _dialogs.Info("没有需要处理的备份（可在预览列表中勾选要删除的项）。", "提示");
@@ -103,21 +89,10 @@ public partial class MainViewModel
             int ok = 0, fail = 0;
             LogDivider();
             Log($"删除日期命名：{dir}，重命名 {toRename.Count} 项，删除 {toDelete.Count} 项");
-            // 先删除多余备份，再重命名保留项，避免目标名与待删除项无关（目标名本就无日期，不会冲突）
-            foreach (var item in toDelete)
-            {
-                try
-                {
-                    RecyclePath(item.FullPath, item.IsDir);
-                    LogSuccess("已移入回收站: " + item.Name);
-                    ok++;
-                }
-                catch (Exception ex)
-                {
-                    LogError("删除失败: " + item.Name + " —— " + ex.Message);
-                    fail++;
-                }
-            }
+            // 先删除多余备份，再重命名保留项：目标名不带日期，只可能被同组的无日期旧项占用
+            var (delOk, delFail) = RecycleCheckedItems(toDelete);
+            ok += delOk;
+            fail += delFail;
             foreach (var item in toRename)
             {
                 try
@@ -364,7 +339,6 @@ public partial class MainViewModel
                 bool keep = i == 0;
                 views.Add(new BackupItemView
                 {
-                    BaseAction = "保留",
                     IsChecked = !keep,
                     Name = c.DisplayName,
                     LastWriteText = DateTextOf(c),
@@ -398,9 +372,8 @@ public partial class MainViewModel
                 bool isRename = i == 0 && rename;
                 views.Add(new BackupItemView
                 {
-                    BaseAction = isRename ? "重命名" : "保留",
+                    IsRename = isRename,
                     IsChecked = i > 0,
-                    CanCheck = !isRename, // 重命名保留项不可勾选删除
                     Name = c.DisplayName,
                     NewName = isRename ? targetDisplay : "—",
                     LastWriteText = DateTextOf(c),
@@ -449,6 +422,44 @@ public partial class MainViewModel
     private int _purgeGroupCount;
     private int _purgeUndatedCount;
 
+    /// <summary>清空预览列表与汇总（目录变更或重新扫描前调用）。</summary>
+    private void ClearToolsPreview()
+    {
+        PurgeItems = null;
+        RenameItems = null;
+        PurgeSummary = "";
+        RenameSummary = "";
+        _purgeGroupCount = 0;
+        _purgeUndatedCount = 0;
+    }
+
+    /// <summary>把列表中的项逐项移入回收站；返回成功与失败（含已不存在）数量。</summary>
+    private (int Ok, int Fail) RecycleCheckedItems(IEnumerable<BackupItemView> items)
+    {
+        int ok = 0, fail = 0;
+        foreach (var item in items)
+        {
+            try
+            {
+                if (!File.Exists(item.FullPath) && !Directory.Exists(item.FullPath))
+                {
+                    LogError("已不存在，跳过: " + item.Name);
+                    fail++;
+                    continue;
+                }
+                RecyclePath(item.FullPath, item.IsDir);
+                LogSuccess("已移入回收站: " + item.Name);
+                ok++;
+            }
+            catch (Exception ex)
+            {
+                LogError("删除失败: " + item.Name + " —— " + ex.Message);
+                fail++;
+            }
+        }
+        return (ok, fail);
+    }
+
     /// <summary>订阅预览行的勾选变化，用于即时刷新操作提示、汇总与按钮使能。</summary>
     private void TrackBackupItems(List<BackupItemView>? items)
     {
@@ -456,12 +467,18 @@ public partial class MainViewModel
         foreach (var item in items) item.PropertyChanged += BackupItemChanged;
     }
 
+    /// <summary>取消旧预览行的订阅，避免被替换的列表继续触发汇总与命令刷新。</summary>
+    private void UntrackBackupItems(List<BackupItemView>? items)
+    {
+        if (items is null) return;
+        foreach (var item in items) item.PropertyChanged -= BackupItemChanged;
+    }
+
     private void BackupItemChanged(object? sender, PropertyChangedEventArgs e)
     {
         if (e.PropertyName != nameof(BackupItemView.IsChecked)) return;
-        if (sender is not BackupItemView item) return;
-        if (PurgeItems is { } purge && purge.Contains(item)) UpdatePurgeSummary();
-        else if (RenameItems is { } rename && rename.Contains(item)) UpdateRenameSummary();
+        UpdatePurgeSummary();
+        UpdateRenameSummary();
         NotifyCommandState();
     }
 
@@ -489,8 +506,8 @@ public partial class MainViewModel
             return;
         }
         int del = items.Count(i => i.IsChecked);
-        int ren = items.Count(i => i.Action == "重命名");
-        int keep = items.Count(i => !i.IsChecked && i.Action != "重命名");
+        int ren = items.Count(i => i.IsRename);
+        int keep = items.Count(i => !i.IsChecked && !i.IsRename);
         RenameSummary = $"重命名 {ren} 项，勾选删除 {del} 项" +
                         (keep > 0 ? $"，保留 {keep} 项" : "") +
                         "，可手动调整勾选（按所在文件夹分组）。";

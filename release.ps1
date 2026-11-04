@@ -5,7 +5,8 @@
 .DESCRIPTION
     流程：校验环境与版本 -> 工作区干净检查 -> 打带注释的 git tag（v 前缀）
          -> dotnet publish 发布 -> 校验 exe 版本号与 tag 一致
-         -> 可选运行 reorganize_publish.ps1 -> 可选推送分支与 tag 到 origin。
+         -> 可选运行 reorganize_publish.ps1 -> 可选推送分支与 tag 到 origin
+         -> 指定 -Push 时调用 gh 在 GitHub 上创建同名 Release 并附带 BBKSync.exe。
 
     版本号由 MinVer 依据 git tag 自动计算（csproj 中 MinVerTagPrefix=v），
     因此必须【先打 tag，再发布】，产物才会带正式版本号。
@@ -16,7 +17,8 @@
     必填，不带 v 前缀的语义化版本号，如 1.4.0 或 1.4.0-beta.1。
 
 .PARAMETER Push
-    发布成功后把当前分支与新 tag 推送到 origin。默认只在本地操作。
+    发布成功后把当前分支与新 tag 推送到 origin，并在 GitHub 上创建同名 Release
+    （需要 gh CLI 已登录，或 git 凭据中存在 github.com 令牌）。默认只在本地操作。
 
 .PARAMETER Reorganize
     发布成功后执行仓库根目录下的 reorganize_publish.ps1（整理运行时到 deps 子目录）。
@@ -106,6 +108,123 @@ function Invoke-Native {
         $detail = if ($ErrorMessage) { $ErrorMessage } else { "$File 执行失败，退出码 $LASTEXITCODE" }
         Fail $detail
     }
+}
+
+# 从 git 凭据助手读取 github.com 令牌（不落盘、不打印），供 gh 创建 Release 使用
+function Get-GitHubStoredToken {
+    $env:GCM_INTERACTIVE = 'never'
+    try {
+        $credential = "protocol=https`nhost=github.com`n`n" | git credential fill 2>$null
+        if ($LASTEXITCODE -ne 0) { return $null }
+        foreach ($line in $credential) {
+            if ($line -match '^password=(.+)$') { return $Matches[1] }
+        }
+        return $null
+    }
+    catch {
+        return $null
+    }
+    finally {
+        Remove-Item Env:GCM_INTERACTIVE -ErrorAction SilentlyContinue
+    }
+}
+
+# 从 origin 地址解析 owner/repo（支持 SSH 与 HTTPS 两种写法）
+function Get-GitHubRepoSlug {
+    $url = git remote get-url origin 2>$null
+    if ($url -and ($url -match 'github\.com[:/](?<slug>[^/]+/[^/]+?)(?:\.git)?$')) {
+        return $Matches['slug']
+    }
+    return $null
+}
+
+# 返回可连通的 GitHub 域名 IP：优先 DNS 结果，api.github.com 另备已知可用 IP
+# （部分网络会屏蔽 DNS 解析到的个别 GitHub IP，导致 gh/curl 默认连接超时）
+function Find-GitHubEndpointIp {
+    param([string]$HostName)
+    $candidates = @()
+    try {
+        $candidates += Resolve-DnsName $HostName -Type A -ErrorAction Stop |
+            Select-Object -ExpandProperty IPAddress
+    }
+    catch { }
+    if ($HostName -eq 'api.github.com') {
+        $candidates += @('140.82.112.5', '140.82.113.5', '140.82.114.5', '140.82.116.5')
+    }
+    foreach ($ip in ($candidates | Select-Object -Unique)) {
+        if (-not $ip) { continue }
+        $client = New-Object System.Net.Sockets.TcpClient
+        try {
+            $task = $client.ConnectAsync($ip, 443)
+            if ($task.Wait(3000) -and $client.Connected) { return $ip }
+        }
+        catch { }
+        finally { $client.Dispose() }
+    }
+    return $null
+}
+
+# gh 不可用时的兜底：直接调用 REST API 创建 Release 并上传 exe
+function New-GitHubReleaseByRest {
+    param(
+        [string]$Tag,
+        [string]$Version,
+        [string]$Token,
+        [string]$AssetPath
+    )
+    $slug = Get-GitHubRepoSlug
+    if (-not $slug) { Fail '无法从 origin 解析 GitHub 仓库标识（owner/repo）。' }
+    $apiIp = Find-GitHubEndpointIp 'api.github.com'
+    if (-not $apiIp) { Fail 'api.github.com:443 不可达，无法创建 GitHub Release。请检查网络或代理后重试。' }
+
+    $bodyFile = Join-Path $env:TEMP "bbksync-release-$Tag.json"
+    $respFile = Join-Path $env:TEMP "bbksync-release-$Tag-response.json"
+    $bodyObj = @{
+        tag_name   = $Tag
+        name       = $Tag
+        body       = "自动发布 $Tag。产物：BBKSync.exe，可在远端电脑使用「程序升级」批量分发。"
+        draft      = $false
+        prerelease = [bool]($Version -match '-')
+    }
+    $utf8NoBom = New-Object System.Text.UTF8Encoding($false)
+    [System.IO.File]::WriteAllText($bodyFile, ($bodyObj | ConvertTo-Json -Compress), $utf8NoBom)
+
+    $code = curl.exe -sS --max-time 60 --resolve "api.github.com:443:$apiIp" `
+        -X POST "https://api.github.com/repos/$slug/releases" `
+        -H "Authorization: Bearer $Token" `
+        -H "Accept: application/vnd.github+json" `
+        -H "Content-Type: application/json; charset=utf-8" `
+        --data-binary "@$bodyFile" -o $respFile -w '%{http_code}'
+    if ($LASTEXITCODE -ne 0 -or "$code" -notmatch '^20') {
+        $detail = if (Test-Path $respFile) { Get-Content $respFile -Raw } else { '' }
+        Remove-Item $bodyFile, $respFile -ErrorAction SilentlyContinue
+        Fail "创建 GitHub Release 失败（HTTP $code）。$detail"
+    }
+    $release = Get-Content $respFile -Raw | ConvertFrom-Json
+    Write-Ok "Release 已创建（id=$($release.id)）"
+
+    if ($AssetPath -and (Test-Path $AssetPath)) {
+        $uploadIp = Find-GitHubEndpointIp 'uploads.github.com'
+        if (-not $uploadIp) {
+            Write-Warn 'uploads.github.com 不可达，跳过上传 BBKSync.exe（Release 已创建）。'
+        }
+        else {
+            $assetName = [System.Uri]::EscapeDataString((Split-Path $AssetPath -Leaf))
+            $uploadUrl = "https://uploads.github.com/repos/$slug/releases/$($release.id)/assets?name=$assetName"
+            $upCode = curl.exe -sS --max-time 300 --resolve "uploads.github.com:443:$uploadIp" `
+                -X POST $uploadUrl `
+                -H "Authorization: Bearer $Token" `
+                -H "Content-Type: application/octet-stream" `
+                --data-binary "@$AssetPath" -o $respFile -w '%{http_code}'
+            if ($LASTEXITCODE -ne 0 -or "$upCode" -notmatch '^20') {
+                Write-Warn "上传 BBKSync.exe 失败（HTTP $upCode），Release 已创建但未附产物。"
+            }
+            else {
+                Write-Ok 'BBKSync.exe 已上传到 Release'
+            }
+        }
+    }
+    Remove-Item $bodyFile, $respFile -ErrorAction SilentlyContinue
 }
 
 # ---------------------------------------------------------------------------
@@ -258,6 +377,47 @@ try {
             Invoke-Native -File git -Arguments @('push', 'origin', "HEAD:$branch") -ErrorMessage '推送分支失败'
             Invoke-Native -File git -Arguments @('push', 'origin', "refs/tags/$Tag") -ErrorMessage '推送 tag 失败'
             Write-Ok '分支与 tag 已推送'
+            # 推送已成功，后续失败不能再回滚本地 tag（否则与远端不一致）
+            $tagCreated = $false
+
+            Write-Step "在 GitHub 上创建 Release：$Tag"
+            # 优先用 gh（有登录态时最省事）；网络屏蔽 api.github.com 时自动改用 REST 兜底
+            $releaseToken = $env:GH_TOKEN
+            if (-not $releaseToken) { $releaseToken = $env:GITHUB_TOKEN }
+            if (-not $releaseToken) {
+                $releaseToken = Get-GitHubStoredToken
+                if ($releaseToken) {
+                    $env:GH_TOKEN = $releaseToken
+                    Write-Ok '已从 git 凭据读取令牌（仅本次进程使用）'
+                }
+            }
+
+            $asset = if (-not $SkipPublish) { Join-Path $PublishDir $ExeName } else { $null }
+            $notes = "自动发布 $Tag。产物：$ExeName，可在远端电脑使用「程序升级」批量分发。"
+            $releaseDone = $false
+            if (Get-Command gh -ErrorAction SilentlyContinue) {
+                $releaseArgs = @('release', 'create', $Tag, '--title', $Tag, '--notes', $notes)
+                if ($Version -match '-') { $releaseArgs += '--prerelease' }
+                if ($asset -and (Test-Path $asset)) { $releaseArgs += $asset }
+                gh @releaseArgs
+                if ($LASTEXITCODE -eq 0) {
+                    $releaseDone = $true
+                    Write-Ok "GitHub Release 已发布：$Tag"
+                }
+                else {
+                    Write-Warn 'gh 创建 Release 失败，改用 REST API 兜底。'
+                }
+            }
+            if (-not $releaseDone) {
+                if (-not $releaseToken) {
+                    Fail '缺少 GitHub 令牌：请先执行 gh auth login，或设置 GH_TOKEN 环境变量后重跑。'
+                }
+                New-GitHubReleaseByRest -Tag $Tag -Version $Version -Token $releaseToken -AssetPath $asset
+                Write-Ok "GitHub Release 已发布：$Tag"
+            }
+        }
+        else {
+            Write-Warn '未指定 -Push，跳过推送与 GitHub Release 创建（本地发版不产生远程 Release）。'
         }
     }
     catch {
@@ -284,6 +444,9 @@ catch {
 # ---------------------------------------------------------------------------
 Write-Step "发版完成：$Tag"
 Write-Host "    git 状态   : tag $Tag 已创建$(if ($Push) { ' 并推送至 origin' } else { '（仅本地，确认无误后执行：git push origin ' + $Tag + '）' })"
+if ($Push) {
+    Write-Host "    GitHub     : Release $Tag 已创建并附带 $ExeName"
+}
 if (-not $SkipPublish) {
     Write-Host "    发布目录   : $PublishDir"
     Write-Host "    可分发文件 : $(Join-Path $PublishDir $ExeName)"

@@ -376,13 +376,24 @@ public partial class MainViewModel : ObservableObject
     public string ProcessStatusText { get => _processStatusText; set => SetProperty(ref _processStatusText, value); }
     public List<string>? ProcessPathItems { get => _processPathItems; set => SetProperty(ref _processPathItems, value); }
 
-    public string ToolsDir { get => _toolsDir; set => SetProperty(ref _toolsDir, value); }
+    public string ToolsDir
+    {
+        get => _toolsDir;
+        set
+        {
+            if (!SetProperty(ref _toolsDir, value)) return;
+            // 目录变更后原预览已失效，清空避免误删其他目录的项
+            ClearToolsPreview();
+        }
+    }
     public List<BackupItemView>? PurgeItems
     {
         get => _purgeItems;
         set
         {
+            var old = _purgeItems;
             if (!SetProperty(ref _purgeItems, value)) return;
+            UntrackBackupItems(old);
             TrackBackupItems(value);
             NotifyCommandState();
         }
@@ -393,7 +404,9 @@ public partial class MainViewModel : ObservableObject
         get => _renameItems;
         set
         {
+            var old = _renameItems;
             if (!SetProperty(ref _renameItems, value)) return;
+            UntrackBackupItems(old);
             TrackBackupItems(value);
             NotifyCommandState();
         }
@@ -478,7 +491,7 @@ public partial class MainViewModel : ObservableObject
     public bool CanRunProcess => !_isBusy;
     public bool CanToolsScan => !_toolsBusy;
     public bool CanPurgeRun => !_toolsBusy && (_purgeItems?.Any(i => i.IsChecked) ?? false);
-    public bool CanRenameRun => !_toolsBusy && (_renameItems?.Any(i => i.IsChecked || i.Action == "重命名") ?? false);
+    public bool CanRenameRun => !_toolsBusy && (_renameItems?.Any(i => i.IsChecked || i.IsRename) ?? false);
 
     private bool IsIdle => !_isBusy && !_opEntered && !IsRemoteBusy;
 

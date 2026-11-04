@@ -703,11 +703,13 @@ git push origin v1.4.0
 ### 一键发版脚本 release.ps1
 
 仓库根目录提供 [release.ps1](release.ps1)（兼容 Windows PowerShell 5.1+，文件为带 BOM 的 UTF-8），
-自动完成「校验 → 打 tag → 发布 → 校验产物版本 → 可选整理目录 → 可选推送」全过程。
+自动完成「校验 → 打 tag → 发布 → 校验产物版本 → 可选整理目录 → 可选推送 → GitHub Release」全过程。
 关键顺序是**先打 tag 再发布**（MinVer 依据 tag 计算正式版本）；
 任何步骤失败都会自动删除本次新建的本地 tag，修正后可直接重跑。
 
 前置条件：工作区干净（无未提交改动）、已安装 .NET 10 SDK、本地与远端不存在同名 tag。
+使用 `-Push` 时还会调用 **GitHub CLI（gh）** 创建与 tag 同名的 Release 并附带 `BBKSync.exe`；
+gh 未登录时会自动尝试从 git 凭据助手读取 github.com 令牌（仅在本次进程内通过 `GH_TOKEN` 使用，不落盘）。
 
 ```powershell
 # 本地发版（打 v1.4.0，发布到 .\publish，不推送）
@@ -726,7 +728,7 @@ git push origin v1.4.0
 | 参数 | 作用 | 默认 |
 |------|------|------|
 | `-Version` | **必填**，不带 `v` 前缀的版本号，支持预发布后缀（如 `1.4.0-beta.1`） | — |
-| `-Push` | 成功后推送当前分支与 tag 到 origin | 关，仅本地 |
+| `-Push` | 成功后推送当前分支与 tag 到 origin，并创建同名 GitHub Release | 关，仅本地 |
 | `-Reorganize` | 发布后执行 `reorganize_publish.ps1` | 关 |
 | `-CleanPublish` | 发布前清空 `publish` 目录（注意会删掉其中的 settings/history 等运行期文件） | 关 |
 | `-AllowDirty` | 允许工作区有未提交改动 | 关 |
