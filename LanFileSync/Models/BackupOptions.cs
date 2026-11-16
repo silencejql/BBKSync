@@ -12,9 +12,14 @@ public sealed class BackupOptions
     public DateTime? LogToDate { get; init; }
     public IReadOnlyList<string> IgnoreRegexes { get; init; } = Array.Empty<string>();
 
-    /// <summary>仅 Log 模式下，非 Log 路径一律不备份。</summary>
+    /// <summary>仅 Log 模式下，非 Log 路径与 Bin 文件夹内的 Log 一律不备份。</summary>
     public bool ExcludesByLogOnly(string relPath)
-        => OnlyLogs && !UploadRules.HasSegment(relPath, "Log");
+    {
+        if (!OnlyLogs) return false;
+        if (!UploadRules.HasSegment(relPath, "Log")) return true;
+        // Bin 文件夹中的 Log 属于程序自带日志，不纳入「只备份 Log」
+        return UploadRules.IsLogUnderBin(relPath);
+    }
 
     /// <summary>
     /// Log 文件按修改日期过滤：仅 Log 模式使用指定区间（起止相同即单日）；

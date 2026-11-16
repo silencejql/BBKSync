@@ -25,6 +25,20 @@ public static class UploadRules
         return false;
     }
 
+    /// <summary>Log 文件夹是否位于 Bin 文件夹内部（如 Bin/Log），用于「只备份 Log」时排除程序自带日志。</summary>
+    public static bool IsLogUnderBin(string rel)
+    {
+        bool inBin = false;
+        foreach (var seg in rel.Split('/'))
+        {
+            if (!inBin && string.Equals(seg, "Bin", StringComparison.OrdinalIgnoreCase))
+                inBin = true;
+            else if (inBin && string.Equals(seg, "Log", StringComparison.OrdinalIgnoreCase))
+                return true;
+        }
+        return false;
+    }
+
     public static bool IsBin(string rel)
         => string.Equals(Top(rel), "Bin", StringComparison.OrdinalIgnoreCase);
 
