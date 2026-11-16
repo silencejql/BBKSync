@@ -52,10 +52,23 @@
                 </Setter>
             </Style>
 
+            <!-- 日历：系统 Calendar 模板不会把背景传给 CalendarItem，这里显式转发，保证深浅主题一致 -->
             <Style TargetType="Calendar">
                 <Setter Property="Background" Value="{DynamicResource CardBgBrush2}" />
                 <Setter Property="Foreground" Value="{DynamicResource TextMainBrush}" />
                 <Setter Property="BorderThickness" Value="0" />
+                <Setter Property="Template">
+                    <Setter.Value>
+                        <ControlTemplate TargetType="Calendar">
+                            <StackPanel x:Name="PART_Root" HorizontalAlignment="Center">
+                                <CalendarItem x:Name="PART_CalendarItem"
+                                              Background="{TemplateBinding Background}"
+                                              Foreground="{TemplateBinding Foreground}"
+                                              BorderThickness="0" />
+                            </StackPanel>
+                        </ControlTemplate>
+                    </Setter.Value>
+                </Setter>
             </Style>
 
             <!-- 日历主体：表头/切换按钮/星期行都换成程序统一风格 -->
