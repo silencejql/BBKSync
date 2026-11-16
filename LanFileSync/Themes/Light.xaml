@@ -1,5 +1,6 @@
 <ResourceDictionary xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
-                    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+                    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+                    xmlns:local="clr-namespace:LanFileSync">
 
     <!-- 主题感知 brush -->
     <SolidColorBrush x:Key="WindowBorderBrush" Color="#2563EB" />
@@ -889,6 +890,9 @@
             </Setter.Value>
         </Setter>
     </Style>
+
+    <!-- 仅双击切换的复选框沿用上面的 CheckBox 主题样式 -->
+    <Style TargetType="{x:Type local:DoubleClickCheckBox}" BasedOn="{StaticResource {x:Type CheckBox}}" />
 
     <!-- 单选按钮：圆点 -->
     <Style TargetType="RadioButton">
