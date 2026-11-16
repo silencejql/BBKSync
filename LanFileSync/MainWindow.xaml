@@ -273,12 +273,12 @@
                                                         Visibility="{Binding IsLogRangePicking, Converter={StaticResource BoolToVisibility}}">
                                                     <StackPanel Orientation="Horizontal">
                                                         <TextBlock Text="从" VerticalAlignment="Center" />
-                                                        <DatePicker Width="124" Margin="6,0" VerticalAlignment="Center"
+                                                        <DatePicker x:Name="dpFrom" Width="124" Margin="6,0" VerticalAlignment="Center"
                                                                     SelectedDateFormat="Short"
                                                                     SelectedDate="{Binding LogFromDate, UpdateSourceTrigger=PropertyChanged}"
                                                                     ToolTip="起始日期；与结束日期相同表示只备份某一天" />
                                                         <TextBlock Text="到" VerticalAlignment="Center" />
-                                                        <DatePicker Width="124" Margin="6,0" VerticalAlignment="Center"
+                                                        <DatePicker x:Name="dpTo" Width="124" Margin="6,0" VerticalAlignment="Center"
                                                                     SelectedDateFormat="Short"
                                                                     SelectedDate="{Binding LogToDate, UpdateSourceTrigger=PropertyChanged}"
                                                                     ToolTip="结束日期；与起始日期相同表示只备份某一天" />

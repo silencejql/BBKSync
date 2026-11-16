@@ -53,6 +53,11 @@ public partial class MainWindow : Window
         _vm.StartServer(showErrors: false);
         UpdateTheme(ThemeManager.IsDark);
 
+        // DatePicker 找不到模板里的 PART_Calendar，会自行创建默认日历，弹出时补上主题样式
+        dpFrom.CalendarOpened += (s, args) => ApplyCalendarTheme(dpFrom);
+        dpTo.CalendarOpened += (s, args) => ApplyCalendarTheme(dpTo);
+
+
         bool minimizeToTray = _startMinimized || _settings.Settings.Server.AutoStartAndListen;
         if (minimizeToTray)
         {
@@ -82,6 +87,28 @@ public partial class MainWindow : Window
     /// <summary>预览列表选中行时标记事件已处理，避免冒泡到外层 TabControl
     /// 触发其模板里的 Selector.SelectionChanged 动画（表现为整页刷新）。</summary>
     private void ToolsListView_SelectionChanged(object sender, SelectionChangedEventArgs e) => e.Handled = true;
+
+    /// <summary>
+    /// 给 DatePicker 弹层里的 Calendar 挂主题样式。
+    /// DatePicker 找不到模板内的 PART_Calendar 时会自行创建默认 Calendar 放进 Popup，
+    /// 因此需要在弹出时把主题样式显式赋给它。
+    /// </summary>
+    private static void ApplyCalendarTheme(DatePicker dp)
+    {
+        if (dp.Template?.FindName("PART_Popup", dp) is not System.Windows.Controls.Primitives.Popup popup) return;
+        if (popup.Child is not Calendar cal) return;
+        try
+        {
+            cal.Style = (Style)Application.Current.FindResource("AppCalendarStyle");
+            cal.CalendarItemStyle = (Style)Application.Current.FindResource("AppCalendarItemStyle");
+            cal.CalendarDayButtonStyle = (Style)Application.Current.FindResource("AppCalendarDayButtonStyle");
+            cal.CalendarButtonStyle = (Style)Application.Current.FindResource("AppCalendarButtonStyle");
+        }
+        catch
+        {
+            // 资源缺失时保持系统默认样式
+        }
+    }
 
     #region 密码保护
 

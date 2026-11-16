@@ -1249,13 +1249,18 @@
         <Setter Property="Template">
             <Setter.Value>
                 <ControlTemplate TargetType="Calendar">
-                    <StackPanel x:Name="PART_Root" HorizontalAlignment="Center">
-                        <CalendarItem x:Name="PART_CalendarItem"
-                                      Style="{TemplateBinding CalendarItemStyle}"
-                                      Background="{TemplateBinding Background}"
-                                      Foreground="{TemplateBinding Foreground}"
-                                      BorderThickness="0" />
-                    </StackPanel>
+                    <Border Background="{TemplateBinding Background}"
+                            BorderBrush="{DynamicResource CardBorderBrush}" BorderThickness="1"
+                            CornerRadius="10" Padding="8,6,8,8" Margin="0,4,0,8"
+                            SnapsToDevicePixels="True" Effect="{StaticResource PopShadow}">
+                        <StackPanel x:Name="PART_Root" HorizontalAlignment="Center">
+                            <CalendarItem x:Name="PART_CalendarItem"
+                                          Style="{TemplateBinding CalendarItemStyle}"
+                                          Background="Transparent"
+                                          Foreground="{TemplateBinding Foreground}"
+                                          BorderThickness="0" />
+                        </StackPanel>
+                    </Border>
                 </ControlTemplate>
             </Setter.Value>
         </Setter>
@@ -1384,17 +1389,14 @@
                         <Border x:Name="focusRing" CornerRadius="10" Margin="-2"
                                 BorderThickness="1" BorderBrush="{DynamicResource AccentBrush}"
                                 Opacity="0" IsHitTestVisible="False" />
-                        <Popup x:Name="PART_Popup" Placement="Bottom" PlacementTarget="{Binding ElementName=bd}"
+                        <Popup x:Name="PART_Popup" Placement="Bottom" VerticalOffset="4"
+                               PlacementTarget="{Binding RelativeSource={RelativeSource TemplatedParent}}"
                                AllowsTransparency="True" StaysOpen="False" PopupAnimation="Fade">
-                            <Border Background="{DynamicResource CardBgBrush2}" BorderBrush="{DynamicResource CardBorderBrush}"
-                                    BorderThickness="1" CornerRadius="10" Margin="0,4,0,0" Padding="6"
-                                    SnapsToDevicePixels="True" Effect="{StaticResource PopShadow}">
-                                <Calendar x:Name="PART_Calendar"
-                                          Style="{StaticResource AppCalendarStyle}"
-                                          CalendarItemStyle="{StaticResource AppCalendarItemStyle}"
-                                          CalendarDayButtonStyle="{StaticResource AppCalendarDayButtonStyle}"
-                                          CalendarButtonStyle="{StaticResource AppCalendarButtonStyle}" />
-                            </Border>
+                            <Calendar x:Name="PART_Calendar"
+                                      Style="{StaticResource AppCalendarStyle}"
+                                      CalendarItemStyle="{StaticResource AppCalendarItemStyle}"
+                                      CalendarDayButtonStyle="{StaticResource AppCalendarDayButtonStyle}"
+                                      CalendarButtonStyle="{StaticResource AppCalendarButtonStyle}" />
                         </Popup>
                     </Grid>
                     <ControlTemplate.Triggers>
