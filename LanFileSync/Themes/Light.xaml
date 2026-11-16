@@ -1241,6 +1241,97 @@
         </Setter>
     </Style>
 
+    <!-- 日历弹层：Popup 内容命中不到隐式样式，这里显式挂载 -->
+    <Style x:Key="AppCalendarStyle" TargetType="Calendar">
+        <Setter Property="Background" Value="{DynamicResource CardBgBrush2}" />
+        <Setter Property="Foreground" Value="{DynamicResource TextMainBrush}" />
+        <Setter Property="BorderThickness" Value="0" />
+        <Setter Property="Template">
+            <Setter.Value>
+                <ControlTemplate TargetType="Calendar">
+                    <StackPanel x:Name="PART_Root" HorizontalAlignment="Center">
+                        <CalendarItem x:Name="PART_CalendarItem"
+                                      Style="{TemplateBinding CalendarItemStyle}"
+                                      Background="{TemplateBinding Background}"
+                                      Foreground="{TemplateBinding Foreground}"
+                                      BorderThickness="0" />
+                    </StackPanel>
+                </ControlTemplate>
+            </Setter.Value>
+        </Setter>
+    </Style>
+    <Style x:Key="AppCalendarItemStyle" TargetType="CalendarItem">
+        <Setter Property="Background" Value="{DynamicResource CardBgBrush2}" />
+        <Setter Property="Foreground" Value="{DynamicResource TextMainBrush}" />
+        <Setter Property="BorderThickness" Value="0" />
+    </Style>
+    <Style x:Key="AppCalendarDayButtonStyle" TargetType="CalendarDayButton">
+        <Setter Property="Foreground" Value="{DynamicResource TextMainBrush}" />
+        <Setter Property="FontSize" Value="12" />
+        <Setter Property="MinWidth" Value="30" />
+        <Setter Property="MinHeight" Value="26" />
+        <Setter Property="Cursor" Value="Hand" />
+        <Setter Property="Template">
+            <Setter.Value>
+                <ControlTemplate TargetType="CalendarDayButton">
+                    <Border x:Name="bd" CornerRadius="6" Background="Transparent"
+                            BorderThickness="1" BorderBrush="Transparent" Margin="1">
+                        <ContentPresenter Content="{TemplateBinding Content}"
+                                          ContentTemplate="{TemplateBinding ContentTemplate}"
+                                          HorizontalAlignment="Center" VerticalAlignment="Center"
+                                          TextElement.Foreground="{TemplateBinding Foreground}" />
+                    </Border>
+                    <ControlTemplate.Triggers>
+                        <Trigger Property="IsMouseOver" Value="True">
+                            <Setter TargetName="bd" Property="Background" Value="{DynamicResource ButtonHoverBgBrush}" />
+                        </Trigger>
+                        <Trigger Property="IsToday" Value="True">
+                            <Setter TargetName="bd" Property="BorderBrush" Value="{DynamicResource AccentBrush}" />
+                        </Trigger>
+                        <Trigger Property="IsInactive" Value="True">
+                            <Setter TargetName="bd" Property="Background" Value="{DynamicResource ButtonHoverBgBrush}" />
+                        </Trigger>
+                        <Trigger Property="IsSelected" Value="True">
+                            <Setter TargetName="bd" Property="Background" Value="{DynamicResource AccentBrush}" />
+                            <Setter TargetName="bd" Property="BorderBrush" Value="{DynamicResource AccentBrush}" />
+                            <Setter Property="Foreground" Value="#FFFFFF" />
+                        </Trigger>
+                        <Trigger Property="IsBlackedOut" Value="True">
+                            <Setter TargetName="bd" Property="Opacity" Value="0.35" />
+                        </Trigger>
+                    </ControlTemplate.Triggers>
+                </ControlTemplate>
+            </Setter.Value>
+        </Setter>
+    </Style>
+    <Style x:Key="AppCalendarButtonStyle" TargetType="CalendarButton">
+        <Setter Property="Foreground" Value="{DynamicResource TextMainBrush}" />
+        <Setter Property="FontSize" Value="12" />
+        <Setter Property="MinWidth" Value="44" />
+        <Setter Property="MinHeight" Value="30" />
+        <Setter Property="Cursor" Value="Hand" />
+        <Setter Property="Template">
+            <Setter.Value>
+                <ControlTemplate TargetType="CalendarButton">
+                    <Border x:Name="bd" CornerRadius="6" Background="Transparent" Margin="1">
+                        <ContentPresenter Content="{TemplateBinding Content}"
+                                          HorizontalAlignment="Center" VerticalAlignment="Center"
+                                          TextElement.Foreground="{TemplateBinding Foreground}" />
+                    </Border>
+                    <ControlTemplate.Triggers>
+                        <Trigger Property="IsMouseOver" Value="True">
+                            <Setter TargetName="bd" Property="Background" Value="{DynamicResource ButtonHoverBgBrush}" />
+                        </Trigger>
+                        <Trigger Property="HasSelectedDays" Value="True">
+                            <Setter TargetName="bd" Property="Background" Value="{DynamicResource AccentBrush}" />
+                            <Setter Property="Foreground" Value="#FFFFFF" />
+                        </Trigger>
+                    </ControlTemplate.Triggers>
+                </ControlTemplate>
+            </Setter.Value>
+        </Setter>
+    </Style>
+
     <!-- 日期选择（输入框与程序输入框风格一致） -->
     <Style TargetType="DatePicker">
         <Setter Property="Foreground" Value="{DynamicResource TextMainBrush}" />
@@ -1298,7 +1389,11 @@
                             <Border Background="{DynamicResource CardBgBrush2}" BorderBrush="{DynamicResource CardBorderBrush}"
                                     BorderThickness="1" CornerRadius="10" Margin="0,4,0,0" Padding="6"
                                     SnapsToDevicePixels="True" Effect="{StaticResource PopShadow}">
-                                <Calendar x:Name="PART_Calendar" Background="{DynamicResource CardBgBrush2}" />
+                                <Calendar x:Name="PART_Calendar"
+                                          Style="{StaticResource AppCalendarStyle}"
+                                          CalendarItemStyle="{StaticResource AppCalendarItemStyle}"
+                                          CalendarDayButtonStyle="{StaticResource AppCalendarDayButtonStyle}"
+                                          CalendarButtonStyle="{StaticResource AppCalendarButtonStyle}" />
                             </Border>
                         </Popup>
                     </Grid>
