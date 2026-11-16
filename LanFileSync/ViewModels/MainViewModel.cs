@@ -1,5 +1,6 @@
 using System.Collections.ObjectModel;
 using System.IO;
+using System.Net.Sockets;
 using System.Reflection;
 using LanFileSync.Mvvm;
 using LanFileSync.Services;
@@ -762,10 +763,30 @@ public partial class MainViewModel : ObservableObject
         }
         catch (Exception ex)
         {
-            if (showErrors) _dialogs.Error("启动服务失败: " + ex.Message, "错误");
-            else LogError("启动服务失败: " + ex.Message);
             _server?.Dispose();
             _server = null;
+            if (ex is SocketException { SocketErrorCode: SocketError.AccessDenied })
+            {
+                int suggested = PortInspector.SuggestPort(port);
+                bool reserved = PortInspector.TryGetExcludedRange(port, out int rangeStart, out int rangeEnd);
+                // 系统保留端口无法通过重试解决，提供一键改用建议端口
+                if (showErrors && reserved && suggested > 0 &&
+                    _dialogs.Confirm(
+                        $"端口 {port} 已被 Windows 保留（保留范围 {rangeStart}~{rangeEnd}），无法监听。\n\n" +
+                        $"是否自动改用端口 {suggested} 并重新启动服务？\n" +
+                        "远端电脑连接本机时也需要填写新端口。", "端口不可用"))
+                {
+                    PortText = suggested.ToString();
+                    StartServer(showErrors: true);
+                    return;
+                }
+                string message = PortInspector.BuildAccessDeniedMessage(port);
+                if (showErrors) _dialogs.Error(message, "错误");
+                else LogError(message);
+                return;
+            }
+            if (showErrors) _dialogs.Error("启动服务失败: " + ex.Message, "错误");
+            else LogError("启动服务失败: " + ex.Message);
         }
     }
 
