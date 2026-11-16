@@ -22,37 +22,8 @@ public partial class MainWindow : Window
     private bool _allowExit;
     private readonly bool _startMinimized;
 
-    // 自维护的双击判定：不用 e.ClickCount，避免日期选择等前一次点击让 ClickCount 变成 2
-    private static CheckBox? _lastClickBox;
-    private static DateTime _lastClickAt;
-    private static readonly TimeSpan DoubleClickWindow = TimeSpan.FromMilliseconds(400);
-
     public MainWindow()
     {
-        // CheckBox 仅双击勾选：单击只记录，双击同一个复选框才切换
-        EventManager.RegisterClassHandler(typeof(CheckBox),
-            UIElement.PreviewMouseLeftButtonDownEvent,
-            new MouseButtonEventHandler((s, e) =>
-            {
-                if (s is CheckBox cb)
-                {
-                    DateTime now = DateTime.Now;
-                    bool isDoubleClick = ReferenceEquals(cb, _lastClickBox) &&
-                                         now - _lastClickAt <= DoubleClickWindow;
-                    if (isDoubleClick)
-                    {
-                        cb.IsChecked = !cb.IsChecked;
-                        _lastClickBox = null;
-                    }
-                    else
-                    {
-                        _lastClickBox = cb;
-                        _lastClickAt = now;
-                    }
-                    e.Handled = true; // 阻止默认 toggle(单击不勾选)
-                }
-            }));
-
         _startMinimized = Environment.GetCommandLineArgs().Any(a =>
             a.Equals("--minimized", StringComparison.OrdinalIgnoreCase) ||
             a.Equals("--autostart", StringComparison.OrdinalIgnoreCase));
