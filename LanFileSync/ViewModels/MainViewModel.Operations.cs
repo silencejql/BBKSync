@@ -92,9 +92,9 @@ public partial class MainViewModel
         // 确认之后再执行 PostgreSQL 备份前脚本：取消备份时不会白跑数据库备份
         await RunPreBackupBatAsync();
         string name = BackupNameFor(Environment.MachineName);
-        string target = BackupTargetPath(dest, name);
+        string target = BackupTargetPath(dest, name, logOnly: LogOnlyBackup);
         BackupEngine engine;
-        try { engine = new BackupEngine(src, target, ReadBackupOptions(), Log); }
+        try { engine = new BackupEngine(src, target, ReadBackupOptions(includeLogOnly: true), Log); }
         catch (Exception ex) { _dialogs.Warning(ex.Message, "错误"); return; }
 
         StartBusy("正在备份本机 BBK...");
@@ -151,11 +151,11 @@ public partial class MainViewModel
                     bool preBackupBat = RunPreBackupBat;
                     using var client = new PeerClient();
                     await client.ConnectAsync(host, port, Constants.RolePull, ct, preBackupBat,
-                        backupFilter: ReadBackupOptions());
+                        backupFilter: ReadBackupOptions(includeLogOnly: true));
                     LogDivider();
                     Log($"已连接远端 {host}:{port}，开始拉取备份 → {target} ...");
                     // Log 日期与忽略规则已随握手下发，远端先筛选；本地不再重复筛选
-                    await client.BackupPullAsync(target, ReadBackupOptions(), preBackupBat, Log, OnFileProgress, OnTotal,
+                    await client.BackupPullAsync(target, ReadBackupOptions(includeLogOnly: true), preBackupBat, Log, OnFileProgress, OnTotal,
                         m => LogError("跳过: " + m), ct, sourceFiltered: true, LogError);
                     LogSuccess($"备份完成: {host}");
                     await CompressAndRemoveFolderAsync(target, ShouldCompress);
@@ -174,7 +174,7 @@ public partial class MainViewModel
     private async Task<string> ResolveRemoteBackupTargetAsync(string dest, string host, int port, CancellationToken ct)
     {
         if (!AutoFetchName)
-            return BackupTargetPath(dest, ComputerNameFor(host));
+            return BackupTargetPath(dest, ComputerNameFor(host), logOnly: LogOnlyBackup);
 
         string name = "", line = "";
         try
@@ -191,7 +191,7 @@ public partial class MainViewModel
             name = ComputerNameFor(host);
         }
         else Log($"已从 {host} 获取设备配置：DeviceNo={name}，LineNo={line}");
-        return BackupTargetPath(dest, name, line);
+        return BackupTargetPath(dest, name, line, LogOnlyBackup);
     }
 
     private async Task BackupFromShareAsync(string dest)
@@ -210,12 +210,12 @@ public partial class MainViewModel
                 name = ComputerNameFor(ShareIp.Trim());
             }
             else Log($"已从共享 {unc} 获取设备配置：DeviceNo={name}，LineNo={line}");
-            target = BackupTargetPath(dest, name, line);
+            target = BackupTargetPath(dest, name, line, LogOnlyBackup);
         }
-        else target = BackupTargetPath(dest, ComputerNameFor(ShareIp.Trim()));
+        else target = BackupTargetPath(dest, ComputerNameFor(ShareIp.Trim()), logOnly: LogOnlyBackup);
 
         BackupEngine engine;
-        try { engine = new BackupEngine(unc, target, ReadBackupOptions(), Log); }
+        try { engine = new BackupEngine(unc, target, ReadBackupOptions(includeLogOnly: true), Log); }
         catch (Exception ex) { _dialogs.Warning(ex.Message, "错误"); return; }
 
         StartBusy("正在从共享备份 BBK...");

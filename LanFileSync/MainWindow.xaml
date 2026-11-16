@@ -254,13 +254,42 @@
                                                 <Button Grid.Column="2" Content="浏览..." Padding="12,6" Margin="8,0,0,0"
                                                         Command="{Binding BrowseBackupDestCommand}" />
                                             </Grid>
-                                            <StackPanel Orientation="Horizontal" Margin="0,8,0,0">
+                                            <StackPanel Orientation="Horizontal" Margin="0,8,0,0"
+                                                        Visibility="{Binding IsNormalLogRuleVisible, Converter={StaticResource BoolToVisibility}}">
                                                 <CheckBox x:Name="cbBackupLogRule" Content="Log 文件夹只备份最近" VerticalAlignment="Center"
                                                           IsChecked="{Binding BackupLogRule}" />
                                                 <TextBox x:Name="txtBackupLogDays" Width="50" Height="20" Margin="6,0" VerticalContentAlignment="Center"
                                                          ToolTip="设置 0 时不备份 Log 文件夹；1 表示只备份当天的 Log，2 表示当天及前一天，以此类推"
                                                          Text="{Binding BackupLogDaysText, UpdateSourceTrigger=PropertyChanged}" />
                                                 <TextBlock Text="天" VerticalAlignment="Center" />
+                                            </StackPanel>
+                                            <StackPanel x:Name="rowLogOnly" Margin="0,8,0,0">
+                                                <CheckBox x:Name="cbBackupLogOnly" VerticalAlignment="Center"
+                                                          Content="只备份 Log（按修改日期区间）"
+                                                          IsChecked="{Binding LogOnlyBackup}"
+                                                          ToolTip="勾选后仅备份 Log 文件夹中的文件：自动弹出日期选择，按文件修改日期挑选区间内的 Log；备份名称增加 _Log 标识。" />
+                                                <Border x:Name="pnlLogRangePick" Margin="0,6,0,0" Padding="8,6" CornerRadius="4"
+                                                        BorderThickness="1" BorderBrush="{DynamicResource InputBorderBrush}"
+                                                        Visibility="{Binding IsLogRangePicking, Converter={StaticResource BoolToVisibility}}">
+                                                    <StackPanel Orientation="Horizontal">
+                                                        <TextBlock Text="从" VerticalAlignment="Center" />
+                                                        <DatePicker Width="118" Height="26" Margin="6,0" VerticalAlignment="Center"
+                                                                    SelectedDate="{Binding LogFromDate, UpdateSourceTrigger=PropertyChanged}"
+                                                                    ToolTip="起始日期；与结束日期相同表示只备份某一天" />
+                                                        <TextBlock Text="到" VerticalAlignment="Center" />
+                                                        <DatePicker Width="118" Height="26" Margin="6,0" VerticalAlignment="Center"
+                                                                    SelectedDate="{Binding LogToDate, UpdateSourceTrigger=PropertyChanged}"
+                                                                    ToolTip="结束日期；与起始日期相同表示只备份某一天" />
+                                                        <Button Content="确定" Command="{Binding ConfirmLogRangeCommand}" Padding="10,2" Margin="4,0,0,0" />
+                                                        <TextBlock Text="起止相同即只备份某一天" Margin="8,0,0,0" VerticalAlignment="Center"
+                                                                   FontSize="10" Foreground="{DynamicResource TextSubBrush}" />
+                                                    </StackPanel>
+                                                </Border>
+                                                <StackPanel x:Name="pnlLogRangeSummary" Orientation="Horizontal" Margin="0,6,0,0"
+                                                            Visibility="{Binding IsLogRangeSummaryVisible, Converter={StaticResource BoolToVisibility}}">
+                                                    <TextBlock Text="{Binding LogRangeSummaryText}" VerticalAlignment="Center" FontWeight="SemiBold" />
+                                                    <Button Content="修改" Command="{Binding EditLogRangeCommand}" Padding="8,2" Margin="8,0,0,0" />
+                                                </StackPanel>
                                             </StackPanel>
                                             <StackPanel x:Name="rowLocalName" Orientation="Horizontal" Margin="0,8,0,0">
                                                 <CheckBox x:Name="cbAutoFetchName" VerticalAlignment="Center"

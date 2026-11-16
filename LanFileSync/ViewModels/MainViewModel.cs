@@ -67,6 +67,10 @@ public partial class MainViewModel : ObservableObject
     private string _backupDestPath = "";
     private bool _backupLogRule = true;
     private string _backupLogDaysText = "2";
+    private bool _logOnlyBackup;
+    private bool _isLogRangePicking;
+    private DateTime? _logFromDate = DateTime.Today;
+    private DateTime? _logToDate = DateTime.Today;
     private bool _autoFetchName = true;
     private bool _compressZip = true;
     private bool _runPreBackupBat;
@@ -171,6 +175,19 @@ public partial class MainViewModel : ObservableObject
         ShowHistoryCommand = new RelayCommand(() => { _dialogs.ShowHistory(); ReloadHistory(); });
         ShowComputersCommand = new RelayCommand(() => { _dialogs.ShowComputers(); ReloadHistory(); });
         ShowHelpCommand = new RelayCommand(() => _dialogs.ShowHelp());
+        ConfirmLogRangeCommand = new RelayCommand(() =>
+        {
+            DateTime from = (LogFromDate ?? DateTime.Today).Date;
+            DateTime to = (LogToDate ?? from).Date;
+            if (to < from) (from, to) = (to, from);
+            LogFromDate = from;
+            LogToDate = to;
+            IsLogRangePicking = false;
+        });
+        EditLogRangeCommand = new RelayCommand(() =>
+        {
+            if (LogOnlyBackup) IsLogRangePicking = true;
+        });
         ShareTestCommand = new RelayCommand(ShareTest, () => CanShareTest);
 
         StartServerCommand = new RelayCommand(() => StartServer(showErrors: true), () => CanStartServer);
@@ -269,8 +286,65 @@ public partial class MainViewModel : ObservableObject
     }
 
     public string BackupDestPath { get => _backupDestPath; set => SetProperty(ref _backupDestPath, value); }
-    public bool BackupLogRule { get => _backupLogRule; set => SetProperty(ref _backupLogRule, value); }
+    public bool BackupLogRule { get => _backupLogRule; set { if (SetProperty(ref _backupLogRule, value)) OnPropertyChanged(nameof(IsNormalLogRuleVisible)); } }
     public string BackupLogDaysText { get => _backupLogDaysText; set => SetProperty(ref _backupLogDaysText, value); }
+
+    /// <summary>只备份 Log：勾选后按文件修改日期区间筛选 Log 文件夹中的文件。</summary>
+    public bool LogOnlyBackup
+    {
+        get => _logOnlyBackup;
+        set
+        {
+            if (!SetProperty(ref _logOnlyBackup, value)) return;
+            IsLogRangePicking = value;
+            OnPropertyChanged(nameof(IsNormalLogRuleVisible));
+            OnPropertyChanged(nameof(IsLogRangeSummaryVisible));
+        }
+    }
+
+    /// <summary>日期选择面板是否可见：勾选「只备份 Log」后显示，确认日期后收起。</summary>
+    public bool IsLogRangePicking
+    {
+        get => _isLogRangePicking;
+        private set
+        {
+            if (!SetProperty(ref _isLogRangePicking, value)) return;
+            OnPropertyChanged(nameof(IsLogRangeSummaryVisible));
+        }
+    }
+
+    /// <summary>日期选择完成后只显示已选区间。</summary>
+    public bool IsLogRangeSummaryVisible => LogOnlyBackup && !IsLogRangePicking;
+
+    /// <summary>普通 Log 保留天数规则仅在非「只备份 Log」模式下显示。</summary>
+    public bool IsNormalLogRuleVisible => !LogOnlyBackup;
+
+    public DateTime? LogFromDate
+    {
+        get => _logFromDate;
+        set { if (SetProperty(ref _logFromDate, value)) OnPropertyChanged(nameof(LogRangeSummaryText)); }
+    }
+
+    public DateTime? LogToDate
+    {
+        get => _logToDate;
+        set { if (SetProperty(ref _logToDate, value)) OnPropertyChanged(nameof(LogRangeSummaryText)); }
+    }
+
+    public string LogRangeSummaryText
+    {
+        get
+        {
+            DateTime from = (_logFromDate ?? DateTime.Today).Date;
+            DateTime to = (_logToDate ?? from).Date;
+            if (to < from) (from, to) = (to, from);
+            return from == to ? $"仅备份 Log：{from:yyyy-MM-dd}" : $"仅备份 Log：{from:yyyy-MM-dd} 至 {to:yyyy-MM-dd}";
+        }
+    }
+
+    public RelayCommand ConfirmLogRangeCommand { get; }
+    public RelayCommand EditLogRangeCommand { get; }
+
     public bool AutoFetchName { get => _autoFetchName; set => SetProperty(ref _autoFetchName, value); }
     public bool CompressZip { get => _compressZip; set => SetProperty(ref _compressZip, value); }
     public bool RunPreBackupBat { get => _runPreBackupBat; set => SetProperty(ref _runPreBackupBat, value); }
@@ -952,16 +1026,25 @@ public partial class MainViewModel : ObservableObject
         NotifyCommandState();
     }
 
-    private BackupOptions ReadBackupOptions()
+    /// <summary>读取备份规则；includeLogOnly 仅由「BBK备份」页使用，
+    /// 更新前的自动备份等流程保持完整备份，避免只留下 Log。</summary>
+    private BackupOptions ReadBackupOptions(bool includeLogOnly = false)
     {
         if (!int.TryParse(BackupLogDaysText, out int days) || days < 0) days = 2;
         string[] ignores = BackupIgnore
             .Split(new[] { ',', '，', '\r', '\n' }, StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries)
             .Where(s => s.Length > 0).ToArray();
+        bool onlyLogs = includeLogOnly && LogOnlyBackup;
+        DateTime from = (LogFromDate ?? DateTime.Today).Date;
+        DateTime to = (LogToDate ?? from).Date;
+        if (to < from) (from, to) = (to, from);
         return new BackupOptions
         {
             ApplyLogRule = BackupLogRule,
             LogRetentionDays = days,
+            OnlyLogs = onlyLogs,
+            LogFromDate = onlyLogs ? from : null,
+            LogToDate = onlyLogs ? to : null,
             IgnoreRegexes = IgnoreEnabled ? ignores : Array.Empty<string>(),
         };
     }
@@ -1018,10 +1101,11 @@ public partial class MainViewModel : ObservableObject
         return fallback;
     }
 
-    private string BackupTargetPath(string dest, string name, string line = "")
+    private string BackupTargetPath(string dest, string name, string line = "", bool logOnly = false)
     {
         if (string.IsNullOrWhiteSpace(line)) line = DeviceConfig.ReadFromRoot(RootPath.Trim()).Line;
         string basePath = string.IsNullOrEmpty(line) ? dest : Path.Combine(dest, "Line" + FileHelper.SanitizeName(line));
-        return Path.Combine(basePath, $"BBK_{FileHelper.SanitizeName(name)}_{DateTime.Now:yyyyMMdd}");
+        string mark = logOnly ? "_Log" : "";
+        return Path.Combine(basePath, $"BBK_{FileHelper.SanitizeName(name)}{mark}_{DateTime.Now:yyyyMMdd}");
     }
 }

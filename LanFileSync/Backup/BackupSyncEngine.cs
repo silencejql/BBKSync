@@ -27,9 +27,6 @@ public sealed class BackupSyncEngine
         _remote.Clear();
         _remote.AddRange(remote);
 
-        // Log 规则按本地日期计算：1=只备份当天，2=当天及前一天，以此类推
-        DateTime logCut = DateTime.Today.AddDays(-(Options.LogRetentionDays - 1));
-
         _needed.Clear();
         foreach (var f in _remote)
         {
@@ -37,12 +34,15 @@ public sealed class BackupSyncEngine
                 continue;
             if (Options.IsIgnored(f.RelPath))
                 continue;
-            if (Options.ApplyLogRule && UploadRules.HasSegment(f.RelPath, "Log"))
+            // 只备份 Log：其余文件全部排除
+            if (Options.ExcludesByLogOnly(f.RelPath))
+                continue;
+
+            bool isLog = UploadRules.HasSegment(f.RelPath, "Log");
+            if (isLog && (Options.OnlyLogs || Options.ApplyLogRule))
             {
-                // 保留天数为 0 表示完全不备份 Log 文件夹
-                if (Options.LogRetentionDays <= 0)
-                    continue;
-                if (new DateTime(f.MTimeUtcTicks, DateTimeKind.Utc).ToLocalTime().Date < logCut)
+                DateTime local = new DateTime(f.MTimeUtcTicks, DateTimeKind.Utc).ToLocalTime();
+                if (Options.ExcludesLogByDate(local))
                     continue;
             }
             if (NeedsFetch(f))

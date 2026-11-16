@@ -26,6 +26,9 @@ public sealed class PeerClient : IDisposable
             {
                 logRule = backupFilter.ApplyLogRule,
                 logDays = backupFilter.LogRetentionDays,
+                onlyLogs = backupFilter.OnlyLogs,
+                logFrom = backupFilter.LogFromDate?.ToString("yyyy-MM-dd"),
+                logTo = backupFilter.LogToDate?.ToString("yyyy-MM-dd"),
                 ignore = backupFilter.IgnoreRegexes,
             };
         await _conn.SendJsonAsync(new { hello = true, role, preBackupBat, binReplace, backupBeforeSync, backupFilter = filter }, ct);

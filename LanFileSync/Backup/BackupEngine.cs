@@ -36,8 +36,6 @@ public sealed class BackupEngine
         if (!Directory.Exists(Source))
             throw new DirectoryNotFoundException("源文件夹不存在: " + Source);
 
-        // Log 规则按本地日期计算：1=只备份当天，2=当天及前一天，以此类推
-        DateTime logCut = DateTime.Today.AddDays(-(Options.LogRetentionDays - 1));
         var list = new List<string>();
 
         foreach (string file in Directory.EnumerateFiles(Source, "*", SearchOption.AllDirectories))
@@ -49,16 +47,14 @@ public sealed class BackupEngine
                     continue;
                 if (Options.IsIgnored(rel))
                     continue;
+                // 只备份 Log：其余文件全部排除
+                if (Options.ExcludesByLogOnly(rel))
+                    continue;
 
-                if (Options.ApplyLogRule && UploadRules.HasSegment(rel, "Log"))
-                {
-                    // 保留天数为 0 表示完全不备份 Log 文件夹
-                    if (Options.LogRetentionDays <= 0)
-                        continue;
-                    var fi = new FileInfo(file);
-                    if (fi.LastWriteTime.Date < logCut)
-                        continue;
-                }
+                bool isLog = UploadRules.HasSegment(rel, "Log");
+                if (isLog && (Options.OnlyLogs || Options.ApplyLogRule) &&
+                    Options.ExcludesLogByDate(File.GetLastWriteTime(file)))
+                    continue;
 
                 list.Add(rel);
             }

@@ -1,4 +1,5 @@
 using System.Diagnostics;
+using System.Globalization;
 using System.IO;
 using System.Net;
 using System.Net.Sockets;
@@ -178,7 +179,27 @@ public sealed class PeerServer : IDisposable
                 if (x.GetString() is { Length: > 0 } s)
                     ignores.Add(s);
             }
-        return new BackupOptions { ApplyLogRule = logRule, LogRetentionDays = days, IgnoreRegexes = ignores };
+        bool onlyLogs = f.TryGetProperty("onlyLogs", out var ol) && ol.ValueKind == JsonValueKind.True;
+        return new BackupOptions
+        {
+            ApplyLogRule = logRule,
+            LogRetentionDays = days,
+            OnlyLogs = onlyLogs,
+            LogFromDate = ParseDate(f, "logFrom"),
+            LogToDate = ParseDate(f, "logTo"),
+            IgnoreRegexes = ignores
+        };
+    }
+
+    /// <summary>解析握手中的 yyyy-MM-dd 日期字段；缺失或格式错误返回 null。</summary>
+    private static DateTime? ParseDate(JsonElement f, string name)
+    {
+        if (!f.TryGetProperty(name, out var el) || el.ValueKind != JsonValueKind.String)
+            return null;
+        return DateTime.TryParseExact(el.GetString(), "yyyy-MM-dd", CultureInfo.InvariantCulture,
+            DateTimeStyles.None, out var date)
+            ? date
+            : null;
     }
 
     /// <summary>处理单个客户端连接：解析握手、标记远端忙碌，再按角色分派。</summary>

@@ -31,19 +31,21 @@ public static class SourceSide
         await peer.SendJsonAsync(new { op = ProtocolOp.ManifestEnd }, ct);
     }
 
-    /// <summary>与本地备份引擎相同的排除口径：临时文件、忽略规则、Log 保留天数。</summary>
+    /// <summary>与本地备份引擎相同的排除口径：临时文件、忽略规则、仅 Log 模式与 Log 日期区间。</summary>
     private static bool ShouldExclude(FileEntry f, BackupOptions o)
     {
         if (UploadRules.IsTmpFile(f.RelPath))
             return true;
         if (o.IsIgnored(f.RelPath))
             return true;
-        if (o.ApplyLogRule && UploadRules.HasSegment(f.RelPath, "Log"))
+        // 只备份 Log：其余文件全部排除
+        if (o.ExcludesByLogOnly(f.RelPath))
+            return true;
+        bool isLog = UploadRules.HasSegment(f.RelPath, "Log");
+        if (isLog && (o.OnlyLogs || o.ApplyLogRule))
         {
-            if (o.LogRetentionDays <= 0)
-                return true;
-            DateTime logCut = DateTime.Today.AddDays(-(o.LogRetentionDays - 1));
-            if (new DateTime(f.MTimeUtcTicks, DateTimeKind.Utc).ToLocalTime().Date < logCut)
+            DateTime local = new DateTime(f.MTimeUtcTicks, DateTimeKind.Utc).ToLocalTime();
+            if (o.ExcludesLogByDate(local))
                 return true;
         }
         return false;
