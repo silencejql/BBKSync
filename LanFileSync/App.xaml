@@ -58,9 +58,99 @@
                 <Setter Property="BorderThickness" Value="0" />
             </Style>
 
+            <!-- 日历主体：表头/切换按钮/星期行都换成程序统一风格 -->
             <Style TargetType="CalendarItem">
                 <Setter Property="Background" Value="{DynamicResource CardBgBrush2}" />
                 <Setter Property="Foreground" Value="{DynamicResource TextMainBrush}" />
+                <Setter Property="Template">
+                    <Setter.Value>
+                        <ControlTemplate TargetType="CalendarItem">
+                            <ControlTemplate.Resources>
+                                <DataTemplate x:Key="{x:Static CalendarItem.DayTitleTemplateResourceKey}">
+                                    <TextBlock Text="{Binding}" HorizontalAlignment="Center" VerticalAlignment="Center"
+                                               Margin="0,2,0,4"
+                                               Foreground="{DynamicResource TextSubBrush}"
+                                               FontSize="11" FontWeight="SemiBold" />
+                                </DataTemplate>
+                                <Style x:Key="CalNavButton" TargetType="Button">
+                                    <Setter Property="Width" Value="24" />
+                                    <Setter Property="Height" Value="24" />
+                                    <Setter Property="Cursor" Value="Hand" />
+                                    <Setter Property="Focusable" Value="False" />
+                                    <Setter Property="Template">
+                                        <Setter.Value>
+                                            <ControlTemplate TargetType="Button">
+                                                <Border x:Name="bd" CornerRadius="6" Background="Transparent">
+                                                    <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center" />
+                                                </Border>
+                                                <ControlTemplate.Triggers>
+                                                    <Trigger Property="IsMouseOver" Value="True">
+                                                        <Setter TargetName="bd" Property="Background" Value="{DynamicResource ButtonHoverBgBrush}" />
+                                                    </Trigger>
+                                                </ControlTemplate.Triggers>
+                                            </ControlTemplate>
+                                        </Setter.Value>
+                                    </Setter>
+                                </Style>
+                                <Style x:Key="CalHeaderButton" TargetType="Button">
+                                    <Setter Property="Cursor" Value="Hand" />
+                                    <Setter Property="Focusable" Value="False" />
+                                    <Setter Property="FontSize" Value="13" />
+                                    <Setter Property="FontWeight" Value="SemiBold" />
+                                    <Setter Property="Foreground" Value="{DynamicResource TextMainBrush}" />
+                                    <Setter Property="Template">
+                                        <Setter.Value>
+                                            <ControlTemplate TargetType="Button">
+                                                <Border x:Name="bd" CornerRadius="6" Background="Transparent" Padding="8,3">
+                                                    <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center" />
+                                                </Border>
+                                                <ControlTemplate.Triggers>
+                                                    <Trigger Property="IsMouseOver" Value="True">
+                                                        <Setter TargetName="bd" Property="Background" Value="{DynamicResource ButtonHoverBgBrush}" />
+                                                    </Trigger>
+                                                </ControlTemplate.Triggers>
+                                            </ControlTemplate>
+                                        </Setter.Value>
+                                    </Setter>
+                                </Style>
+                            </ControlTemplate.Resources>
+                            <Grid x:Name="PART_Root">
+                                <Border Background="{TemplateBinding Background}" CornerRadius="8" Padding="8,6,8,8">
+                                    <Grid>
+                                        <Grid.RowDefinitions>
+                                            <RowDefinition Height="Auto" />
+                                            <RowDefinition Height="*" />
+                                        </Grid.RowDefinitions>
+                                        <Grid Grid.Row="0" Margin="0,0,0,4">
+                                            <Grid.ColumnDefinitions>
+                                                <ColumnDefinition Width="Auto" />
+                                                <ColumnDefinition Width="*" />
+                                                <ColumnDefinition Width="Auto" />
+                                            </Grid.ColumnDefinitions>
+                                            <Button x:Name="PART_PreviousButton" Grid.Column="0" Style="{StaticResource CalNavButton}">
+                                                <Path Width="6" Height="10" Stretch="Uniform"
+                                                      Stroke="{DynamicResource TextSubBrush}" StrokeThickness="1.6"
+                                                      StrokeStartLineCap="Round" StrokeEndLineCap="Round"
+                                                      Data="M5,0 L0,5 L5,10" />
+                                            </Button>
+                                            <Button x:Name="PART_HeaderButton" Grid.Column="1" Style="{StaticResource CalHeaderButton}" />
+                                            <Button x:Name="PART_NextButton" Grid.Column="2" Style="{StaticResource CalNavButton}">
+                                                <Path Width="6" Height="10" Stretch="Uniform"
+                                                      Stroke="{DynamicResource TextSubBrush}" StrokeThickness="1.6"
+                                                      StrokeStartLineCap="Round" StrokeEndLineCap="Round"
+                                                      Data="M0,0 L5,5 L0,10" />
+                                            </Button>
+                                        </Grid>
+                                        <Grid x:Name="PART_MonthView" Grid.Row="1" HorizontalAlignment="Center" Visibility="Visible" />
+                                        <Grid x:Name="PART_YearView" Grid.Row="1" HorizontalAlignment="Center" Visibility="Hidden" />
+                                    </Grid>
+                                </Border>
+                                <Rectangle x:Name="PART_DisabledVisual" Fill="#80FFFFFF" RadiusX="8" RadiusY="8"
+                                           Visibility="Collapsed" IsHitTestVisible="False" />
+                            </Grid>
+                        </ControlTemplate>
+                    </Setter.Value>
+                </Setter>
             </Style>
 
             <Style TargetType="CalendarDayButton">
