@@ -1295,10 +1295,10 @@
                                 Opacity="0" IsHitTestVisible="False" />
                         <Popup x:Name="PART_Popup" Placement="Bottom" PlacementTarget="{Binding ElementName=bd}"
                                AllowsTransparency="True" StaysOpen="False" PopupAnimation="Fade">
-                            <Border Background="#FFFFFF" BorderBrush="{DynamicResource CardBorderBrush}"
+                            <Border Background="{DynamicResource CardBgBrush2}" BorderBrush="{DynamicResource CardBorderBrush}"
                                     BorderThickness="1" CornerRadius="10" Margin="0,4,0,0" Padding="6"
                                     SnapsToDevicePixels="True" Effect="{StaticResource PopShadow}">
-                                <Calendar x:Name="PART_Calendar" Background="#FFFFFF" />
+                                <Calendar x:Name="PART_Calendar" Background="{DynamicResource CardBgBrush2}" />
                             </Border>
                         </Popup>
                     </Grid>

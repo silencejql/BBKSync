@@ -36,7 +36,7 @@
                                 <ScrollViewer x:Name="PART_ContentHost" VerticalAlignment="Center" />
                                 <ContentControl x:Name="PART_Watermark" Visibility="Collapsed"
                                                 Content="选择日期"
-                                                Foreground="#6B7280" FontSize="11"
+                                                Foreground="{DynamicResource TextSubBrush}" FontSize="11"
                                                 IsHitTestVisible="False" VerticalAlignment="Center" />
                             </Grid>
                             <ControlTemplate.Triggers>
@@ -53,18 +53,18 @@
             </Style>
 
             <Style TargetType="Calendar">
-                <Setter Property="Background" Value="#FFFFFF" />
-                <Setter Property="Foreground" Value="#1F2430" />
+                <Setter Property="Background" Value="{DynamicResource CardBgBrush2}" />
+                <Setter Property="Foreground" Value="{DynamicResource TextMainBrush}" />
                 <Setter Property="BorderThickness" Value="0" />
             </Style>
 
             <Style TargetType="CalendarItem">
-                <Setter Property="Background" Value="#FFFFFF" />
-                <Setter Property="Foreground" Value="#1F2430" />
+                <Setter Property="Background" Value="{DynamicResource CardBgBrush2}" />
+                <Setter Property="Foreground" Value="{DynamicResource TextMainBrush}" />
             </Style>
 
             <Style TargetType="CalendarDayButton">
-                <Setter Property="Foreground" Value="#1F2430" />
+                <Setter Property="Foreground" Value="{DynamicResource TextMainBrush}" />
                 <Setter Property="FontSize" Value="12" />
                 <Setter Property="MinWidth" Value="30" />
                 <Setter Property="MinHeight" Value="26" />
@@ -81,17 +81,17 @@
                             </Border>
                             <ControlTemplate.Triggers>
                                 <Trigger Property="IsMouseOver" Value="True">
-                                    <Setter TargetName="bd" Property="Background" Value="#EEF4FF" />
+                                    <Setter TargetName="bd" Property="Background" Value="{DynamicResource ButtonHoverBgBrush}" />
                                 </Trigger>
                                 <Trigger Property="IsToday" Value="True">
-                                    <Setter TargetName="bd" Property="BorderBrush" Value="#2563EB" />
+                                    <Setter TargetName="bd" Property="BorderBrush" Value="{DynamicResource AccentBrush}" />
                                 </Trigger>
                                 <Trigger Property="IsInactive" Value="True">
-                                    <Setter TargetName="bd" Property="Background" Value="#DEE9FB" />
+                                    <Setter TargetName="bd" Property="Background" Value="{DynamicResource ButtonHoverBgBrush}" />
                                 </Trigger>
                                 <Trigger Property="IsSelected" Value="True">
-                                    <Setter TargetName="bd" Property="Background" Value="#2563EB" />
-                                    <Setter TargetName="bd" Property="BorderBrush" Value="#2563EB" />
+                                    <Setter TargetName="bd" Property="Background" Value="{DynamicResource AccentBrush}" />
+                                    <Setter TargetName="bd" Property="BorderBrush" Value="{DynamicResource AccentBrush}" />
                                     <Setter Property="Foreground" Value="#FFFFFF" />
                                 </Trigger>
                                 <Trigger Property="IsBlackedOut" Value="True">
@@ -104,7 +104,7 @@
             </Style>
 
             <Style TargetType="CalendarButton">
-                <Setter Property="Foreground" Value="#1F2430" />
+                <Setter Property="Foreground" Value="{DynamicResource TextMainBrush}" />
                 <Setter Property="FontSize" Value="12" />
                 <Setter Property="MinWidth" Value="44" />
                 <Setter Property="MinHeight" Value="30" />
@@ -119,10 +119,10 @@
                             </Border>
                             <ControlTemplate.Triggers>
                                 <Trigger Property="IsMouseOver" Value="True">
-                                    <Setter TargetName="bd" Property="Background" Value="#EEF4FF" />
+                                    <Setter TargetName="bd" Property="Background" Value="{DynamicResource ButtonHoverBgBrush}" />
                                 </Trigger>
                                 <Trigger Property="HasSelectedDays" Value="True">
-                                    <Setter TargetName="bd" Property="Background" Value="#2563EB" />
+                                    <Setter TargetName="bd" Property="Background" Value="{DynamicResource AccentBrush}" />
                                     <Setter Property="Foreground" Value="#FFFFFF" />
                                 </Trigger>
                             </ControlTemplate.Triggers>
