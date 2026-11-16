@@ -273,21 +273,25 @@
                                                         Visibility="{Binding IsLogRangePicking, Converter={StaticResource BoolToVisibility}}">
                                                     <StackPanel Orientation="Horizontal">
                                                         <TextBlock Text="从" VerticalAlignment="Center" />
-                                                        <DatePicker Width="118" Height="26" Margin="6,0" VerticalAlignment="Center"
+                                                        <DatePicker Width="124" Margin="6,0" VerticalAlignment="Center"
+                                                                    SelectedDateFormat="Short"
                                                                     SelectedDate="{Binding LogFromDate, UpdateSourceTrigger=PropertyChanged}"
                                                                     ToolTip="起始日期；与结束日期相同表示只备份某一天" />
                                                         <TextBlock Text="到" VerticalAlignment="Center" />
-                                                        <DatePicker Width="118" Height="26" Margin="6,0" VerticalAlignment="Center"
+                                                        <DatePicker Width="124" Margin="6,0" VerticalAlignment="Center"
+                                                                    SelectedDateFormat="Short"
                                                                     SelectedDate="{Binding LogToDate, UpdateSourceTrigger=PropertyChanged}"
                                                                     ToolTip="结束日期；与起始日期相同表示只备份某一天" />
                                                         <Button Content="确定" Command="{Binding ConfirmLogRangeCommand}" Padding="10,2" Margin="4,0,0,0" />
-                                                        <TextBlock Text="起止相同即只备份某一天" Margin="8,0,0,0" VerticalAlignment="Center"
-                                                                   FontSize="10" Foreground="{DynamicResource TextSubBrush}" />
                                                     </StackPanel>
                                                 </Border>
                                                 <StackPanel x:Name="pnlLogRangeSummary" Orientation="Horizontal" Margin="0,6,0,0"
                                                             Visibility="{Binding IsLogRangeSummaryVisible, Converter={StaticResource BoolToVisibility}}">
-                                                    <TextBlock Text="{Binding LogRangeSummaryText}" VerticalAlignment="Center" FontWeight="SemiBold" />
+                                                    <Border CornerRadius="6" BorderThickness="1" Padding="8,3"
+                                                            BorderBrush="{DynamicResource InputBorderBrush}">
+                                                        <TextBlock Text="{Binding LogRangeSummaryText}" VerticalAlignment="Center"
+                                                                   FontSize="11" Foreground="{DynamicResource TextMainBrush}" />
+                                                    </Border>
                                                     <Button Content="修改" Command="{Binding EditLogRangeCommand}" Padding="8,2" Margin="8,0,0,0" />
                                                 </StackPanel>
                                             </StackPanel>

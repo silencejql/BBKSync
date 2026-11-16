@@ -1291,6 +1291,101 @@
         </Setter>
     </Style>
 
+    <!-- 日期选择（输入框与程序输入框风格一致） -->
+    <Style TargetType="DatePicker">
+        <Setter Property="Foreground" Value="{DynamicResource TextMainBrush}" />
+        <Setter Property="FontFamily" Value="Microsoft YaHei UI, Segoe UI Variable, Segoe UI" />
+        <Setter Property="FontSize" Value="12" />
+        <Setter Property="Background" Value="#0E141D" />
+        <Setter Property="BorderBrush" Value="{DynamicResource InputBorderBrush}" />
+        <Setter Property="BorderThickness" Value="1" />
+        <Setter Property="MinHeight" Value="28" />
+        <Setter Property="Padding" Value="8,0" />
+        <Setter Property="VerticalContentAlignment" Value="Center" />
+        <Setter Property="Template">
+            <Setter.Value>
+                <ControlTemplate TargetType="DatePicker">
+                    <Grid>
+                        <Border x:Name="bd" CornerRadius="8" SnapsToDevicePixels="True"
+                                Background="{TemplateBinding Background}"
+                                BorderBrush="{TemplateBinding BorderBrush}"
+                                BorderThickness="{TemplateBinding BorderThickness}"
+                                Padding="{TemplateBinding Padding}">
+                            <Grid>
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="*" />
+                                    <ColumnDefinition Width="22" />
+                                </Grid.ColumnDefinitions>
+                                <DatePickerTextBox x:Name="PART_TextBox" Grid.Column="0"
+                                                   Background="Transparent" BorderThickness="0"
+                                                   VerticalAlignment="Center" />
+                                <Button x:Name="PART_Button" Grid.Column="1" Focusable="False"
+                                        Background="Transparent" BorderThickness="0" Cursor="Hand"
+                                        ToolTip="选择日期">
+                                    <Button.Template>
+                                        <ControlTemplate TargetType="Button">
+                                            <Border x:Name="btnBd" Background="Transparent" CornerRadius="6">
+                                                <Path Width="13" Height="13" Stretch="Uniform"
+                                                      Stroke="{DynamicResource TextSubBrush}" StrokeThickness="1.2"
+                                                      HorizontalAlignment="Center" VerticalAlignment="Center"
+                                                      Data="M2,4.5 H14 V14 H2 Z M2,7.5 H14 M5,2.5 V5 M11,2.5 V5" />
+                                            </Border>
+                                            <ControlTemplate.Triggers>
+                                                <Trigger Property="IsMouseOver" Value="True">
+                                                    <Setter TargetName="btnBd" Property="Background" Value="#1B2434" />
+                                                </Trigger>
+                                            </ControlTemplate.Triggers>
+                                        </ControlTemplate>
+                                    </Button.Template>
+                                </Button>
+                            </Grid>
+                        </Border>
+                        <Border x:Name="focusRing" CornerRadius="10" Margin="-2"
+                                BorderThickness="1" BorderBrush="{DynamicResource AccentBrush}"
+                                Opacity="0" IsHitTestVisible="False" />
+                        <Popup x:Name="PART_Popup" Placement="Bottom" PlacementTarget="{Binding ElementName=bd}"
+                               AllowsTransparency="True" StaysOpen="False" PopupAnimation="Fade">
+                            <Border Background="#FFFFFF" BorderBrush="{DynamicResource CardBorderBrush}"
+                                    BorderThickness="1" CornerRadius="10" Margin="0,4,0,0" Padding="6"
+                                    SnapsToDevicePixels="True" Effect="{StaticResource PopShadow}">
+                                <Calendar x:Name="PART_Calendar" Background="#FFFFFF" />
+                            </Border>
+                        </Popup>
+                    </Grid>
+                    <ControlTemplate.Triggers>
+                        <Trigger Property="IsKeyboardFocusWithin" Value="True">
+                            <Setter TargetName="bd" Property="BorderBrush" Value="{DynamicResource AccentBrush}" />
+                            <Trigger.EnterActions>
+                                <BeginStoryboard>
+                                    <Storyboard>
+                                        <DoubleAnimation Storyboard.TargetName="focusRing"
+                                                         Storyboard.TargetProperty="Opacity"
+                                                         To="0.35" Duration="0:0:0.18" />
+                                    </Storyboard>
+                                </BeginStoryboard>
+                            </Trigger.EnterActions>
+                            <Trigger.ExitActions>
+                                <BeginStoryboard>
+                                    <Storyboard>
+                                        <DoubleAnimation Storyboard.TargetName="focusRing"
+                                                         Storyboard.TargetProperty="Opacity"
+                                                         To="0" Duration="0:0:0.2" />
+                                    </Storyboard>
+                                </BeginStoryboard>
+                            </Trigger.ExitActions>
+                        </Trigger>
+                        <Trigger Property="IsMouseOver" Value="True">
+                            <Setter TargetName="bd" Property="BorderBrush" Value="{DynamicResource AccentBrush}" />
+                        </Trigger>
+                        <Trigger Property="IsEnabled" Value="False">
+                            <Setter TargetName="bd" Property="Opacity" Value="0.5" />
+                        </Trigger>
+                    </ControlTemplate.Triggers>
+                </ControlTemplate>
+            </Setter.Value>
+        </Setter>
+    </Style>
+
     <!-- 标题栏按钮 -->
     <Style x:Key="TitleBarButton" TargetType="Button">
         <Setter Property="Width" Value="44" />
